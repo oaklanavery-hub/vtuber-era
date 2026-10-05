@@ -56,16 +56,18 @@ reviewed; enemy portraits and HP bars share the same position.
 
 ## External deployment status
 
-The public repository and Pages workflow are prepared locally. The connected
-GitHub account is `oaklanavery-hub`; the account lists no accessible owned
-repositories, and fetching `oaklanavery-hub/vtuber-era` returns 404. Available
-GitHub connector tools cannot create a repository. No public push or Pages
-deployment is claimed. Repository creation plus authenticated write access and
-Pages activation are the remaining external steps.
+The public repository is
+[`oaklanavery-hub/vtuber-era`](https://github.com/oaklanavery-hub/vtuber-era),
+and the browser release is live at
+[`oaklanavery-hub.github.io/vtuber-era`](https://oaklanavery-hub.github.io/vtuber-era/).
 
-The Actions workflow has been checked locally for YAML structure, official
-action versions, exact engine/templates, checksum verification, both test
-runners, output checks and deployment settings. It has not run on GitHub yet.
+GitHub Actions run
+[`37285925817`](https://github.com/oaklanavery-hub/vtuber-era/actions/runs/37285925817)
+completed successfully on 5 October 2026. Its build job installed the exact
+engine/templates, verified checksums, imported resources, passed both test
+runners, exported the Web release and uploaded the Pages artifact. The dependent
+deploy job also completed successfully. The live page serves the `VTuber Era`
+document and Godot loader from the expected `/vtuber-era/` project path.
 
 ## Remaining validation
 
