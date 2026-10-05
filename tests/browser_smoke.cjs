@@ -47,6 +47,18 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
     args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
       ...(process.env.QA_SINGLE_PROCESS ? ['--single-process', '--no-zygote', '--in-process-gpu'] : [])] });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await page.addInitScript(() => {
+    // Observe real WebAudio buffer starts; do not alter sound or game timing.
+    window.vtuberEraAudioQA = { starts: 0, shortEffects: 0 };
+    const originalStart = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      window.vtuberEraAudioQA.starts++;
+      if (this.buffer?.duration >= 0.08 && this.buffer.duration <= 0.26) {
+        window.vtuberEraAudioQA.shortEffects++;
+      }
+      return originalStart.apply(this, args);
+    };
+  });
   activePage = page;
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
@@ -55,6 +67,8 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   const waitScreen = async screen => {
     await page.waitForFunction(screen => window.vtuberEraQA?.screen === screen, screen, { timeout: 60000 });
     visited.add(screen);
+    assert.equal((await snapshot()).pixel_font, 'Tiny5');
+    assert.equal((await snapshot()).text_overflows, 0, 'text stays inside its UI boxes');
   };
   const click = async (x, y) => { await page.mouse.click(x * 2, y * 2); await page.waitForTimeout(100); };
   const screenshot = name => page.screenshot({ path: path.join(output, `${name}.png`) });
@@ -124,15 +138,16 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await pickCard(chosenCards[3]);
   await click(535, 54);
   await screenshot('rival-options');
-  await click(523, 75 + 23 * (realms.indexOf(rival) + 1));
+  await click(523, 80 + 20 * (realms.indexOf(rival) + 1));
   await page.waitForFunction(realm => window.vtuberEraQA?.rival === realm, rival);
   await screenshot('warband');
   await click(509, 336);
   await waitScreen('battle');
   const initial = await snapshot();
-  assert.equal(initial.release, 'creature-armies-solid-collision');
+  assert.equal(initial.release, 'compact-collision-pixel-audio');
   assert.deepEqual(initial.arena, [600, 202]);
-  assert.equal(initial.body_size, 24);
+  assert.equal(initial.body_size, 7.2);
+  assert.equal(initial.spawn_spacing, 24);
   assert.equal(initial.commander, `${leaderRealm}_commander`);
   assert.equal(initial.commanders[1], `${rival}_commander`);
   assert.deepEqual(initial.warbands[0], chosenCards);
@@ -219,11 +234,12 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
         const bodies = state?.combat_positions || [];
         for (let a = 0; a < bodies.length; a++) {
           for (let b = a + 1; b < bodies.length; b++) {
-            if (Math.abs(bodies[a][2] - bodies[b][2]) < 23.999 && Math.abs(bodies[a][3] - bodies[b][3]) < 23.999) {
+            if (Math.abs(bodies[a][2] - bodies[b][2]) < state.body_size - 0.001 && Math.abs(bodies[a][3] - bodies[b][3]) < state.body_size - 0.001) {
               throw new Error(`Solid bodies overlapped: ${bodies[a][0]} / ${bodies[b][0]}`);
             }
           }
         }
+        if (state?.text_overflows) throw new Error('Text escaped its assigned box');
         return ['round_result', 'finished'].includes(state?.phase);
       }, null, { timeout: 90000 });
       now = await snapshot();
@@ -241,6 +257,9 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   }
   visited.add('results');
   const final = await snapshot();
+  assert(final.combat_sounds > 0, 'combat events play actual sound effects');
+  const audio = await page.evaluate(() => window.vtuberEraAudioQA);
+  assert(audio.shortEffects > 0, 'new combat samples start in WebAudio');
   assert(final.hearts.includes(0), 'four-Heart match reaches a real result');
   await screenshot('results');
   await click(483, 333);
@@ -265,6 +284,10 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
     seed: initial.seed, rounds, actions, stats, errors, headers: 'ordinary HTTP; no cross-origin isolation',
     testedViewport: ['1280x720', '1000x720'], arena: initial.arena, bodySize: initial.body_size,
     spawnCollisionPassed: true, combatCollisionPassed: true, settingsPersisted: true, rematchPassed: true };
+  report.pixelFont = final.pixel_font;
+  report.textOverflows = final.text_overflows;
+  report.combatSoundsPlayed = final.combat_sounds;
+  report.webAudio = audio;
   fs.writeFileSync(path.join(output, 'report.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
 })().catch(async error => {

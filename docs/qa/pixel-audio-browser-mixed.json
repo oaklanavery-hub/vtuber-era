@@ -1,0 +1,185 @@
+{
+  "status": "passed",
+  "scenario": "mixed",
+  "rival": "fire",
+  "commander": "water_commander",
+  "warband": [
+    "fire_archer",
+    "water_melee",
+    "water_mage",
+    "earth_siege"
+  ],
+  "browser": "151.0.7922.34",
+  "screens": [
+    "menu",
+    "compendium",
+    "settings",
+    "commander",
+    "warband",
+    "battle",
+    "results"
+  ],
+  "seed": 1791210663,
+  "rounds": [
+    {
+      "round": 1,
+      "hearts": [
+        3,
+        4
+      ],
+      "heartLoss": 1
+    },
+    {
+      "round": 2,
+      "hearts": [
+        2,
+        4
+      ],
+      "heartLoss": 1
+    },
+    {
+      "round": 3,
+      "hearts": [
+        1,
+        4
+      ],
+      "heartLoss": 1
+    },
+    {
+      "round": 4,
+      "hearts": [
+        0,
+        4
+      ],
+      "heartLoss": 1
+    }
+  ],
+  "actions": [
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "promote"
+      }
+    }
+  ],
+  "stats": {
+    "reinforcements": 2,
+    "promotions": 5,
+    "spell": 1,
+    "comeback": 3
+  },
+  "errors": [],
+  "headers": "ordinary HTTP; no cross-origin isolation",
+  "testedViewport": [
+    "1280x720",
+    "1000x720"
+  ],
+  "arena": [
+    600,
+    202
+  ],
+  "bodySize": 7.2,
+  "spawnCollisionPassed": true,
+  "combatCollisionPassed": true,
+  "settingsPersisted": true,
+  "rematchPassed": true,
+  "pixelFont": "Tiny5",
+  "textOverflows": 0,
+  "combatSoundsPlayed": 228,
+  "webAudio": {
+    "starts": 280,
+    "shortEffects": 228
+  }
+}

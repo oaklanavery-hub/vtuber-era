@@ -10,22 +10,51 @@ func check(condition: bool, message: String) -> void:
 		failures += 1
 		printerr("UI FAIL: ", message)
 
+func layout(ui, parent: Node = null) -> void:
+	for child in (parent if parent else ui.surface).get_children():
+		if child is Label or child is Button:
+			check(child.get_theme_font("font").get_font_name() == "Tiny5", "all interface text uses the pixel font: "+child.text)
+		if child is Control and child.has_meta("text_box"):
+			check(StoryStyle.text_within_box(child), "text remains inside its assigned box: "+child.text)
+		layout(ui, child)
+
+func audio() -> void:
+	var sound = root.get_node("Sound")
+	for cue in sound.COMBAT_CUES:
+		var stream: AudioStreamWAV = sound.streams[cue]
+		check(stream != null and stream.mix_rate == 22050 and stream.get_length() >= 0.08 and stream.data.size() > 300, "real combat audio loaded: "+cue)
+	for id in GameCatalog.ARMY_IDS:
+		var requests: Dictionary = sound.combat_requests([{"kind":"attack", "card_id":id}])
+		check(requests.size() == 1 and sound.streams.has(requests.keys()[0]), "each army attack has an available sound: "+id)
+	var burst: Array = []
+	for index in range(144):
+		burst.append({"kind":"hit", "absorbed":0.0})
+	check(sound.combat_requests(burst).size() == 1, "crowded hit events are coalesced")
+	check(sound.combat_requests([{"kind":"hit", "absorbed":5.0}]).has("shield_hit"), "shield absorption has its own sound")
+	check(sound.combat_requests([{"kind":"defeat"}, {"kind":"heal"}, {"kind":"splash", "set_id":"earth"}]).size() == 3, "defeats, healing and siege impacts are audible events")
+
 func _run() -> void:
 	var ui = load("res://scenes/main.tscn").instantiate()
 	root.add_child(ui)
 	await create_timer(0.4).timeout
+	audio()
+	layout(ui)
 	check(ui.screen=="menu", "loading leads to menu")
 	for realm in GameCatalog.REALMS:
 		ui._compendium_tab(realm)
 		check(ui.screen=="compendium" and ui.compendium_realm==realm, "each realm's compendium opens")
+		layout(ui)
 	ui.settings_return = "menu"
 	ui.show_settings()
 	check(ui.screen=="settings", "settings open")
+	layout(ui)
 	ui.show_commander()
 	for id in GameCatalog.COMMANDER_IDS:
 		ui._select_commander(id)
 		check(ui.selected_commander_id==id, "all three commanders can be selected")
+		layout(ui)
 	ui.show_warband()
+	layout(ui)
 	ui._preset("clear")
 	ui.new_match()
 	check(ui.screen=="warband" and ui.state==null, "incomplete loadout cannot start")
@@ -41,6 +70,7 @@ func _run() -> void:
 	check(ui.state.bond==null and ui.state.commander.id=="earth_commander", "mixed cards work under independent commander")
 	check(ui.state.commander_for(1).id=="water_commander" and ui.state.warband_for(1)==GameCatalog.WATER_IDS, "rival selector supplies independent opposing realm")
 	check(ui.screen=="battle" and ui.offer_buttons.size()==3, "three draft offers rendered")
+	layout(ui)
 	check(ui.battlefield.position == Vector2(20,64) and CombatSimulation.ARENA_SIZE == Vector2(600,202), "compact HUD leaves a larger battlefield")
 	check(ui.offer_buttons[0].size.y == 64 and ui.spell_button.size.y <= 36 and ui.battle_button.size.y <= 22, "battle controls retain their compact sizes")
 	var before: String = JSON.stringify(ui.state.sides[0].offers)
@@ -60,6 +90,7 @@ func _run() -> void:
 		ui.simulation.step()
 	ui._round_over()
 	check(ui.modal_kind=="round_result", "round result dialog opens")
+	layout(ui)
 	ui.next_round()
 	check(ui.state.round_number==2 and ui.state.phase=="command", "next round resumes command phase")
 	ui.state.sides[1].hearts=1
@@ -68,6 +99,7 @@ func _run() -> void:
 	ui.simulation.result={"winner":0,"seconds":1.0,"reason":"UI fixture","survivors":[1,0]}
 	ui._round_over()
 	check(ui.screen=="results" and ui.state.winner==0, "victory opens results screen")
+	layout(ui)
 	ui.new_match()
 	check(ui.state.round_number==1 and ui.state.sides[0].hearts==4, "Rematch starts a fresh match")
 	ui.state.sides[0].hearts=1

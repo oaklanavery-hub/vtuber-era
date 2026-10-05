@@ -47,7 +47,14 @@ func _draw_unit(texture: Texture2D, location: Vector2, frame: int, side: int, ra
 
 func _draw() -> void:
 	if simulation:
-		for unit in simulation.units:
+		# Sprites can overlap above their smaller feet. Paint rear units first;
+		# never reorder the simulation array, whose indices are stable unit IDs.
+		var visible_units: Array = simulation.units.filter(func(unit: Dictionary) -> bool: return unit.hp > 0.0)
+		visible_units.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			var first: float = a.previous_position.lerp(a.position, interpolation).y
+			var second: float = b.previous_position.lerp(b.position, interpolation).y
+			return first < second if first != second else a.id < b.id)
+		for unit in visible_units:
 			if unit.hp <= 0.0:
 				continue
 			var location: Vector2 = unit.previous_position.lerp(unit.position, interpolation)

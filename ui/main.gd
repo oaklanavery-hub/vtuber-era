@@ -4,7 +4,8 @@ const World = preload("res://scenes/world.gd")
 const Battlefield = preload("res://scenes/battlefield.gd")
 const Runes = preload("res://ui/command_runes.gd")
 const Seal = preload("res://ui/wax_seal.gd")
-const HEADING = preload("res://assets/fonts/storybook.ttf")
+const Hearts = preload("res://ui/hearts.gd")
+const HEADING = StoryStyle.PIXEL_FONT
 
 var world: Node2D
 var battlefield: Node2D
@@ -83,22 +84,19 @@ func _panel(rectangle: Rect2, parent: Control = null, color: Color = StoryStyle.
 func _label(text_value: String, rectangle: Rect2, font_size: int = 11, centered: bool = false, serif: bool = false, parent: Control = null) -> Label:
 	var node := Label.new()
 	node.text = text_value
-	node.position = rectangle.position
-	node.size = rectangle.size
-	node.add_theme_font_size_override("font_size", font_size)
 	if serif:
 		node.add_theme_font_override("font", HEADING)
 	node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if centered else HORIZONTAL_ALIGNMENT_LEFT
 	node.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	(parent if parent else surface).add_child(node)
+	StoryStyle.fit_label(node, rectangle, font_size)
 	return node
 
 func _button(text_value: String, rectangle: Rect2, action: Callable, primary: bool = false, parent: Control = null) -> Button:
 	var node := Button.new()
 	node.text = text_value
-	node.position = rectangle.position
-	node.size = rectangle.size
+	node.clip_contents = true
 	if primary:
 		node.add_theme_stylebox_override("normal", StoryStyle.panel(StoryStyle.MOSS))
 		node.add_theme_stylebox_override("hover", StoryStyle.panel(Color("5c8062")))
@@ -107,7 +105,16 @@ func _button(text_value: String, rectangle: Rect2, action: Callable, primary: bo
 			node.add_theme_color_override(key, Color("fff1ce"))
 	node.pressed.connect(func(): Sound.begin(); Sound.play("click"); action.call())
 	(parent if parent else surface).add_child(node)
+	StoryStyle.fit_button(node, rectangle)
 	return node
+
+func _hearts(rectangle: Rect2, count_value: int) -> void:
+	var node := Hearts.new()
+	node.position = rectangle.position
+	node.size = rectangle.size
+	node.count = count_value
+	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	surface.add_child(node)
 
 func _portrait(rectangle: Rect2, parent: Control = null, leader: CommanderData = null) -> void:
 	var image := TextureRect.new()
@@ -165,7 +172,7 @@ func show_commander() -> void:
 		_label(leader.spell_name, Rect2(4, 131, 180, 17), 10, true, true, tile)
 		_label(leader.spell_description, Rect2(4, 151, 180, 16), 9, true, false, tile)
 		if chosen:
-			_label("✓", Rect2(164, 6, 16, 16), 11, true, false, tile)
+			_label("OK", Rect2(164, 6, 16, 16), 8, true, false, tile)
 	_button("Back", Rect2(20, 315, 100, 28), show_menu)
 	_button("Build your warband →", Rect2(323, 312, 297, 31), show_warband, true)
 	_publish()
@@ -230,7 +237,7 @@ func show_warband() -> void:
 			tile.add_theme_stylebox_override("normal", StoryStyle.panel(Color("e5d7ad")))
 		_sprite(card, Rect2(3, 4, 30, 30), tile)
 		_label(card.short_name, Rect2(35, 3, 105, 18), 10, false, true, tile)
-		_label("%s · %d units%s" % [card.role.capitalize(), card.group_size, " ✓" if chosen else ""], Rect2(35, 22, 105, 14), 8, false, false, tile)
+		_label("%s · %d units%s" % [card.role.capitalize(), card.group_size, " +" if chosen else ""], Rect2(35, 22, 105, 14), 8, false, false, tile)
 		tile.tooltip_text = "%s\n%s" % [card.display_name, card.description]
 	var realm_bond: SetBonusData = GameCatalog.warband_bond(selected_warband, cards)
 	_panel(Rect2(15, 286, 610, 40))
@@ -264,7 +271,7 @@ func _roster_text(side: int, abbreviated: bool = false) -> String:
 	for id in state.warband_for(side):
 		var army: Dictionary = state.sides[side].roster[id]
 		var army_name: String = abbreviations[id] if abbreviated else state.cards[id].short_name
-		pieces.append("%s %d%s" % [army_name, army.count, " Ⅱ" if army.rank==2 else " Ⅲ" if army.rank==3 else ""])
+		pieces.append("%s %d%s" % [army_name, army.count, " R2" if army.rank==2 else " R3" if army.rank==3 else ""])
 	return "  ·  ".join(pieces)
 
 func show_battle() -> void:
@@ -275,10 +282,8 @@ func show_battle() -> void:
 	_portrait(Rect2(590, 10, 30, 30), null, state.commander_for(1))
 	_label("YOU · %d units" % state.total_units(0), Rect2(62, 8, 140, 15), 9)
 	_label("%s AI · %d units" % [state.commander_for(1).set_id.to_upper(), state.total_units(1)], Rect2(428, 8, 148, 15), 9)
-	var hearts_left := _label("♥ ".repeat(state.sides[0].hearts), Rect2(62, 23, 160, 18), 12)
-	hearts_left.add_theme_color_override("font_color", StoryStyle.EMBER)
-	var hearts_right := _label("♥ ".repeat(state.sides[1].hearts), Rect2(428, 23, 148, 18), 12)
-	hearts_right.add_theme_color_override("font_color", StoryStyle.EMBER)
+	_hearts(Rect2(62, 23, 160, 18), state.sides[0].hearts)
+	_hearts(Rect2(428, 23, 148, 18), state.sides[1].hearts)
 	_label("Round %d" % state.round_number, Rect2(234, 7, 172, 20), 14, true, true)
 	phase_label = _label("Command Phase" if state.phase=="command" else "Automatic combat", Rect2(231, 27, 178, 14), 9, true)
 	var bond_label := _label("Bond: %s" % state.bond.display_name if state.bond else "Mixed Warband", Rect2(237, 39, 166, 14), 8, true)
@@ -399,17 +404,23 @@ func _process(delta: float) -> void:
 		accumulator += delta * SaveStore.settings.combat_speed
 		var step_time: float = 1.0 / float(state.config.ticks_per_second)
 		var steps := 0
+		var audio_events: Array = []
 		while accumulator >= step_time and steps < 60 and not simulation.finished:
 			simulation.step()
 			battlefield.ingest(simulation.events)
+			audio_events.append_array(simulation.events)
 			accumulator -= step_time
 			steps += 1
+		Sound.combat(audio_events)
 		battlefield.interpolation = clampf(accumulator/step_time, 0.0, 1.0)
 		var seconds: float = float(simulation.tick) / float(state.config.ticks_per_second)
 		clock_label.text = "%.1fs · %dx" % [seconds, SaveStore.settings.combat_speed]
 		phase_label.text = "Sudden death" if simulation.sudden_death else "Automatic combat"
+		StoryStyle.refit_label(clock_label)
+		StoryStyle.refit_label(phase_label)
 		if state.sides[0].spell:
 			spell_label.text = "%s · %.1fs" % [state.commander.spell_name, maxf(0.0, state.commander.spell_duration-seconds)] if seconds < state.commander.spell_duration else state.commander.spell_name+" complete"
+			StoryStyle.refit_label(spell_label)
 		if simulation.finished:
 			_round_over()
 	if telemetry_time >= 0.25:
@@ -484,6 +495,9 @@ func show_results() -> void:
 	surface.add_child(scroll)
 	var summary := Label.new()
 	summary.text = "\n".join(lines)
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.custom_minimum_size.x = 362
+	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	summary.add_theme_font_size_override("font_size",10)
 	scroll.add_child(summary)
 	_label(_roster_text(0), Rect2(191, 271, 376, 18), 9)
@@ -584,7 +598,8 @@ func _publish() -> void:
 	if not qa_enabled:
 		return
 	var snapshot := {"screen": screen, "modal": modal_kind, "settings": SaveStore.settings,
-		"release": "creature-armies-solid-collision",
+		"release": "compact-collision-pixel-audio", "pixel_font": StoryStyle.PIXEL_FONT.get_font_name(),
+		"combat_sounds": Sound.combat_sounds_played, "text_overflows": _text_overflows(surface),
 		"selected_commander": selected_commander_id, "selected_warband": selected_warband,
 		"rival": rival_realm, "compendium_realm": compendium_realm}
 	if state:
@@ -600,6 +615,7 @@ func _publish() -> void:
 			snapshot.groups[id] = state.cards[id].group_size
 		snapshot["arena"] = [CombatSimulation.ARENA_SIZE.x, CombatSimulation.ARENA_SIZE.y]
 		snapshot["body_size"] = CombatSimulation.BODY_SIZE
+		snapshot["spawn_spacing"] = CombatSimulation.SPAWN_SPACING
 		snapshot["preview"] = []
 		for entry in battlefield.preview_units:
 			snapshot.preview.append([entry.side, entry.card_id, entry.position.x, entry.position.y])
@@ -610,3 +626,11 @@ func _publish() -> void:
 				if unit.hp > 0.0:
 					snapshot.combat_positions.append([unit.id, unit.side, unit.position.x, unit.position.y])
 	JavaScriptBridge.eval("window.vtuberEraQA = %s;" % JSON.stringify(snapshot))
+
+func _text_overflows(parent: Node) -> int:
+	var count: int = 0
+	for child in parent.get_children():
+		if child is Control and not StoryStyle.text_within_box(child):
+			count += 1
+		count += _text_overflows(child)
+	return count

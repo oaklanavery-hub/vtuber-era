@@ -58,6 +58,8 @@ func _run() -> void:
 	quit(0 if failures == 0 else 1)
 
 func _content() -> void:
+	expect(is_equal_approx(CombatSimulation.BODY_SIZE, 24.0*0.3), "collision width and height are 70 percent smaller")
+	expect(CombatSimulation.SPAWN_SPACING == 24.0, "spawn spacing remains independent of smaller collision bodies")
 	var names := {"fire_archer":"Fire Lizard", "fire_melee":"Fire Imp", "fire_tank":"Magma Golem", "fire_assassin":"Red Ninja",
 		"water_mage":"Water Wizard", "water_tank":"Ice Golem", "water_melee":"Water Slime", "water_ranged":"Snowman",
 		"earth_tank":"Tree", "earth_melee":"Armadillo", "earth_ranged":"Wood Archer", "earth_siege":"Wooden Siege"}
@@ -122,8 +124,8 @@ func _blocked_routes() -> void:
 	freeze_attacks(sim)
 	var walker: Dictionary = sim.units[0]
 	walker.position = Vector2(180,100)
-	sim.units[1].position = Vector2(228,88)
-	sim.units[2].position = Vector2(228,112)
+	sim.units[1].position = Vector2(228,100-CombatSimulation.BODY_SIZE/2.0)
+	sim.units[2].position = Vector2(228,100+CombatSimulation.BODY_SIZE/2.0)
 	var target: Dictionary = sim.units[3]
 	target.position = Vector2(360,100)
 	for value in sim.units:
@@ -131,7 +133,7 @@ func _blocked_routes() -> void:
 	var went_around: bool = false
 	for tick in range(320):
 		sim.step()
-		went_around = went_around or absf(walker.position.y-100.0) >= 35.0
+		went_around = went_around or absf(walker.position.y-100.0) >= CombatSimulation.BODY_SIZE*1.5-0.01
 		expect(clear_bodies(sim), "fighter routes around allied wall without clipping")
 	expect(went_around, "blocked fighter uses a side lane rather than stacking")
 	expect(sim.in_attack_range(walker,target), "blocked fighter continues until it reaches enemy contact")
@@ -139,7 +141,7 @@ func _blocked_routes() -> void:
 	walker.position = Vector2(180,28)
 	walker.navigation_bias = -1.0
 	sim.units[1].position = Vector2(228,28)
-	sim.units[2].position = Vector2(228,52)
+	sim.units[2].position = Vector2(228,28+CombatSimulation.BODY_SIZE)
 	target.position = Vector2(360,28)
 	for value in sim.units:
 		value.previous_position = value.position
@@ -172,6 +174,12 @@ func _blocked_routes() -> void:
 func _contact_and_determinism() -> void:
 	var state := populated(GameCatalog.FIRE_IDS, [0,1,0,0])
 	var sim := CombatSimulation.new(state)
+	sim.units[0].position = Vector2(200,100)
+	sim.units[1].position = Vector2(210,100)
+	freeze_attacks(sim)
+	sim.step()
+	expect(clear_bodies(sim) and sim.units[0].position.distance_to(sim.units[1].position) < 24.0, "sprites can crowd together while their smaller collision bodies stay separate")
+	sim = CombatSimulation.new(state)
 	sim.units[0].position = Vector2(200,100)
 	sim.units[1].position = Vector2(380,100)
 	for value in sim.units:

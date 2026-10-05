@@ -68,7 +68,8 @@ The table below is historical evidence from **before solid collision**. The
 creature update preserves all base stats, roles and effects, but its larger
 arena and permanent body blocking change engagements; these earlier win rates
 must not be treated as measurements of the new movement system. Melee contact
-uses a 24px solid body footprint; ranged reach remains centre-to-centre.
+uses a 7.2px solid body footprint, reduced 70% in each dimension from 24px;
+spawn spacing remains 24px and ranged reach remains centre-to-centre.
 
 `tests/balance_simulations.gd` runs both sides with the same NormalAI and shared
 budgets over eight fixed seeds for every ordered realm pairing (72 full matches).

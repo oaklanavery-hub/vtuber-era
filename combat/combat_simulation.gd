@@ -24,7 +24,11 @@ var target_clusters: Dictionary = {}
 var reading_movement_snapshot: bool = false
 const BACKLINE := ["ranged", "mage", "siege"]
 const ARENA_SIZE := Vector2(600, 202)
-const BODY_SIZE: float = 24.0
+# Collision stays on, but occupies only 30% of the old 24px footprint.
+# Sprite/spawn spacing is independent so armies remain readable before combat.
+const BODY_SIZE: float = 7.2
+const SPAWN_SPACING: float = 24.0
+const GRID_SIZE: float = 24.0
 const DETOUR_COMMITMENT: float = 1.4
 const MIN_POSITION := Vector2(16, 28)
 const MAX_POSITION := Vector2(584, 180)
@@ -75,10 +79,10 @@ func _init(state) -> void:
 static func formation(side: int, role: String, index: int) -> Vector2:
 	var x: float = {"tank":244.0, "melee":220.0, "ranged":100.0, "mage":76.0, "siege":52.0, "assassin":196.0}[role]
 	var y: float = SPAWN_ROWS[index%7]
-	x -= float(index/7)*BODY_SIZE
+	x -= float(index/7)*SPAWN_SPACING
 	if role == "assassin":
 		y = 28.0 if index%2 == 0 else 172.0
-		x -= float(index/2)*BODY_SIZE
+		x -= float(index/2)*SPAWN_SPACING
 	return Vector2(x if side == 0 else ARENA_SIZE.x-x, y)
 
 static func spawn_layout(state, side: int) -> Array:
@@ -102,7 +106,7 @@ static func spawn_layout(state, side: int) -> Array:
 	var slots: Array[Vector2] = []
 	for column in range(11):
 		for row in SPAWN_ROWS:
-			slots.append(Vector2(28.0+column*BODY_SIZE, row))
+			slots.append(Vector2(28.0+column*SPAWN_SPACING, row))
 	for entry in placement:
 		var best: int = 0
 		var best_distance: float = INF
@@ -288,7 +292,7 @@ func _clip_motion(origin: Vector2, motion: Vector2, neighbors: Array, reservatio
 
 func _resolve_movements(movements: Array) -> void:
 	# Permanent swept-box collision for BOTH teams. Reservations include the
-	# entire path this tick, so interpolated sprites cannot cross one another.
+	# entire path this tick, so interpolated collision bodies cannot cross.
 	# Rotate priority each tick; no unit/team always wins a crowded lane.
 	var grid: Dictionary = {}
 	var reservations: Array = []
@@ -297,7 +301,7 @@ func _resolve_movements(movements: Array) -> void:
 		reservations.append(Rect2(location-Vector2.ONE*BODY_SIZE, Vector2.ONE*BODY_SIZE*2.0))
 		if unit.hp <= 0.0:
 			continue
-		var cell := Vector2i(floori(location.x/BODY_SIZE), floori(location.y/BODY_SIZE))
+		var cell := Vector2i(floori(location.x/GRID_SIZE), floori(location.y/GRID_SIZE))
 		if not grid.has(cell):
 			grid[cell] = []
 		grid[cell].append(unit.id)
@@ -309,7 +313,7 @@ func _resolve_movements(movements: Array) -> void:
 		if unit.hp <= 0.0 or desired.length_squared() < 0.000001:
 			continue
 		var neighbors: Array = []
-		var cell := Vector2i(floori(origin.x/BODY_SIZE), floori(origin.y/BODY_SIZE))
+		var cell := Vector2i(floori(origin.x/GRID_SIZE), floori(origin.y/GRID_SIZE))
 		for x in range(cell.x-2, cell.x+3):
 			for y in range(cell.y-2, cell.y+3):
 				neighbors.append_array(grid.get(Vector2i(x,y), []))
@@ -387,6 +391,7 @@ func step() -> void:
 			var stats: UnitStats = cards[unit.card_id].stats
 			if in_attack_range(unit, target):
 				unit.attack_at = tick
+				events.append({"kind":"attack", "card_id":unit.card_id})
 				unit.cooldown = maxi(1, int(ceil(float(config.ticks_per_second)/(stats.attacks_per_second*attack_speed(unit)))))
 				if unit.role in BACKLINE:
 					projectiles.append({"id":next_projectile_id, "source":unit.id, "card_id":unit.card_id,

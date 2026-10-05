@@ -8,7 +8,11 @@ The creature-army update adds twelve distinct animated designs, permanent solid
 unit collision, side-stepping around blocked approaches and a compact battle HUD.
 The battlefield is now 600×202, about 52% more area than the previous 560×142.
 
-![Creature armies and permanent collision](docs/screenshots/creature-battle.png)
+The latest presentation update reduces collision boxes 70% to 7.2×7.2, keeps
+collision active, paints creatures in depth order, adds twelve combat sound
+effects and fits Tiny5 pixel-font text inside the interface boxes.
+
+![Pixel fonts, compact collisions and combat audio](docs/screenshots/pixel-audio-battle.png)
 
 **Play:** [Launch VTuber Era](https://oaklanavery-hub.github.io/vtuber-era/)
 **Source:** [oaklanavery-hub/vtuber-era](https://github.com/oaklanavery-hub/vtuber-era)

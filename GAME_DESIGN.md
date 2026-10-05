@@ -91,9 +91,13 @@ rock-paper-scissors damage multipliers are used.
 
 Preview and combat share a unique-slot allocator, including mixed armies with
 duplicate roles. Each side has 77 potential 24px-spaced slots for its 72-unit
-cap. Alive units on both teams keep solid 24×24 bodies throughout combat.
+cap. Alive units on both teams keep solid 7.2×7.2 bodies throughout combat,
+70% smaller in each dimension than the previous footprint. Spawn spacing and
+spatial bucket size remain 24px, independently of collision size.
 Swept movement reserves the whole tick's path, preventing both simulation
-penetration and interpolated sprite crossing. Dead units do not block movement.
+penetration and interpolated body crossing. Sprites are painted in depth order
+and may partially overlap above their feet, leaving rear creatures visible.
+Dead units do not block movement.
 Spatial buckets limit collision checks; deterministic rotating movement priority
 avoids permanent first-unit/first-team lane priority.
 
@@ -101,7 +105,7 @@ Out-of-range units advance toward their selected target, testing side lanes and
 backward detours when blocked. A stable escape-side bias prevents oscillation
 against a wall. Crowded units wait if no safe lane is free; they never jump over
 or pass through allies or enemies. Short-range melee attacks meet at solid body
-edges (a 24px minimum contact distance), with any reach above 24 extending the
+edges (a 7.2px minimum contact distance), with any reach above 7.2 extending the
 edge gap. Ranged attacks retain their Resource-defined centre distance. This
 keeps short-range melee functional without changing any stored army stats.
 
@@ -124,6 +128,18 @@ honey/coral/orange, Water turquoise/seafoam/pearl/lavender, Earth moss/ochre/sto
 Health bars, shield lines, Slow marks and healing crosses expose combat effects.
 Reduced effects removes bounces, flashes and particles. All values live in custom
 Resources; portraits and sprites remain replaceable placeholders.
+
+All interface text uses the Tiny5 pixel font with antialiasing and subpixel
+positioning disabled. Labels measure their text, wrap descriptions where room
+permits, and reduce the font size to fit their assigned rectangles. Buttons
+account for their inner margins; compact rosters use ellipsis and full tooltips
+when needed. Hearts are original pixel icons rather than fallback font glyphs.
+
+Twelve original short combat cues cover melee, ninja slashes, arrows, snowballs,
+fire breath, water magic, siege launches/impacts, shield hits, impacts, healing
+and dispersal. Frame events are coalesced, each cue has a cooldown, and a quiet
+six-voice pool plays at most three new cues per rendered frame. Music and menu
+cues have separate players. The existing volume setting controls all audio.
 
 Version 2 settings preserve volume, display speed, effects, Commander, warband
 and rival. Version 0/1 saves migrate in place using the existing file name;

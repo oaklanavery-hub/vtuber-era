@@ -13,7 +13,7 @@ for name in ('index.html', 'index.js', 'index.wasm', 'index.pck'):
         raise SystemExit(f'Missing Web output: {name}')
 (build / '.nojekyll').touch()
 parts = ['VTuber Era third-party notices\n\nProject source and original assets have no open-source licence.\n']
-for file in [ROOT/'assets/licenses/Godot-LICENSE.txt', ROOT/'assets/licenses/Godot-COPYRIGHT.txt', ROOT/'assets/fonts/LICENSE-DejaVu.txt']:
+for file in [ROOT/'assets/licenses/Godot-LICENSE.txt', ROOT/'assets/licenses/Godot-COPYRIGHT.txt', ROOT/'assets/fonts/LICENSE-DejaVu.txt', ROOT/'assets/fonts/Tiny5-OFL.txt']:
     parts.append(f'\n\n--- {file.name} ---\n\n{file.read_text()}')
 (build / 'THIRD_PARTY_NOTICES.txt').write_text(''.join(parts))
 html = (build / 'index.html').read_text()

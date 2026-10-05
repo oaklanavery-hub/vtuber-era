@@ -7,6 +7,7 @@ from pathlib import Path
 import math
 import struct
 import wave
+import random
 from army_sprites import army_figure
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -281,9 +282,37 @@ def audio():
         for i, midi in enumerate(phrase):
             note(data, i*.12, .55, 440*2**((midi-69)/12), .24)
         wav(name, data)
+    combat_audio()
+
+
+def combat_audio():
+    """Short original cartoon/chiptune effects; no sampled recordings."""
+    profiles = {
+        'swing': (.10, 340, 125, .40), 'slash': (.12, 1050, 240, .55),
+        'arrow': (.11, 820, 170, .35), 'snowball': (.13, 480, 100, .65),
+        'fire_breath': (.23, 145, 75, .85), 'water_cast': (.24, 390, 780, .20),
+        'siege_launch': (.18, 155, 90, .40), 'siege_impact': (.23, 95, 40, .70),
+        'impact': (.09, 170, 70, .65), 'shield_hit': (.16, 1100, 500, .10),
+        'disperse': (.25, 720, 140, .08), 'heal': (.22, 620, 1040, .02),
+    }
+    for index, (name, (duration, start, end, noise_mix)) in enumerate(profiles.items()):
+        data = []
+        rng = random.Random(20261005 + index)
+        phase = 0.0
+        filtered_noise = 0.0
+        for sample in range(int(RATE * duration)):
+            t = sample / RATE
+            progress = t / duration
+            frequency = start + (end - start) * progress
+            phase += 2 * math.pi * frequency / RATE
+            filtered_noise = filtered_noise * .35 + rng.uniform(-1, 1) * .65
+            tone = math.sin(phase) + .16 * (1 if math.sin(phase * 2) >= 0 else -1)
+            envelope = min(1, t / .004) * (1 - progress) ** 2
+            data.append((tone * (1 - noise_mix) + filtered_noise * noise_mix) * envelope * .48)
+        wav(name, data)
 
 
 if __name__ == '__main__':
     art()
     audio()
-    print('Twelve original six-frame SVG atlases, three portraits, icon and seven PCM WAV files rebuilt.')
+    print('Twelve original six-frame SVG atlases, three portraits, icon and nineteen PCM WAV files rebuilt.')

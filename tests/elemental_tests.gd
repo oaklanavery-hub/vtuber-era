@@ -125,7 +125,7 @@ func _shields() -> void:
 	var guard: Dictionary = unit(hit,"earth_tank")
 	var attacker: Dictionary = unit(hit,"fire_melee",1)
 	guard.position = Vector2(200,70)
-	attacker.position = Vector2(224,70)
+	attacker.position = Vector2(220,70)
 	attacker.cooldown = 0
 	attacker.damage = 10.0
 	var before: float = guard.shield
@@ -216,7 +216,7 @@ func _lifesteal() -> void:
 	var blade: Dictionary = unit(life,"water_melee")
 	var target: Dictionary = unit(life,"fire_tank",1)
 	blade.position = Vector2(200,70)
-	target.position = Vector2(224,70)
+	target.position = Vector2(221,70)
 	blade.hp = blade.max_hp*.5
 	blade.damage = 1000.0
 	blade.cooldown = 0
@@ -239,7 +239,7 @@ func _lifesteal() -> void:
 	blade = unit(tidal,"water_melee")
 	target = unit(tidal,"fire_tank",1)
 	blade.position = Vector2(200,70)
-	target.position = Vector2(224,70)
+	target.position = Vector2(221,70)
 	blade.hp = blade.max_hp*.49
 	blade.damage = 100.0
 	blade.cooldown = 0

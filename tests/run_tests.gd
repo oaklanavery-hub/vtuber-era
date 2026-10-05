@@ -188,7 +188,7 @@ func _test_combat_effects() -> void:
 	var state := combat_fixture()
 	var sim := CombatSimulation.new(state)
 	sim.units[0].position = Vector2(272, 70)
-	sim.units[1].position = Vector2(296, 70)
+	sim.units[1].position = Vector2(295, 70)
 	sim.step()
 	expect(sim.units[0].hp < sim.units[0].max_hp, "melee damage lands")
 	expect(sim.units[0].burn_until>0 and sim.units[1].burn_until>0, "first successful attacks apply Wildfire burn")
@@ -230,7 +230,7 @@ func _test_combat_effects() -> void:
 	var draw := CombatSimulation.new(combat_fixture())
 	for unit in draw.units:
 		unit.hp = 1.0
-		unit.position = Vector2(279+unit.side*24, 70)
+		unit.position = Vector2(279+unit.side*23, 70)
 	draw.step()
 	expect(draw.finished and draw.result.winner==-1, "simultaneous dispersal is a visible draw, never an arbitrary winner")
 

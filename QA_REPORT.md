@@ -1,3 +1,22 @@
+# Compact collisions, pixel fonts and combat audio — 5 October 2026
+Collision remains permanent on both teams. Its width and height are reduced by 70%, from 24px to 7.2px. Spawn spacing remains 24px, while depth-sorted sprites may partially overlap above the smaller bodies. Out-of-range pursuit and detours remain active.
+All UI text uses licensed Tiny5 with pixel rendering and rectangle-based fitting. Original pixel heart icons avoid unsupported font glyphs. Twelve new synthesized combat effects use event coalescing, cooldowns and a separate quiet six-voice pool; the existing volume setting controls them.
+- Rules/economy/combat: **1,002 checks; 0 failures**.
+- Elemental mechanics and 33 complete matches/replays: **17,482 checks; 0 failures**.
+- Permanent collisions and formations: **74,858 checks; 0 failures**.
+- Native UI, font layout and audio resources/events: **0 failures**.
+Official Godot 4.5 engine and Web-template SHA-512 checksums match. The release export includes Tiny5 OFL notices. Four complete WebAssembly/WebGL browser matches passed collision sampling, pixel-font box checks, settings/loadout persistence, spells/drafting, Hearts, results and Rematch, with no engine, JavaScript or HTTP errors.
+| Player | Rival | Rounds | Combat sounds played | New samples observed in WebAudio |
+|---|---|---:|---:|---:|
+| Fire | Fire | 6 | 369 | — |
+| Water | Earth | 7 | 892 | 892 |
+| Earth | Water | 5 | 476 | 476 |
+| Mixed | Fire | 4 | 228 | 228 |
+
+Reports: `docs/qa/pixel-audio-browser-*.json`. Visually inspected screenshots at 1280×720 and 1000×720 show readable menus, all twelve army names, compact controls and closer combat crowds. Current examples: `docs/screenshots/pixel-audio-battle.png` and `pixel-audio-warband.png`.
+
+The evidence below is historical and describes the earlier 24px-footprint release.
+
 # Creature-army and collision validation — 5 October 2026
 
 ## Creature update
