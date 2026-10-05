@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
+[ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]
+[ext_resource type="Script" path="res://data/types/unit_stats.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/units/fire_assassin.svg" id="3"]
+[sub_resource type="Resource" id="Stats"]
+script = ExtResource("2")
+max_hp = 60.0
+damage = 13.0
+attacks_per_second = 1.55
+move_speed = 62.0
+attack_range = 19.0
+[resource]
+script = ExtResource("1")
+id = "fire_assassin"
+display_name = "Flameveil Stalkers"
+short_name = "Flameveil"
+role = "assassin"
+group_size = 1
+description = "Fast flankers who hunt archers behind the frontline."
+stats = SubResource("Stats")
+sprite = ExtResource("3")

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
+[ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]
+[ext_resource type="Script" path="res://data/types/unit_stats.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/units/fire_melee.svg" id="3"]
+[sub_resource type="Resource" id="Stats"]
+script = ExtResource("2")
+max_hp = 64.0
+damage = 8.0
+attacks_per_second = 1.05
+move_speed = 39.0
+attack_range = 20.0
+[resource]
+script = ExtResource("1")
+id = "fire_melee"
+display_name = "Ashblade Warriors"
+short_name = "Ashblade"
+role = "melee"
+group_size = 3
+description = "Brave fighters who rush into the festival contest."
+stats = SubResource("Stats")
+sprite = ExtResource("3")

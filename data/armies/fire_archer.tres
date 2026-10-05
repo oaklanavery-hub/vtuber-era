@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
+[ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]
+[ext_resource type="Script" path="res://data/types/unit_stats.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/units/fire_archer.svg" id="3"]
+[sub_resource type="Resource" id="Stats"]
+script = ExtResource("2")
+max_hp = 34.0
+damage = 9.0
+attacks_per_second = 1.0
+move_speed = 34.0
+attack_range = 138.0
+[resource]
+script = ExtResource("1")
+id = "fire_archer"
+display_name = "Emberbow Rangers"
+short_name = "Emberbow"
+role = "ranged"
+group_size = 3
+description = "Quick archers. Protect them with a frontline."
+stats = SubResource("Stats")
+sprite = ExtResource("3")
