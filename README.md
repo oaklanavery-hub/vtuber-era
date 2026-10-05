@@ -6,9 +6,8 @@ sparks in a sunny woodland clearing. This is a playable Phase 1 vertical slice.
 
 ![Phase 1 browser gameplay](docs/screenshots/phase1.png)
 
-**Browser release:** built and available in the separate Web download.
-**Public deployment:** pending repository creation and Pages setup; no live
-GitHub Pages URL is claimed.
+**Play online:** [Launch VTuber Era](https://oaklanavery-hub.github.io/vtuber-era/)
+**Source:** [oaklanavery-hub/vtuber-era](https://github.com/oaklanavery-hub/vtuber-era)
 
 ## Play and controls
 
@@ -93,39 +92,19 @@ CDN, runtime JavaScript game framework or remote asset service is needed.
 
 ## Public GitHub and Pages
 
-Intended repository: `oaklanavery-hub/vtuber-era`, public, default branch `main`.
-The connected GitHub tools could read the account but could not create a new
-repository. The local source repository, source archive and history bundle are
-prepared. A GitHub repository must be created before a push can succeed.
+The public source repository is
+[oaklanavery-hub/vtuber-era](https://github.com/oaklanavery-hub/vtuber-era), with
+`main` as its default branch. The browser release is live at
+[oaklanavery-hub.github.io/vtuber-era](https://oaklanavery-hub.github.io/vtuber-era/).
 
-With GitHub CLI and your own authenticated account, publication is:
-
-```sh
-gh auth login
-gh repo create vtuber-era --public --source=. --remote=origin --push
-```
-
-Or create a public repository named `vtuber-era` in GitHub, then:
-
-```sh
-git remote add origin https://github.com/oaklanavery-hub/vtuber-era.git
-git push -u origin main
-```
-
-If an origin is already configured, use `git remote set-url origin` instead.
-Enable **Settings → Pages → Source: GitHub Actions**. The included
-`.github/workflows/deploy-pages.yml` installs the exact engine and templates,
-verifies official SHA-512 checksums, imports resources, runs both GDScript
-runners, exports, checks required files, adds notices and `.nojekyll`, and deploys
-using the official Pages actions. It runs on `main` pushes or manual dispatch.
-Only contents-read, Pages-write and ID-token-write permissions are requested;
-concurrent deployments are serialized with cancellation of older runs.
-
-After a successful deployment, the intended address is
-`https://oaklanavery-hub.github.io/vtuber-era/`. It is **not live yet**.
-
-The archive's optional history bundle can restore the prepared commit with
-`git clone vtuber-era-history.bundle vtuber-era-restored`.
+The included `.github/workflows/deploy-pages.yml` installs the exact engine and
+templates, verifies official SHA-512 checksums, imports resources, runs both
+GDScript runners, exports, checks required files, adds notices and `.nojekyll`,
+and deploys using the official Pages actions. It runs on `main` pushes or manual
+dispatch. Only contents-read, Pages-write and ID-token-write permissions are
+requested; concurrent deployments are serialized with cancellation of older
+runs. The first public build and deployment completed successfully on
+5 October 2026.
 
 ## Project structure
 
