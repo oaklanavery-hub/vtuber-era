@@ -1,0 +1,30 @@
+# Godot import cache (keep .import metadata and .gd.uid source identifiers).
+.godot/
+.export/
+build/
+exports/
+export.cfg
+export_credentials.cfg
+
+# Credentials, local saves, tools and temporary output.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.log
+*.tmp
+*.bak
+*.zip
+*.tpz
+*.pck
+*.wasm
+__pycache__/
+node_modules/
+test-results/
+playwright-report/
+user_data/
+.DS_Store
+Thumbs.db
+desktop.ini
