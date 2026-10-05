@@ -304,6 +304,6 @@ func _test_saves() -> void:
 	expect(Store.sanitize("broken")==Store.defaults(), "invalid save safely defaults")
 	expect(Store.sanitize({"version": 99, "volume":0.0})==Store.defaults(), "unsupported future version safely defaults")
 	var migrated: Dictionary = Store.sanitize({"version":0,"volume":0.8,"combat_speed":3.0,"reduced_effects":true})
-	expect(migrated.version==1 and migrated.volume==0.8 and migrated.combat_speed==3.0 and migrated.reduced_effects, "known old settings migrate safely")
+	expect(migrated.version==2 and migrated.volume==0.8 and migrated.combat_speed==3.0 and migrated.reduced_effects, "known old settings migrate safely")
 	var invalid: Dictionary = Store.sanitize({"volume":5,"combat_speed":999,"reduced_effects":"false"})
 	expect(invalid.volume==1.0 and invalid.combat_speed==1.0 and invalid.reduced_effects==false, "invalid setting fields recover independently")

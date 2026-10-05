@@ -4,8 +4,17 @@ const http = require('http');
 const path = require('path');
 const assert = require('assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const scenario = process.env.QA_REALM || 'fire';
+const rival = process.env.QA_RIVAL || (scenario === 'water' ? 'earth' : scenario === 'earth' ? 'water' : 'fire');
+const leaderRealm = scenario === 'mixed' ? 'water' : scenario;
+const realms = ['fire', 'water', 'earth'];
+const cards = ['fire_archer', 'fire_melee', 'fire_tank', 'fire_assassin',
+  'water_mage', 'water_tank', 'water_melee', 'water_ranged',
+  'earth_tank', 'earth_melee', 'earth_ranged', 'earth_siege'];
+const chosenCards = scenario === 'mixed' ? ['fire_archer', 'water_melee', 'water_mage', 'earth_siege']
+  : cards.slice(realms.indexOf(scenario) * 4, realms.indexOf(scenario) * 4 + 4);
 const root = path.resolve(__dirname, '../build/web');
-const output = path.resolve(__dirname, '../test-results/browser');
+const output = path.resolve(__dirname, `../test-results/browser/${scenario}`);
 fs.mkdirSync(output, { recursive: true });
 fs.writeFileSync(path.join(output, '../.gdignore'), '');
 
@@ -32,7 +41,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
 
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  const url = `http://127.0.0.1:${server.address().port}/vtuber-era/?qa=1`;
+  const url = process.env.QA_URL || `http://127.0.0.1:${server.address().port}/vtuber-era/?qa=1`;
   const custom = process.env.CHROMIUM_EXECUTABLE;
   browser = await chromium.launch({ headless: true, ...(custom ? { executablePath: custom } : {}),
     args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
@@ -57,7 +66,11 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
 
   await click(320, 232);
   await waitScreen('compendium');
-  await screenshot('compendium');
+  for (let i = 0; i < realms.length; i++) {
+    await click(211 + i * 106, 93);
+    await page.waitForFunction(realm => window.vtuberEraQA?.compendium_realm === realm, realms[i]);
+    await screenshot(`compendium-${realms[i]}`);
+  }
   await click(320, 333);
   await waitScreen('menu');
   await click(320, 270);
@@ -85,13 +98,43 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await waitScreen('menu');
   await click(320, 190);
   await waitScreen('commander');
+  for (let i = 0; i < realms.length; i++) {
+    await click(114 + i * 206, 204);
+    await page.waitForFunction(id => window.vtuberEraQA?.selected_commander === id, `${realms[i]}_commander`);
+  }
+  await click(114 + realms.indexOf(leaderRealm) * 206, 204);
+  await page.waitForFunction(id => window.vtuberEraQA?.selected_commander === id, `${leaderRealm}_commander`);
   await screenshot('commander');
   await click(432, 328);
   await waitScreen('warband');
+  await click(358, 135);
+  await page.waitForFunction(() => window.vtuberEraQA?.selected_warband.length === 0);
+  await click(530, 341);
+  assert.equal((await snapshot()).screen, 'warband', 'an incomplete loadout cannot start');
+  const pickCard = async id => {
+    const index = cards.indexOf(id);
+    await click(88 + (index % 4) * 152, 175 + Math.floor(index / 4) * 44);
+  };
+  for (const id of chosenCards) await pickCard(id);
+  await page.waitForFunction(() => window.vtuberEraQA?.selected_warband.length === 4);
+  await pickCard(cards.find(id => !chosenCards.includes(id)));
+  assert.deepEqual((await snapshot()).selected_warband, chosenCards, 'a fifth card is blocked');
+  await pickCard(chosenCards[3]);
+  await page.waitForFunction(() => window.vtuberEraQA?.selected_warband.length === 3);
+  await pickCard(chosenCards[3]);
+  await click(535, 54);
+  await screenshot('rival-options');
+  await click(523, 75 + 23 * (realms.indexOf(rival) + 1));
+  await page.waitForFunction(realm => window.vtuberEraQA?.rival === realm, rival);
   await screenshot('warband');
   await click(509, 336);
   await waitScreen('battle');
   const initial = await snapshot();
+  assert.equal(initial.commander, `${leaderRealm}_commander`);
+  assert.equal(initial.commanders[1], `${rival}_commander`);
+  assert.deepEqual(initial.warbands[0], chosenCards);
+  assert.equal(initial.bond, scenario === 'mixed' ? '' : ({ fire: 'wildfire', water: 'tidal_recovery', earth: 'earthen_guard' })[scenario]);
+  console.log(`PASS: ${scenario} warband and ${leaderRealm} commander enter a real match against ${rival}.`);
   const initialOffers = JSON.stringify(initial.offers);
   await click(540, 280);
   let now = await snapshot();
@@ -103,7 +146,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
 
   const eligible = (choice, s) => {
     const army = s.roster[choice.card_id];
-    const group = ['fire_archer', 'fire_melee'].includes(choice.card_id) ? 3 : 1;
+    const group = s.groups[choice.card_id];
     if (choice.kind === 'summon') return army.count + group <= 24 && s.total + group <= 72;
     if (choice.kind === 'reinforce') return army.summons >= 2 && army.reinforcements < 2 && army.count * 2 <= 24 && s.total + army.count <= 72;
     return army.summons >= 2 && army.rank < 3;
@@ -112,7 +155,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
     const army = s.roster[choice.card_id];
     if (choice.kind === 'reinforce') return 120 + army.count;
     if (choice.kind === 'promote') return 80 + army.count;
-    return (army.summons === 1 ? 45 : 25) + (choice.card_id === 'fire_tank' && s.roster.fire_tank.count === 0 ? 50 : 0) - army.count;
+    return (army.summons === 1 ? 45 : 25) + (choice.card_id.includes('tank') && army.count === 0 ? 50 : 0) - army.count;
   };
   while ((await snapshot()).screen !== 'results') {
     now = await snapshot();
@@ -187,8 +230,16 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   assert.equal(rematch.points, 3);
   assert.notEqual(rematch.seed, final.seed);
   console.log('PASS: Rematch resets all persistent and temporary match state.');
+  await page.reload();
+  await waitScreen('menu');
+  const loadout = await snapshot();
+  assert.equal(loadout.selected_commander, `${leaderRealm}_commander`);
+  assert.deepEqual(loadout.selected_warband, chosenCards);
+  assert.equal(loadout.rival, rival);
+  console.log('PASS: commander, mixed/pure loadout and rival persist after reload.');
   assert.deepEqual(errors, [], 'browser must have no engine, HTTP or JavaScript errors');
-  const report = { status: 'passed', browser: await browser.version(), screens: [...visited],
+  const report = { status: 'passed', scenario, rival, commander: `${leaderRealm}_commander`, warband: chosenCards,
+    browser: await browser.version(), screens: [...visited],
     seed: initial.seed, rounds, actions, stats, errors, headers: 'ordinary HTTP; no cross-origin isolation',
     testedViewport: ['1280x720', '1000x720'], settingsPersisted: true, rematchPassed: true };
   fs.writeFileSync(path.join(output, 'report.json'), JSON.stringify(report, null, 2));

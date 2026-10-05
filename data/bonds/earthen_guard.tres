@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="SetBonusData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://data/types/set_bonus_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = "earthen_guard"
+display_name = "Earthen Guard"
+set_id = "earth"
+effect = "shield"
+description = "Every ally begins battle with a shield worth 10% of its max HP."
+shield_fraction = 0.10

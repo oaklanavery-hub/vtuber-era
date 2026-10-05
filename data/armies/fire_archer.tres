@@ -9,11 +9,13 @@ damage = 9.0
 attacks_per_second = 1.0
 move_speed = 34.0
 attack_range = 138.0
+
 [resource]
 script = ExtResource("1")
 id = "fire_archer"
 display_name = "Emberbow Rangers"
 short_name = "Emberbow"
+set_id = "fire"
 role = "ranged"
 group_size = 3
 description = "Quick archers. Protect them with a frontline."

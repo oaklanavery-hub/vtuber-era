@@ -6,6 +6,9 @@ var cards: Dictionary
 var commander: CommanderData
 var bond: SetBonusData
 var warband: Array = GameCatalog.FIRE_IDS.duplicate()
+var warbands: Array = []
+var commanders: Array = []
+var bonds: Array = []
 var rng := RandomNumberGenerator.new()
 var match_seed: int
 var sides: Array = []
@@ -17,32 +20,51 @@ var history: Array = []
 var action_log: Array = []
 var ai_explanations: Array = []
 var opponent_snapshot: Dictionary = {}
+var opponent_snapshots: Array = []
 
-func _init(seed_value: int = 1) -> void:
+func _init(seed_value: int = 1, commander_id: String = "fire_commander", player_warband: Array = [], rival_commander_id: String = "", rival_warband: Array = []) -> void:
 	config = GameCatalog.balance()
 	cards = GameCatalog.cards()
-	commander = GameCatalog.commander()
-	bond = GameCatalog.bond()
+	commander = GameCatalog.commander(commander_id)
+	warband = player_warband.duplicate() if GameCatalog.valid_warband(player_warband, cards) else GameCatalog.realm_cards(commander.set_id)
+	var rival: CommanderData = GameCatalog.commander(rival_commander_id) if not rival_commander_id.is_empty() else commander
+	var rival_ids: Array = rival_warband.duplicate() if GameCatalog.valid_warband(rival_warband, cards) else warband.duplicate() if rival_commander_id.is_empty() else GameCatalog.realm_cards(rival.set_id)
+	warbands = [warband, rival_ids]
+	commanders = [commander, rival]
+	bonds = [GameCatalog.warband_bond(warband, cards), GameCatalog.warband_bond(rival_ids, cards)]
+	bond = bonds[0]
 	match_seed = seed_value
 	rng.seed = seed_value
-	for _side in range(2):
+	for side in range(2):
 		var roster := {}
-		for id in warband:
+		for id in warband_for(side):
 			roster[id] = {"count": 0, "rank": 1, "summons": 0, "reinforcements": 0}
 		sides.append({"hearts": config.starting_hearts, "points": 0,
 			"spell": false, "roster": roster, "offers": []})
 	begin_round()
 
+func warband_for(side: int) -> Array:
+	return warbands[side]
+
+func commander_for(side: int) -> CommanderData:
+	return commanders[side]
+
+func bond_for(side: int) -> SetBonusData:
+	return bonds[side]
+
+func snapshot_for(side: int) -> Dictionary:
+	return opponent_snapshots[1-side]
+
 func total_units(side: int) -> int:
 	var total := 0
-	for id in warband:
+	for id in warband_for(side):
 		total += int(sides[side].roster[id].count)
 	return total
 
 func eligible(side: int, choice: Dictionary) -> bool:
 	if side < 0 or side >= sides.size() or not choice.has("card_id") or not choice.has("kind"):
 		return false
-	if not warband.has(choice.card_id):
+	if not warband_for(side).has(choice.card_id):
 		return false
 	var army: Dictionary = sides[side].roster[choice.card_id]
 	var data: ArmyCardData = cards[choice.card_id]
@@ -98,6 +120,7 @@ func begin_round() -> bool:
 	phase = "command"
 	ai_explanations.clear()
 	opponent_snapshot = sides[0].roster.duplicate(true)
+	opponent_snapshots = [opponent_snapshot, sides[1].roster.duplicate(true)]
 	for side in range(2):
 		sides[side].points = config.command_points + (config.comeback_points if previous_loser == side else 0)
 		sides[side].spell = false

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
+[ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]
+[ext_resource type="Script" path="res://data/types/unit_stats.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/units/earth_tank.svg" id="3"]
+[sub_resource type="Resource" id="Stats"]
+script = ExtResource("2")
+max_hp = 250.0
+damage = 6.0
+attacks_per_second = 0.55
+move_speed = 22.0
+attack_range = 25.0
+
+[resource]
+script = ExtResource("1")
+id = "earth_tank"
+display_name = "Stoneguard Sentinels"
+short_name = "Stoneguard"
+set_id = "earth"
+role = "tank"
+group_size = 1
+description = "The toughest single guardian. Holds the frontline with a great stone shield."
+stats = SubResource("Stats")
+sprite = ExtResource("3")

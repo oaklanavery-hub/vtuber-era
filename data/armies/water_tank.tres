@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
+[ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]
+[ext_resource type="Script" path="res://data/types/unit_stats.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/units/water_tank.svg" id="3"]
+[sub_resource type="Resource" id="Stats"]
+script = ExtResource("2")
+max_hp = 180.0
+damage = 6.0
+attacks_per_second = 0.55
+move_speed = 24.0
+attack_range = 23.0
+ally_shield_fraction = 0.08
+ally_shield_radius = 58.0
+ally_shield_duration = 8.0
+[resource]
+script = ExtResource("1")
+id = "water_tank"
+display_name = "Coral Wardens"
+short_name = "Coral Wardens"
+set_id = "water"
+role = "tank"
+group_size = 1
+description = "At battle start, shield nearby allies for 8% of their max HP for 8s."
+stats = SubResource("Stats")
+sprite = ExtResource("3")

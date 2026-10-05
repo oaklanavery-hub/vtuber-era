@@ -9,7 +9,7 @@ static func generate(state, side: int) -> Array:
 	# Capped normal cards remain visible (disabled), so even a full roster has
 	# three distinct offers and can proceed to battle without a free reroll.
 	var pools := {"summon": [], "reinforce": [], "promote": []}
-	for id in state.warband:
+	for id in state.warband_for(side):
 		pools.summon.append({"kind": "summon", "card_id": id})
 		for kind in ["reinforce", "promote"]:
 			var special := {"kind": kind, "card_id": id}

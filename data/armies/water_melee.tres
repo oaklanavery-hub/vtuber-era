@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
+[ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]
+[ext_resource type="Script" path="res://data/types/unit_stats.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/units/water_melee.svg" id="3"]
+[sub_resource type="Resource" id="Stats"]
+script = ExtResource("2")
+max_hp = 52.0
+damage = 6.0
+attacks_per_second = 0.9
+move_speed = 35.0
+attack_range = 21.0
+lifesteal_fraction = 0.15
+lifesteal_cap_per_second = 0.02
+[resource]
+script = ExtResource("1")
+id = "water_melee"
+display_name = "Waveblade Fighters"
+short_name = "Waveblade"
+set_id = "water"
+role = "melee"
+group_size = 3
+description = "Heal for 15% of HP damage dealt, capped at 2% max HP per second."
+stats = SubResource("Stats")
+sprite = ExtResource("3")

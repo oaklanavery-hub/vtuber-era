@@ -9,11 +9,13 @@ damage = 8.0
 attacks_per_second = 1.05
 move_speed = 39.0
 attack_range = 20.0
+
 [resource]
 script = ExtResource("1")
 id = "fire_melee"
 display_name = "Ashblade Warriors"
 short_name = "Ashblade"
+set_id = "fire"
 role = "melee"
 group_size = 3
 description = "Brave fighters who rush into the festival contest."

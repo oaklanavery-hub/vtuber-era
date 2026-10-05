@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CommanderData" load_steps=3 format=3]
+[ext_resource type="Script" path="res://data/types/commander_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/portraits/water_commander.svg" id="2"]
+[resource]
+script = ExtResource("1")
+id = "water_commander"
+display_name = "Water Commander"
+set_id = "water"
+identity = "A gentle tide sage and keeper of healing currents."
+passive_description = "All allies: +5% max HP\nWater allies: +10% healing & shields"
+attack_damage_bonus = 0.0
+matching_attack_speed_bonus = 0.0
+max_hp_bonus = 0.05
+matching_healing_shield_bonus = 0.10
+spell_name = "Healing Current"
+spell_kind = "healing"
+spell_description = "Heal 3% max HP/s · 5s"
+spell_attack_speed_bonus = 0.0
+spell_healing_per_second = 0.03
+spell_duration = 5.0
+portrait = ExtResource("2")

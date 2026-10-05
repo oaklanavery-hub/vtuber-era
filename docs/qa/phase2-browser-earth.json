@@ -1,0 +1,186 @@
+{
+  "status": "passed",
+  "scenario": "earth",
+  "rival": "water",
+  "commander": "earth_commander",
+  "warband": [
+    "earth_tank",
+    "earth_melee",
+    "earth_ranged",
+    "earth_siege"
+  ],
+  "browser": "151.0.7922.34",
+  "screens": [
+    "menu",
+    "compendium",
+    "settings",
+    "commander",
+    "warband",
+    "battle",
+    "results"
+  ],
+  "seed": 1791199287,
+  "rounds": [
+    {
+      "round": 1,
+      "hearts": [
+        3,
+        4
+      ],
+      "heartLoss": 1
+    },
+    {
+      "round": 2,
+      "hearts": [
+        3,
+        3
+      ],
+      "heartLoss": 1
+    },
+    {
+      "round": 3,
+      "hearts": [
+        3,
+        2
+      ],
+      "heartLoss": 1
+    },
+    {
+      "round": 4,
+      "hearts": [
+        3,
+        1
+      ],
+      "heartLoss": 1
+    },
+    {
+      "round": 5,
+      "hearts": [
+        3,
+        0
+      ],
+      "heartLoss": 1
+    }
+  ],
+  "actions": [
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "earth_ranged",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_ranged",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_ranged",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_ranged",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_ranged",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "earth_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "earth_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "summon"
+      }
+    }
+  ],
+  "stats": {
+    "reinforcements": 2,
+    "promotions": 2,
+    "spell": 1,
+    "comeback": 1
+  },
+  "errors": [],
+  "headers": "ordinary HTTP; no cross-origin isolation",
+  "testedViewport": [
+    "1280x720",
+    "1000x720"
+  ],
+  "settingsPersisted": true,
+  "rematchPassed": true
+}

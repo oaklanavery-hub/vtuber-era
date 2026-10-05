@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CommanderData" load_steps=3 format=3]
+[ext_resource type="Script" path="res://data/types/commander_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/portraits/earth_commander.svg" id="2"]
+[resource]
+script = ExtResource("1")
+id = "earth_commander"
+display_name = "Earth Commander"
+set_id = "earth"
+identity = "A steadfast stone warden with a warm, patient heart."
+passive_description = "All allies: 5% less incoming damage\nEarth allies: +5% max HP"
+attack_damage_bonus = 0.0
+matching_attack_speed_bonus = 0.0
+matching_max_hp_bonus = 0.05
+damage_reduction = 0.05
+spell_name = "Stonewall Formation"
+spell_kind = "damage_reduction"
+spell_description = "20% less damage · 7s"
+spell_attack_speed_bonus = 0.0
+spell_damage_reduction = 0.20
+spell_duration = 7.0
+portrait = ExtResource("2")

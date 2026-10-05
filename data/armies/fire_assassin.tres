@@ -9,13 +9,15 @@ damage = 13.0
 attacks_per_second = 1.55
 move_speed = 62.0
 attack_range = 19.0
+
 [resource]
 script = ExtResource("1")
 id = "fire_assassin"
 display_name = "Flameveil Stalkers"
 short_name = "Flameveil"
+set_id = "fire"
 role = "assassin"
 group_size = 1
-description = "Fast flankers who hunt archers behind the frontline."
+description = "Fast flankers who hunt archers, mages and siege behind the frontline."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

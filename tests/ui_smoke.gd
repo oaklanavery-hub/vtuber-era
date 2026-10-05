@@ -15,14 +15,31 @@ func _run() -> void:
 	root.add_child(ui)
 	await create_timer(0.4).timeout
 	check(ui.screen=="menu", "loading leads to menu")
-	ui.show_compendium()
-	check(ui.screen=="compendium", "compendium opens")
+	for realm in GameCatalog.REALMS:
+		ui._compendium_tab(realm)
+		check(ui.screen=="compendium" and ui.compendium_realm==realm, "each realm's compendium opens")
 	ui.settings_return = "menu"
 	ui.show_settings()
 	check(ui.screen=="settings", "settings open")
 	ui.show_commander()
+	for id in GameCatalog.COMMANDER_IDS:
+		ui._select_commander(id)
+		check(ui.selected_commander_id==id, "all three commanders can be selected")
 	ui.show_warband()
+	ui._preset("clear")
 	ui.new_match()
+	check(ui.screen=="warband" and ui.state==null, "incomplete loadout cannot start")
+	for id in ["water_mage","water_melee","earth_tank","earth_siege"]:
+		ui._toggle_card(id)
+	ui._toggle_card("fire_tank")
+	check(ui.selected_warband.size()==4 and not ui.selected_warband.has("fire_tank"), "builder prevents a fifth card")
+	ui._toggle_card("water_mage")
+	check(ui.selected_warband.size()==3, "selected card can be removed")
+	ui._toggle_card("water_mage")
+	ui.rival_realm="water"
+	ui.new_match()
+	check(ui.state.bond==null and ui.state.commander.id=="earth_commander", "mixed cards work under independent commander")
+	check(ui.state.commander_for(1).id=="water_commander" and ui.state.warband_for(1)==GameCatalog.WATER_IDS, "rival selector supplies independent opposing realm")
 	check(ui.screen=="battle" and ui.offer_buttons.size()==3, "three draft offers rendered")
 	var before: String = JSON.stringify(ui.state.sides[0].offers)
 	ui.prepare_spell()

@@ -9,11 +9,13 @@ damage = 7.0
 attacks_per_second = 0.65
 move_speed = 27.0
 attack_range = 23.0
+
 [resource]
 script = ExtResource("1")
 id = "fire_tank"
 display_name = "Cinderwall Guardians"
 short_name = "Cinderwall"
+set_id = "fire"
 role = "tank"
 group_size = 1
 description = "A sturdy guardian to absorb attacks and protect allies."

@@ -22,7 +22,9 @@ func ingest(events: Array) -> void:
 		return
 	for event in events:
 		if event.kind == "defeat":
-			sparks.append({"position": event.position, "age": 0.0})
+			sparks.append({"position": event.position, "age": 0.0, "color": GameCatalog.realm_color(event.get("set_id", "fire"))})
+		elif event.kind == "splash":
+			sparks.append({"position": event.position, "age": 0.0, "color": GameCatalog.realm_color(event.set_id)})
 
 func _draw_unit(texture: Texture2D, location: Vector2, frame: int, side: int, rank_value: int, hurt: bool = false) -> void:
 	var tint := Color.WHITE
@@ -56,12 +58,21 @@ func _draw() -> void:
 			if int(unit.burn_until) >= simulation.tick and unit.burn_until > 0:
 				draw_rect(Rect2(location.x+10, location.y-20, 3, 5), Color("d57346"))
 				draw_rect(Rect2(location.x+11, location.y-19, 1, 3), Color("f9e4b5"))
+			if unit.shield > 0.0:
+				draw_rect(Rect2(location.x-11, location.y-28, 22, 2), Color("8fc6cb"))
+			if unit.slow_until > simulation.tick:
+				draw_rect(Rect2(location.x+10, location.y-12, 3, 3), Color("659fbb"))
+			if simulation.tick-int(unit.heal_at) < 5 and not reduced_effects:
+				draw_rect(Rect2(location.x-14, location.y-15, 5, 1), Color("7dba9d"))
+				draw_rect(Rect2(location.x-12, location.y-17, 1, 5), Color("7dba9d"))
 		for projectile in simulation.projectiles:
-			draw_rect(Rect2(projectile.position-Vector2(3, 1), Vector2(6, 2)), Color("80543b"))
+			var card: ArmyCardData = state.cards[projectile.card_id]
+			var size := Vector2(6, 6) if card.role == "siege" else Vector2(4, 4) if card.role == "mage" else Vector2(6, 2)
+			draw_rect(Rect2(projectile.position-size/2, size), GameCatalog.realm_color(card.set_id))
 			draw_rect(Rect2(projectile.position, Vector2(2, 2)), Color("f9e4b5"))
 	elif state:
 		for side in range(2):
-			for card_id in state.warband:
+			for card_id in state.warband_for(side):
 				var army: Dictionary = state.sides[side].roster[card_id]
 				for index in range(int(army.count)):
 					var location: Vector2 = CombatSimulation.formation(side, state.cards[card_id].role, index)
@@ -69,6 +80,6 @@ func _draw() -> void:
 	for spark in sparks:
 		for index in range(5):
 			var offset := Vector2(sin(float(index)*2.4)*spark.age*21, -spark.age*25+cos(float(index))*7)
-			var color := Color("e8ba61") if index%2==0 else Color("f9e4b5")
+			var color: Color = spark.color if index%2==0 else Color("f9e4b5")
 			color.a = 1.0-spark.age/0.7
 			draw_rect(Rect2(spark.position+offset, Vector2(3, 3)), color)

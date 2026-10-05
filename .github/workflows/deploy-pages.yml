@@ -55,9 +55,10 @@ jobs:
       - name: Import resources
         run: godot --headless --path . --editor --import --quit
       - name: Run deterministic gameplay and UI tests
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
           godot --headless --path . --script res://tests/run_tests.gd
+          godot --headless --path . --script res://tests/elemental_tests.gd
           godot --headless --path . --script res://tests/ui_smoke.gd
       - name: Export single-threaded Web release
         run: |

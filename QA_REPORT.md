@@ -1,76 +1,81 @@
-# Phase 1 validation — 5 October 2026
+# Phase 2 validation — 5 October 2026
 
 ## Release configuration
 
-- Exact engine: `4.5.stable.official.876b29033`.
-- Standard GDScript project; Compatibility renderer.
-- Logical 640×360, preserved 16:9, nearest-neighbour textures.
-- Web threads and GDExtensions disabled.
-- Official engine and template SHA-512 checksums verified locally.
-- Required `.html`, `.js`, `.wasm` and `.pck` outputs verified.
-- `.nojekyll` and engine/font notices included in Web output.
+Exact Godot `4.5.stable.official.876b29033`, standard GDScript, Compatibility
+renderer, 640x360 with preserved 16:9 and nearest filtering. Web threads and
+GDExtensions are disabled. Official engine/templates were SHA-512 verified;
+exported HTML, JavaScript, WebAssembly and resource-pack files were checked.
+The Web output includes `.nojekyll` and engine/font notices.
 
-## Automated gameplay
+## Automated correctness
 
-`godot --headless --path . --script res://tests/run_tests.gd`
+- `tests/run_tests.gd`: **1,030 checks; 0 failures**.
+- `tests/elemental_tests.gd`: **16,212 checks; 0 failures**.
+- `tests/ui_smoke.gd`: **0 failures**, without engine/script errors.
 
-**1,016 checks; 0 failures.** Coverage includes four-card uniqueness, Wildfire,
-starting/comeback points, skill costs and duration, offer preservation, summons,
-eligibility, two-use Reinforcements, Rank 3, 24/72 caps, persistence, full-HP
-reset, effects cleanup, Hearts, no double result application, legal AI actions,
-frozen opponent information, seeded full-match replay, differently batched ticks,
-melee/projectile damage, Burn timing, assassin priority, timeout comparisons,
-escalating sudden death and invalid save recovery.
+Coverage includes shared economy/caps/offers, all three Commanders and spells,
+independent mixed loadouts, per-side AI offers/frozen snapshots, shield absorption
+and expiry, affinity bonuses, non-stacking Slow and Burn, timed healing without
+resurrection, actual-damage lifesteal and caps, Tidal Recovery's same-tick threshold,
+siege travel/targeting/splash, assassin backline priority and version 0/1 migration.
+The elemental suite completes 33 full four-Heart matches including seeded replay
+across all nine ordered realm pairings and all Commanders with a mixed warband.
+Every completed battle checks finite bounded HP and cleared temporary effects.
 
-`godot --headless --path . --script res://tests/ui_smoke.gd`
-
-**0 failures.** Loading, menu, compendium, settings, Commander, Warband, actual
-summoning/spell UI, combat, round results, Victory, Defeat and Rematch exercised.
-No script errors, resource leak warnings or engine errors in the final runners.
+UI smoke exercises all Commander/compendium pages, incomplete/overfull loadout
+rejection, mixed drafting against an independent rival, spells, real combat,
+round advancement, Victory, Defeat and Rematch.
 
 ## Exported browser play
 
-Playwright controls a real Chromium 151 browser with the release WebAssembly
-build served through ordinary localhost HTTP at `/vtuber-era/`. The browser is
-not cross-origin isolated and receives no COOP/COEP workaround headers.
+Real Chromium 151 runs the release WebAssembly/WebGL build over ordinary HTTP
+at `/vtuber-era/`, without custom cross-origin isolation headers. All four final
+scenarios passed complete matches, settings/loadout persistence across reload,
+spell offer preservation, one-point draft actions, reinforcement confirmation,
+promotions, comeback points, round Hearts, results and Rematch.
 
-The recorded full match (seed `1791185542`) completed six rounds: player Hearts
-3 → 2 → 1 → 1 → 1 → 0; AI Hearts 4 → 4 → 4 → 3 → 2 → 2. It exercised five
-Reinforcements, three Promotions, one prepared spell and three comeback phases.
-Each observed action spent one point; Reinforcements doubled without changing
-Rank; Promotions kept counts; spell preparation preserved offers. The match
-ended in Defeat and Rematch restored four Hearts, three points, empty armies,
-no queued spell and a new seed. Zero engine, JavaScript or HTTP errors occurred.
+| Player warband | Rival | Rounds | Reinforcements | Promotions |
+|---|---|---:|---:|---:|
+| Fire | Fire | 5 | 1 | 4 |
+| Water | Earth | 6 | 6 | 3 |
+| Earth | Water | 5 | 2 | 2 |
+| Mixed | Fire | 6 | 5 | 3 |
 
-Settings survived a browser reload through IndexedDB. Viewports 1280×720 and
-1000×720 preserved the logical 16:9 field. Space started combat even while a
-card had focus. Both the raw trace and action list are in
-`docs/qa/browser-report.json`. A final layout pass fixed portrait sizing, header
-roster placement, enemy sprite/HP alignment and the settings popup palette.
+Each scenario recorded **zero engine, JavaScript or HTTP errors**. Screenshots
+were visually inspected at 1280x720 and 1000x720. Commander cards, all twelve
+army selections, pure/mixed bond information, long spell names, ranged/siege
+sprites and dynamic opposing realms fit the logical layout. Space starts combat
+while a card has focus. Rematch restores four Hearts, three points, no armies,
+no queued spell and a new seed while retaining the chosen loadout.
 
-The final export was then tested through another complete browser match (seed
-`1791186025`, four rounds, two Reinforcements, three comeback phases), with saved
-settings, zero errors and successful Rematch again. Its trace is retained in
-`docs/qa/browser-report-final.json`. Screenshots of the final export were visually
-reviewed; enemy portraits and HP bars share the same position.
+The traces and real actions are in `docs/qa/phase2-browser-*.json`;
+`docs/screenshots/phase2.png` shows Earth versus Water combat, and
+`phase2-warband.png` shows an independent Water Commander with mixed cards.
 
-## External deployment status
+## Balance sample
 
-The public repository is
-[`oaklanavery-hub/vtuber-era`](https://github.com/oaklanavery-hub/vtuber-era),
-and the browser release is live at
-[`oaklanavery-hub.github.io/vtuber-era`](https://oaklanavery-hub.github.io/vtuber-era/).
+`tests/balance_simulations.gd` completed **72 full AI matches**: eight fixed seeds
+for all nine ordered realm pairings, using the same AI policy and budgets on both
+sides. Final results are in `docs/qa/phase2-balance.json`. All pairings produced
+wins for both sides in the sample. Mean match lengths ranged from 5.25 to 6 rounds.
+Initial Water/Earth dominance led to stat/splash reductions and diminishing value
+for repeated assassin summons. Original Fire base stats are preserved.
 
-GitHub Actions run
-[`37285925817`](https://github.com/oaklanavery-hub/vtuber-era/actions/runs/37285925817)
-completed successfully on 5 October 2026. Its build job installed the exact
-engine/templates, verified checksums, imported resources, passed both test
-runners, exported the Web release and uploaded the Pages artifact. The dependent
-deploy job also completed successfully. The live page serves the `VTuber Era`
-document and Godot loader from the expected `/vtuber-era/` project path.
+This sample demonstrates varied outcomes and termination, not competitive player
+balance. Additional seeds, player strategies and larger roster performance tests
+remain useful.
+
+## Publishing
+
+The existing public source is
+[oaklanavery-hub/vtuber-era](https://github.com/oaklanavery-hub/vtuber-era).
+The Pages workflow installs the exact engine/templates, runs all three
+correctness suites, exports and deploys to the existing
+[playable URL](https://oaklanavery-hub.github.io/vtuber-era/).
 
 ## Remaining validation
 
-Firefox, Safari, mobile performance and large-scale balance playtesting remain
-future work. Correctness tests do not establish competitive balance. Placeholder
-art and original synthesized audio are Phase 1 production limits.
+Firefox, Safari and mobile performance remain untested. Portraits/art/music are
+replaceable placeholders, and active matches are not saved. Versioned settings
+and selected loadouts preserve existing saves without resetting them.

@@ -1,12 +1,13 @@
 extends Node
 
-const VERSION := 1
+const VERSION := 2
 const SAVE_PATH := "user://vtuber_era_v1.json"
 var settings: Dictionary = defaults()
 
 static func defaults() -> Dictionary:
 	return {"version": VERSION, "volume": 0.55, "combat_speed": 1.0,
 		"reduced_effects": false, "commander": "fire_commander",
+		"rival": "mirror",
 		"warband": ["fire_archer", "fire_melee", "fire_tank", "fire_assassin"]}
 
 static func sanitize(raw: Variant) -> Dictionary:
@@ -24,7 +25,17 @@ static func sanitize(raw: Variant) -> Dictionary:
 		result.combat_speed = float(speed)
 	if raw.get("reduced_effects") is bool:
 		result.reduced_effects = raw.reduced_effects
-	# Phase 1 safely falls back to its only available setup.
+	var leader: Variant = raw.get("commander", "fire_commander")
+	if leader is String and GameCatalog.COMMANDER_IDS.has(leader):
+		result.commander = leader
+	var ids: Variant = raw.get("warband", [])
+	if ids is Array and GameCatalog.valid_warband(ids, GameCatalog.cards()):
+		result.warband = ids.duplicate()
+	else:
+		result.warband = GameCatalog.realm_cards(GameCatalog.commander(result.commander).set_id)
+	var rival: Variant = raw.get("rival", "mirror")
+	if rival is String and rival in ["mirror", "fire", "water", "earth"]:
+		result.rival = rival
 	return result
 
 func _ready() -> void:

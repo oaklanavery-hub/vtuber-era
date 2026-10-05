@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
+[ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]
+[ext_resource type="Script" path="res://data/types/unit_stats.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/units/water_mage.svg" id="3"]
+[sub_resource type="Resource" id="Stats"]
+script = ExtResource("2")
+max_hp = 34.0
+damage = 6.0
+attacks_per_second = 0.6
+move_speed = 30.0
+attack_range = 146.0
+projectile_speed = 220.0
+splash_radius = 22.0
+splash_falloff = 0.5
+slow_fraction = 0.25
+slow_duration = 2.0
+[resource]
+script = ExtResource("1")
+id = "water_mage"
+display_name = "Tidecallers"
+short_name = "Tidecallers"
+set_id = "water"
+role = "mage"
+group_size = 2
+description = "Splash spells slow enemy movement by 25% for 2s. Slow never stacks."
+stats = SubResource("Stats")
+sprite = ExtResource("3")

@@ -1,0 +1,87 @@
+{
+  "policy": "NormalAI for both sides; full four-Heart matches",
+  "samples": [
+    {
+      "matches": 8,
+      "mean_rounds": 6.0,
+      "mean_seconds": 98.3291666666667,
+      "player": "fire",
+      "rival": "fire",
+      "wins": 4
+    },
+    {
+      "matches": 8,
+      "mean_rounds": 5.375,
+      "mean_seconds": 83.3125,
+      "player": "fire",
+      "rival": "water",
+      "wins": 5
+    },
+    {
+      "matches": 8,
+      "mean_rounds": 5.5,
+      "mean_seconds": 110.9375,
+      "player": "fire",
+      "rival": "earth",
+      "wins": 6
+    },
+    {
+      "matches": 8,
+      "mean_rounds": 5.75,
+      "mean_seconds": 93.7375,
+      "player": "water",
+      "rival": "fire",
+      "wins": 6
+    },
+    {
+      "matches": 8,
+      "mean_rounds": 5.5,
+      "mean_seconds": 95.9,
+      "player": "water",
+      "rival": "water",
+      "wins": 4
+    },
+    {
+      "matches": 8,
+      "mean_rounds": 5.75,
+      "mean_seconds": 129.029166666667,
+      "player": "water",
+      "rival": "earth",
+      "wins": 2
+    },
+    {
+      "matches": 8,
+      "mean_rounds": 5.25,
+      "mean_seconds": 100.166666666667,
+      "player": "earth",
+      "rival": "fire",
+      "wins": 3
+    },
+    {
+      "matches": 8,
+      "mean_rounds": 5.625,
+      "mean_seconds": 124.116666666667,
+      "player": "earth",
+      "rival": "water",
+      "wins": 7
+    },
+    {
+      "matches": 8,
+      "mean_rounds": 5.625,
+      "mean_seconds": 152.3875,
+      "player": "earth",
+      "rival": "earth",
+      "wins": 4
+    }
+  ],
+  "seeds": [
+    42,
+    914,
+    71,
+    103,
+    251,
+    808,
+    1207,
+    2026
+  ]
+}

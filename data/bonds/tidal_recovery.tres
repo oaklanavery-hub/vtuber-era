@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="SetBonusData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://data/types/set_bonus_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = "tidal_recovery"
+display_name = "Tidal Recovery"
+set_id = "water"
+effect = "recovery"
+description = "Once per battle, each ally below 50% HP heals 12% max HP over 3s."
+recovery_threshold = 0.5
+recovery_fraction = 0.12
+recovery_seconds = 3

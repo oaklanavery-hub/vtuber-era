@@ -8,17 +8,21 @@ sample recordings, models, fonts or other source media.
 
 | Asset | Format / location | Source |
 |---|---|---|
-| Four chibi unit atlases | `assets/units/*.svg`, 192×32; six 32×32 frames | Original code-native pixel designs |
-| Fire Commander portrait | `assets/portraits/fire_commander.svg`, 96×96 | Original pixel design |
+| Twelve chibi unit atlases | `assets/units/*.svg`, 192×32; six 32×32 frames | Original code-native pixel designs |
+| Three Commander portraits | `assets/portraits/*_commander.svg`, 96×96 | Original pixel designs |
 | Fire crest / app icon | `assets/icon.svg`, 32×32 | Original pixel design |
 | Woodland, cottages, stream, lanterns, moss ruins, flowers, bunting | `scenes/world.gd` | Original Node2D drawing |
 | Parchment, rounded borders, wax seals and runes | `ui/style.gd`, `ui/wax_seal.gd`, `ui/command_runes.gd` | Original Godot drawing and styling |
 | Festival loop and six cues | `assets/audio/*.wav`, mono 22,050 Hz 16-bit PCM | Original synthesized score and plucked harmonics |
-| Hit, arrow and defeat-spark visuals | `scenes/battlefield.gd` | Original Godot drawing |
+| Hit, projectile, healing, shield, Slow and defeat-spark visuals | `scenes/battlefield.gd` | Original Godot drawing |
 
 The art is placeholder work, not a final commissioned VTuber identity. No
 copyrighted game assets or specific character designs were copied. The project
 owner has not approved an open-source licence for original assets or code.
+
+Fire uses honey/coral/orange; Water turquoise, cornflower, seafoam, pearl and
+lavender; Earth moss, sage, chestnut, ochre, stone grey and bronze. Tide staffs,
+coral shields, runed hammers and a wooden trebuchet distinguish new silhouettes.
 
 Rebuild the supplied originals with `python3 tools/generate_assets.py`.
 This deliberately overwrites generated sprite/audio files and their initial

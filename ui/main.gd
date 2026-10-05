@@ -28,9 +28,16 @@ var settings_return: String = "menu"
 var qa_enabled: bool = false
 var telemetry_time: float = 0.0
 var last_seed: int = 0
+var selected_commander_id: String = "fire_commander"
+var selected_warband: Array = GameCatalog.FIRE_IDS.duplicate()
+var rival_realm: String = "mirror"
+var compendium_realm: String = "fire"
 
 func _ready() -> void:
 	theme = StoryStyle.theme()
+	selected_commander_id = SaveStore.settings.commander
+	selected_warband = SaveStore.settings.warband.duplicate()
+	rival_realm = SaveStore.settings.rival
 	world = World.new()
 	add_child(world)
 	battlefield = Battlefield.new()
@@ -102,11 +109,11 @@ func _button(text_value: String, rectangle: Rect2, action: Callable, primary: bo
 	(parent if parent else surface).add_child(node)
 	return node
 
-func _portrait(rectangle: Rect2, parent: Control = null) -> void:
+func _portrait(rectangle: Rect2, parent: Control = null, leader: CommanderData = null) -> void:
 	var image := TextureRect.new()
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	image.texture = GameCatalog.commander().portrait
+	image.texture = (leader if leader else GameCatalog.commander(selected_commander_id)).portrait
 	image.position = rectangle.position
 	image.size = rectangle.size
 	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -138,70 +145,141 @@ func show_menu() -> void:
 	_button("Army Compendium", Rect2(235, 218, 170, 29), show_compendium)
 	_button("Settings", Rect2(235, 256, 170, 28), func(): settings_return="menu"; show_settings())
 	_portrait(Rect2(83, 165, 96, 96))
-	_label("The Fire Realm awaits", Rect2(61, 268, 140, 20), 9, true)
-	_label("PHASE 1  ·  FIRE REALM", Rect2(194, 327, 252, 20), 9, true)
+	_label("Three realms await", Rect2(61, 268, 140, 20), 9, true)
+	_label("FIRE  ·  WATER  ·  EARTH", Rect2(194, 327, 252, 20), 9, true)
 	_publish()
 
 func show_commander() -> void:
 	_reset("commander")
-	_title("Choose your Commander", "Every good story starts with a spark.")
-	_panel(Rect2(100, 131, 440, 167))
-	_portrait(Rect2(122, 159, 96, 96))
-	_label("Fire Commander", Rect2(239, 147, 272, 26), 18, false, true)
-	_label("A cheerful flame warden & festival champion", Rect2(240, 177, 275, 19), 10)
-	_label("All allies: +5% attack damage\nFire allies: +5% attack speed", Rect2(240, 202, 270, 36), 11)
-	_label("Blazing Orders · +25% attack speed for 6s\nPrepare before battle for 1 Command Point.", Rect2(240, 243, 274, 35), 10)
-	_button("Back", Rect2(100, 313, 100, 28), show_menu)
-	_button("Choose Fire Commander →", Rect2(323, 312, 217, 31), show_warband, true)
+	_title("Choose your Commander", "Lead any four armies. Your commander is yours to choose.")
+	for index in range(3):
+		var leader: CommanderData = GameCatalog.commander(GameCatalog.COMMANDER_IDS[index])
+		var chosen: bool = selected_commander_id == leader.id
+		var tile := _button("", Rect2(20+index*206, 124, 188, 179), _select_commander.bind(leader.id))
+		tile.tooltip_text = leader.identity
+		if chosen:
+			tile.add_theme_stylebox_override("normal", StoryStyle.panel(Color("e5d7ad")))
+		_portrait(Rect2(63, 6, 62, 62), tile, leader)
+		_label(leader.display_name, Rect2(4, 71, 180, 20), 14, true, true, tile)
+		_label(leader.passive_description, Rect2(8, 95, 174, 32), 9, false, false, tile)
+		_label(leader.spell_name, Rect2(4, 131, 180, 17), 10, true, true, tile)
+		_label(leader.spell_description, Rect2(4, 151, 180, 16), 9, true, false, tile)
+		if chosen:
+			_label("✓", Rect2(164, 6, 16, 16), 11, true, false, tile)
+	_button("Back", Rect2(20, 315, 100, 28), show_menu)
+	_button("Build your warband →", Rect2(323, 312, 297, 31), show_warband, true)
 	_publish()
+
+func _select_commander(id: String) -> void:
+	var previous: String = GameCatalog.commander(selected_commander_id).set_id
+	var previous_bond: SetBonusData = GameCatalog.warband_bond(selected_warband, GameCatalog.cards())
+	selected_commander_id = id
+	if previous_bond != null and previous_bond.set_id == previous:
+		selected_warband = GameCatalog.realm_cards(GameCatalog.commander(id).set_id)
+	show_commander()
+
+func _preset(realm: String) -> void:
+	selected_warband = GameCatalog.realm_cards(realm) if realm != "clear" else []
+	show_warband()
+
+func _toggle_card(id: String) -> void:
+	if selected_warband.has(id):
+		selected_warband.erase(id)
+	elif selected_warband.size() < 4:
+		selected_warband.append(id)
+	show_warband()
 
 func show_warband() -> void:
 	_reset("warband")
-	_title("Your Fire Warband", "Four different armies. One warm-hearted realm.")
+	_panel(Rect2(10, 3, 620, 65))
+	_label("Build your Warband", Rect2(20, 8, 600, 31), 24, true, true)
+	_label("%s · %d / 4 unique armies" % [GameCatalog.commander(selected_commander_id).display_name, selected_warband.size()], Rect2(20, 43, 417, 22), 10)
+	var rival := OptionButton.new()
+	rival.position = Vector2(440, 40)
+	rival.size = Vector2(180, 28)
+	var rival_ids := ["mirror", "fire", "water", "earth"]
+	for realm in rival_ids:
+		rival.add_item("Rival: %s" % ("Mirror" if realm == "mirror" else realm.capitalize()))
+	rival.select(rival_ids.find(rival_realm))
+	rival.item_selected.connect(func(index: int): rival_realm=rival_ids[index]; _publish())
+	surface.add_child(rival)
 	var cards: Dictionary = GameCatalog.cards()
 	for index in range(4):
-		var card: ArmyCardData = cards[GameCatalog.FIRE_IDS[index]]
-		var tile := _panel(Rect2(25+index*150, 135, 140, 119))
-		_sprite(card, Rect2(48, 11, 44, 44), tile)
-		_label(card.short_name, Rect2(5, 61, 130, 20), 12, true, true, tile)
-		_label("%s · %d units" % [card.role.capitalize(), card.group_size], Rect2(5, 89, 130, 17), 10, true, false, tile)
-	_label("✦ Wildfire Realm Bond active", Rect2(85, 270, 470, 20), 13, true, true)
-	_label("Each Fire unit's first hit applies a 3-second Burn.", Rect2(85, 291, 470, 18), 10, true)
-	_button("Back", Rect2(25, 321, 99, 28), show_commander)
-	_button("Enter the festival →", Rect2(408, 319, 207, 32), new_match, true)
+		if index < selected_warband.size():
+			var card: ArmyCardData = cards[selected_warband[index]]
+			var slot := _button("", Rect2(17+index*152, 74, 143, 43), _toggle_card.bind(card.id))
+			_sprite(card, Rect2(3, 6, 30, 30), slot)
+			_label(card.short_name, Rect2(35, 3, 105, 19), 10, false, true, slot)
+			_label("%s · remove" % card.set_id.capitalize(), Rect2(35, 23, 104, 15), 8, false, false, slot)
+		else:
+			var slot := _panel(Rect2(17+index*152, 74, 143, 43))
+			_label("Choose an army", Rect2(5, 7, 133, 28), 10, true, false, slot)
+	for index in range(3):
+		var realm: String = GameCatalog.REALMS[index]
+		var preset := _button("%s preset" % realm.capitalize(), Rect2(20+index*99, 124, 94, 23), _preset.bind(realm))
+		preset.add_theme_font_size_override("font_size",9)
+		preset.size = Vector2(94,23)
+	_button("Clear", Rect2(322, 124, 72, 23), _preset.bind("clear"))
+	_label("Pick cards below · each army may appear once", Rect2(402, 126, 216, 19), 8)
+	for index in range(12):
+		var card: ArmyCardData = cards[GameCatalog.ARMY_IDS[index]]
+		var chosen: bool = selected_warband.has(card.id)
+		var tile := _button("", Rect2(17+(index%4)*152, 155+int(index/4)*44, 143, 41), _toggle_card.bind(card.id))
+		tile.disabled = not chosen and selected_warband.size() == 4
+		if chosen:
+			tile.add_theme_stylebox_override("normal", StoryStyle.panel(Color("e5d7ad")))
+		_sprite(card, Rect2(3, 4, 30, 30), tile)
+		_label(card.short_name, Rect2(35, 3, 105, 18), 10, false, true, tile)
+		_label("%s · %d units%s" % [card.role.capitalize(), card.group_size, " ✓" if chosen else ""], Rect2(35, 22, 105, 14), 8, false, false, tile)
+		tile.tooltip_text = "%s\n%s" % [card.display_name, card.description]
+	var realm_bond: SetBonusData = GameCatalog.warband_bond(selected_warband, cards)
+	_panel(Rect2(15, 286, 610, 40))
+	_label("Realm Bond: %s" % realm_bond.display_name if realm_bond else "Mixed warbands have no Realm Bond" if selected_warband.size()==4 else "Choose exactly four unique armies", Rect2(20, 288, 600, 20), 12, true, true)
+	_label(realm_bond.description if realm_bond else "Your commander's bonuses still apply to your chosen armies.", Rect2(20, 308, 600, 15), 9, true)
+	_button("Back", Rect2(20, 328, 99, 26), show_commander)
+	var enter := _button("Enter the festival →", Rect2(440, 328, 180, 26), new_match, true)
+	enter.disabled = not GameCatalog.valid_warband(selected_warband, cards)
 	_publish()
 
 func new_match() -> void:
+	if not GameCatalog.valid_warband(selected_warband, GameCatalog.cards()):
+		return
 	last_seed = int(Time.get_unix_time_from_system()) if last_seed == 0 else last_seed+1
-	state = MatchState.new(last_seed)
+	state = MatchState.new(last_seed, selected_commander_id, selected_warband,
+		"" if rival_realm == "mirror" else rival_realm+"_commander")
 	NormalAI.play(state)
 	simulation = null
 	accumulator = 0.0
+	SaveStore.settings.commander = selected_commander_id
+	SaveStore.settings.warband = selected_warband.duplicate()
+	SaveStore.settings.rival = rival_realm
 	SaveStore.save()
 	show_battle()
 
 func _roster_text(side: int, abbreviated: bool = false) -> String:
 	var pieces: Array[String] = []
-	for id in state.warband:
+	for id in state.warband_for(side):
 		var army: Dictionary = state.sides[side].roster[id]
-		var army_name: String = {"ranged":"Bow", "melee":"Blade", "tank":"Guard", "assassin":"Veil"}[state.cards[id].role] if abbreviated else state.cards[id].short_name
+		var army_name: String = state.cards[id].short_name.left(4) if abbreviated else state.cards[id].short_name
 		pieces.append("%s %d%s" % [army_name, army.count, " Ⅱ" if army.rank==2 else " Ⅲ" if army.rank==3 else ""])
 	return "  ·  ".join(pieces)
 
 func show_battle() -> void:
 	_reset("battle")
 	_panel(Rect2(15, 7, 610, 60))
-	_portrait(Rect2(23, 14, 38, 38))
-	_portrait(Rect2(579, 14, 38, 38))
+	_portrait(Rect2(23, 14, 38, 38), null, state.commander_for(0))
+	_portrait(Rect2(579, 14, 38, 38), null, state.commander_for(1))
 	_label("YOU · %d units" % state.total_units(0), Rect2(71, 10, 140, 18), 10)
-	_label("EMBER AI · %d units" % state.total_units(1), Rect2(433, 10, 134, 18), 10)
+	_label("%s AI · %d units" % [state.commander_for(1).set_id.to_upper(), state.total_units(1)], Rect2(433, 10, 134, 18), 10)
 	var hearts_left := _label("♥ ".repeat(state.sides[0].hearts), Rect2(71, 27, 160, 21), 16)
 	hearts_left.add_theme_color_override("font_color", StoryStyle.EMBER)
 	var hearts_right := _label("♥ ".repeat(state.sides[1].hearts), Rect2(433, 27, 143, 21), 16)
 	hearts_right.add_theme_color_override("font_color", StoryStyle.EMBER)
 	_label("Round %d" % state.round_number, Rect2(234, 9, 172, 22), 15, true, true)
 	phase_label = _label("Command Phase" if state.phase=="command" else "Automatic combat", Rect2(231, 31, 178, 18), 10, true)
-	_label("✦ Wildfire", Rect2(242, 49, 156, 17), 9, true)
+	var bond_label := _label("Bond: %s" % state.bond.display_name if state.bond else "Mixed Warband", Rect2(237, 49, 166, 17), 9, true)
+	bond_label.tooltip_text = "You: %s\nRival: %s" % [state.bond.description if state.bond else "No Realm Bond", state.bond_for(1).description if state.bond_for(1) else "No Realm Bond"]
+	bond_label.mouse_filter = Control.MOUSE_FILTER_STOP
 	var player_armies := _label(_roster_text(0, true), Rect2(20, 50, 217, 14), 8)
 	player_armies.tooltip_text = _roster_tooltip(0)
 	player_armies.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -230,7 +308,7 @@ func show_battle() -> void:
 		_label(action_title, Rect2(8, 4, 112, 17), 8, false, false, tile)
 		_label(str(index+1), Rect2(120, 4, 12, 16), 9, true, false, tile)
 		_sprite(card, Rect2(6, 27, 32, 32), tile)
-		_label(card.short_name, Rect2(39, 25, 96, 21), 11, false, true, tile)
+		_label(card.short_name, Rect2(39, 25, 96, 21), 10, false, true, tile)
 		var detail: String = "+%d %s" % [card.group_size, "units" if card.group_size>1 else "unit"]
 		if choice.kind == "reinforce":
 			detail = "%d → %d units" % [army.count, army.count*2]
@@ -242,11 +320,11 @@ func show_battle() -> void:
 		seal.position = Vector2(124, 80)
 		tile.add_child(seal)
 		tile.tooltip_text = "%s\n%s\nHP %d · damage %d · %.2f attacks/s\nOwned: %d · Rank %d · normal summons: %d\nReinforcements used: %d / 2" % [card.display_name, card.description, card.stats.max_hp, card.stats.damage, card.stats.attacks_per_second, army.count, army.rank, army.summons, army.reinforcements]
-	var spell_text := "Blazing Orders\n+25% attack speed · 6s\n1 Command Point"
+	var spell_text := "%s\n%s\n1 Command Point" % [state.commander.spell_name, state.commander.spell_description]
 	if state.sides[0].spell:
-		spell_text = "Blazing Orders queued\nYour next battle starts\nwith +25% attack speed"
+		spell_text = "%s\nQueued for next battle\n%s" % [state.commander.spell_name, state.commander.spell_description]
 	if state.phase == "combat":
-		spell_text = "Blazing Orders\nPrepared before battle"
+		spell_text = "%s\nPrepared before battle" % state.commander.spell_name
 	spell_button = _button(spell_text, Rect2(459, 254, 162, 61), prepare_spell)
 	spell_button.name = "CommandSpell"
 	spell_button.disabled = not state.can_prepare_spell(0)
@@ -256,9 +334,9 @@ func show_battle() -> void:
 	battle_button.name = "BeginBattle"
 	battle_button.disabled = state.phase!="command" or state.total_units(0)==0
 	battle_button.tooltip_text = "Enter automatic combat. Unused Command Points are discarded.\nSpace: begin battle · Escape: settings · F3: AI explanation"
-	spell_label = _label("Blazing Orders queued" if state.sides[0].spell else "", Rect2(32, 76, 202, 18), 9)
+	spell_label = _label(state.commander.spell_name+" queued" if state.sides[0].spell else "", Rect2(32, 76, 240, 18), 9)
 	if state.sides[1].spell:
-		_label("AI · Blazing Orders queued" if state.phase=="command" else "AI · Blazing Orders prepared", Rect2(435, 76, 178, 18), 9)
+		_label("AI · %s %s" % [state.commander_for(1).spell_name, "queued" if state.phase=="command" else "prepared"], Rect2(362, 76, 251, 18), 9)
 	if debug_ai:
 		var debug_panel := _panel(Rect2(354, 90, 250, 89))
 		_label("AI decisions · previous-round information", Rect2(8, 4, 236, 15), 8, false, false, debug_panel)
@@ -267,7 +345,7 @@ func show_battle() -> void:
 
 func _roster_tooltip(side: int) -> String:
 	var lines: Array[String] = ["%d persistent units" % state.total_units(side)]
-	for id in state.warband:
+	for id in state.warband_for(side):
 		var army: Dictionary = state.sides[side].roster[id]
 		lines.append("%s: %d · Rank %d" % [state.cards[id].display_name, army.count, army.rank])
 	return "\n".join(lines)
@@ -320,7 +398,7 @@ func _process(delta: float) -> void:
 		clock_label.text = "%.1fs · %dx" % [seconds, SaveStore.settings.combat_speed]
 		phase_label.text = "Sudden death" if simulation.sudden_death else "Automatic combat"
 		if state.sides[0].spell:
-			spell_label.text = "Blazing Orders · %.1fs" % maxf(0.0, state.commander.spell_duration-seconds) if seconds < state.commander.spell_duration else "Blazing Orders complete"
+			spell_label.text = "%s · %.1fs" % [state.commander.spell_name, maxf(0.0, state.commander.spell_duration-seconds)] if seconds < state.commander.spell_duration else state.commander.spell_name+" complete"
 		if simulation.finished:
 			_round_over()
 	if telemetry_time >= 0.25:
@@ -338,7 +416,7 @@ func _round_over() -> void:
 	var winning_side: int = int(simulation.result.winner)
 	Sound.play("victory" if winning_side==0 else "defeat")
 	var title: String = "Round won!" if winning_side==0 else "A new spark awaits" if winning_side==1 else "A festival draw"
-	var message: String = "Ember AI loses a Heart." if winning_side==0 else "You lose a Heart. Next round: 4 Command Points." if winning_side==1 else "Both armies dispersed together. No Hearts lost."
+	var message: String = "Your rival loses a Heart." if winning_side==0 else "You lose a Heart. Next round: 4 Command Points." if winning_side==1 else "Both armies dispersed together. No Hearts lost."
 	message += "\n%s · %.1fs\nYour units return at full HP next round." % [simulation.result.reason, simulation.result.seconds]
 	_dialog(title, message, "Next round  →", next_round, "round_result")
 
@@ -382,7 +460,7 @@ func show_results() -> void:
 	_title("Victory!" if state.winner==0 else "Defeat", "Your Convergence story, written in sparks." if state.winner==0 else "A new festival. A new beginning.")
 	_panel(Rect2(51, 128, 538, 170))
 	_portrait(Rect2(71, 145, 79, 79))
-	_label("Fire Commander", Rect2(63, 232, 110, 22), 10, true, true)
+	_label(state.commander.display_name, Rect2(55, 232, 126, 22), 10, true, true)
 	_label("%d rounds · %d Hearts remaining" % [state.history.size(), state.sides[0].hearts], Rect2(190, 140, 372, 23), 14, false, true)
 	var lines: Array[String] = []
 	for record in state.history:
@@ -404,18 +482,26 @@ func show_results() -> void:
 
 func show_compendium() -> void:
 	_reset("compendium")
-	_title("Fire Army Compendium", "Meet the festival's warmest company.")
+	_label("Army Compendium", Rect2(76, 27, 488, 40), 28, true, true)
+	for index in range(3):
+		var realm: String = GameCatalog.REALMS[index]
+		_button(realm.capitalize(), Rect2(161+index*106, 79, 100, 28), _compendium_tab.bind(realm), compendium_realm == realm)
 	var cards: Dictionary = GameCatalog.cards()
 	for index in range(4):
-		var card: ArmyCardData = cards[GameCatalog.FIRE_IDS[index]]
+		var card: ArmyCardData = cards[GameCatalog.realm_cards(compendium_realm)[index]]
 		var tile := _panel(Rect2(30+(index%2)*296, 132+int(index/2)*84, 284, 77))
 		_sprite(card, Rect2(6, 10, 48, 48), tile)
 		_label(card.display_name, Rect2(56, 6, 222, 19), 11, false, true, tile)
 		_label("%s · %d per summon · HP %d" % [card.role.capitalize(), card.group_size, card.stats.max_hp], Rect2(56, 29, 222, 18), 10, false, false, tile)
 		_label("Damage %d · %.2f attacks/s · range %d" % [card.stats.damage, card.stats.attacks_per_second, card.stats.attack_range], Rect2(56, 49, 222, 16), 9, false, false, tile)
 		tile.tooltip_text = card.description
+	_label("Hover a card for its ability · %s" % GameCatalog.bond(compendium_realm).display_name, Rect2(30, 297, 580, 16), 9, true)
 	_button("← Main menu", Rect2(223, 318, 194, 31), show_menu)
 	_publish()
+
+func _compendium_tab(realm: String) -> void:
+	compendium_realm = realm
+	show_compendium()
 
 func show_settings() -> void:
 	_reset("settings")
@@ -486,13 +572,21 @@ func _publish() -> void:
 	# changes combat, RNG, statistics, points or the selected seed.
 	if not qa_enabled:
 		return
-	var snapshot := {"screen": screen, "modal": modal_kind, "settings": SaveStore.settings}
+	var snapshot := {"screen": screen, "modal": modal_kind, "settings": SaveStore.settings,
+		"release": "phase2-water-earth",
+		"selected_commander": selected_commander_id, "selected_warband": selected_warband,
+		"rival": rival_realm, "compendium_realm": compendium_realm}
 	if state:
 		snapshot.merge({"phase": state.phase, "round": state.round_number,
 			"points": state.sides[0].points, "spell": state.sides[0].spell,
 			"hearts": [state.sides[0].hearts, state.sides[1].hearts],
 			"seed": state.match_seed, "offers": state.sides[0].offers,
-			"roster": state.sides[0].roster, "total": state.total_units(0)})
+			"roster": state.sides[0].roster, "total": state.total_units(0),
+			"commander": state.commander.id, "warbands": state.warbands,
+			"commanders": [state.commander_for(0).id, state.commander_for(1).id],
+			"bond": state.bond.id if state.bond else "", "groups": {}})
+		for id in state.cards:
+			snapshot.groups[id] = state.cards[id].group_size
 		if simulation:
 			snapshot["tick"] = simulation.tick
 	JavaScriptBridge.eval("window.vtuberEraQA = %s;" % JSON.stringify(snapshot))
