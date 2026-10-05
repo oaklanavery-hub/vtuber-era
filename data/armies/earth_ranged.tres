@@ -13,8 +13,8 @@ projectile_speed = 240.0
 [resource]
 script = ExtResource("1")
 id = "earth_ranged"
-display_name = "Runestone Marksmen"
-short_name = "Runestone"
+display_name = "Wood Archers"
+short_name = "Wood Archer"
 set_id = "earth"
 role = "ranged"
 group_size = 2

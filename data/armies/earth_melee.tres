@@ -13,11 +13,11 @@ attack_range = 23.0
 [resource]
 script = ExtResource("1")
 id = "earth_melee"
-display_name = "Ironroot Warriors"
-short_name = "Ironroot"
+display_name = "Armadillos"
+short_name = "Armadillo"
 set_id = "earth"
 role = "melee"
 group_size = 2
-description = "Durable bruisers who strike hard with heavy runed hammers."
+description = "Durable, shell-plated armadillos who strike hard in close combat."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

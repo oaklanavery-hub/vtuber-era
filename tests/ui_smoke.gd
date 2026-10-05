@@ -41,6 +41,8 @@ func _run() -> void:
 	check(ui.state.bond==null and ui.state.commander.id=="earth_commander", "mixed cards work under independent commander")
 	check(ui.state.commander_for(1).id=="water_commander" and ui.state.warband_for(1)==GameCatalog.WATER_IDS, "rival selector supplies independent opposing realm")
 	check(ui.screen=="battle" and ui.offer_buttons.size()==3, "three draft offers rendered")
+	check(ui.battlefield.position == Vector2(20,64) and CombatSimulation.ARENA_SIZE == Vector2(600,202), "compact HUD leaves a larger battlefield")
+	check(ui.offer_buttons[0].size.y == 64 and ui.spell_button.size.y <= 36 and ui.battle_button.size.y <= 22, "battle controls retain their compact sizes")
 	var before: String = JSON.stringify(ui.state.sides[0].offers)
 	ui.prepare_spell()
 	check(ui.state.sides[0].points==2 and ui.state.sides[0].spell, "spell UI spends one point")
@@ -50,6 +52,9 @@ func _run() -> void:
 	check(ui.state.total_units(0)>0, "UI summons real persistent armies")
 	ui.begin_battle()
 	check(ui.simulation!=null and ui.state.phase=="combat", "UI launches real combat")
+	check(ui.battlefield.preview_units.size() == ui.simulation.units.size(), "all preview creatures are present at combat start")
+	for index in range(ui.simulation.units.size()):
+		check(ui.battlefield.preview_units[index].position == ui.simulation.units[index].position, "preview and real spawn positions match")
 	# Resolve the same simulation synchronously, then invoke its result flow.
 	while not ui.simulation.finished and ui.simulation.tick<4500:
 		ui.simulation.step()

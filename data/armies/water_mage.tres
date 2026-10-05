@@ -17,8 +17,8 @@ slow_duration = 2.0
 [resource]
 script = ExtResource("1")
 id = "water_mage"
-display_name = "Tidecallers"
-short_name = "Tidecallers"
+display_name = "Water Wizards"
+short_name = "Water Wizard"
 set_id = "water"
 role = "mage"
 group_size = 2

@@ -13,11 +13,11 @@ attack_range = 23.0
 [resource]
 script = ExtResource("1")
 id = "fire_tank"
-display_name = "Cinderwall Guardians"
-short_name = "Cinderwall"
+display_name = "Magma Golems"
+short_name = "Magma Golem"
 set_id = "fire"
 role = "tank"
 group_size = 1
-description = "A sturdy guardian to absorb attacks and protect allies."
+description = "Heavy basalt golems with molten cores. Absorb attacks and protect allies."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

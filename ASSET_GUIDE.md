@@ -8,7 +8,7 @@ sample recordings, models, fonts or other source media.
 
 | Asset | Format / location | Source |
 |---|---|---|
-| Twelve chibi unit atlases | `assets/units/*.svg`, 192×32; six 32×32 frames | Original code-native pixel designs |
+| Twelve animated creature-army atlases | `assets/units/*.svg`, 192×32; six 32×32 frames | Original code-native designs in `tools/army_sprites.py` |
 | Three Commander portraits | `assets/portraits/*_commander.svg`, 96×96 | Original pixel designs |
 | Fire crest / app icon | `assets/icon.svg`, 32×32 | Original pixel design |
 | Woodland, cottages, stream, lanterns, moss ruins, flowers, bunting | `scenes/world.gd` | Original Node2D drawing |
@@ -21,8 +21,13 @@ copyrighted game assets or specific character designs were copied. The project
 owner has not approved an open-source licence for original assets or code.
 
 Fire uses honey/coral/orange; Water turquoise, cornflower, seafoam, pearl and
-lavender; Earth moss, sage, chestnut, ochre, stone grey and bronze. Tide staffs,
-coral shields, runed hammers and a wooden trebuchet distinguish new silhouettes.
+lavender; Earth moss, sage, chestnut, ochre, stone grey and bronze. The armies are
+Fire Lizards, Fire Imps, Magma Golems, Red Ninjas, Water Wizards, Ice Golems,
+Water Slimes, Snowmen, Trees, Armadillos, Wood Archers and Wooden Siege.
+Tails, horns, molten cracks, masks, ice facets, squashing slime, snowballs,
+branches, segmented shells, bows and catapult wheels distinguish their silhouettes.
+Commander portraits are unchanged. Battle sprites render at 24×24 inside solid
+24×24 footprints; the source atlases remain six 32×32 frames.
 
 Rebuild the supplied originals with `python3 tools/generate_assets.py`.
 This deliberately overwrites generated sprite/audio files and their initial

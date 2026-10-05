@@ -1,4 +1,48 @@
-# Phase 2 validation — 5 October 2026
+# Creature-army and collision validation — 5 October 2026
+
+## Creature update
+
+All twelve army IDs, base stats, roles, effects and saved loadouts are preserved.
+Their names and original six-frame sprites now match the requested creature
+appearances. Commander portraits are unchanged. The 600×202 arena has about
+52% more area than the old 560×142; battle cards shrink from 96px to 64px tall.
+
+- Rules/economy/combat runner: **932 checks; 0 failures**.
+- Elemental runner: **15,800 checks; 0 failures**, including 33 full matches
+  and deterministic replay across pure and mixed warbands.
+- Permanent collision/formation runner: **74,855 checks; 0 failures**.
+- Native UI smoke: **0 failures**.
+
+Collision coverage includes maximum 144-unit crowds, mixed duplicate-role armies,
+unique preview/spawn positions, mirrored formations, in-bounds motion, swept-body
+collision on both teams, interpolation without clipping, speed limits, detours
+around allied and hostile blockers, arena-edge escape, pursuit into attack range,
+functional melee contact and fixed-tick replay. No collision toggle or temporary
+spawn-only bypass exists. Completely blocked units wait for a safe lane rather
+than passing through another body.
+
+The final release WebAssembly/WebGL export passed four complete browser matches,
+saved-settings/loadout reloads, real spells and draft actions, round Hearts,
+results and Rematch. Each scenario checked non-overlapping previews and live
+combat positions on both teams throughout the match, with zero engine,
+JavaScript or HTTP errors.
+
+| Player | Rival | Rounds | Reinforcements | Promotions |
+|---|---|---:|---:|---:|
+| Fire | Fire | 5 | 4 | 4 |
+| Water | Earth | 5 | 6 | 4 |
+| Earth | Water | 5 | 3 | 3 |
+| Mixed | Fire | 7 | 2 | 6 |
+
+Traces are in `docs/qa/creature-browser-*.json`. Visually inspected screenshots
+show all twelve creature designs, the compact header/cards and larger arena at
+1280×720 and 1000×720. Current presentation examples are
+`docs/screenshots/creature-battle.png` and `creature-warband.png`.
+
+The earlier Phase 2 evidence below is historical. Its balance sample predates
+solid collision and must not be interpreted as current movement-system win rates.
+
+# Previous Phase 2 validation — historical
 
 ## Release configuration
 

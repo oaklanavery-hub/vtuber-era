@@ -4,7 +4,11 @@ A cozy storybook drafting auto-battler at the Convergence Festival. Choose a
 Fire, Water or Earth Commander and four unique armies from twelve cards. Phase 2
 adds mixed warbands, healing, shields, Slow, lifesteal and siege splash.
 
-![Phase 2 browser gameplay](docs/screenshots/phase2.png)
+The creature-army update adds twelve distinct animated designs, permanent solid
+unit collision, side-stepping around blocked approaches and a compact battle HUD.
+The battlefield is now 600×202, about 52% more area than the previous 560×142.
+
+![Creature armies and permanent collision](docs/screenshots/creature-battle.png)
 
 **Play:** [Launch VTuber Era](https://oaklanavery-hub.github.io/vtuber-era/)
 **Source:** [oaklanavery-hub/vtuber-era](https://github.com/oaklanavery-hub/vtuber-era)
@@ -54,6 +58,7 @@ Run from the project directory with `godot` pointing to Godot 4.5:
 godot --headless --path . --editor --import --quit
 godot --headless --path . --script res://tests/run_tests.gd
 godot --headless --path . --script res://tests/elemental_tests.gd
+godot --headless --path . --script res://tests/formation_tests.gd
 godot --headless --path . --script res://tests/ui_smoke.gd
 ```
 
@@ -63,6 +68,9 @@ The elemental runner checks all Commanders, mixed loadouts, shields, healing,
 lifesteal, Slow, splash and complete deterministic matches across all nine realm
 pairings. UI smoke exercises selection, real drafting, combat, results and Rematch.
 All runners exit non-zero on failure. See `QA_REPORT.md` for release evidence.
+The formation runner covers 144-unit crowds, duplicate-role mixed spawns, body
+collision throughout movement and interpolation, allied/hostile detours, melee
+contact, range-based pursuit, original stats and deterministic movement replay.
 
 Optional balance sampling runs 72 full AI matches:
 
@@ -100,7 +108,7 @@ account, CDN, remote asset service or JavaScript game framework is needed.
 ## GitHub Pages
 
 `.github/workflows/deploy-pages.yml` installs the exact engine/templates,
-verifies official SHA-512 checksums, imports, runs all three correctness runners,
+verifies official SHA-512 checksums, imports, runs all four correctness runners,
 exports, checks required files, includes notices and `.nojekyll`, then deploys
 through official Pages actions. Main pushes and manual dispatch trigger it.
 The public game uses the existing `/vtuber-era/` project path.

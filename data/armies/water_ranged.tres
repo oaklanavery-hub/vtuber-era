@@ -13,11 +13,11 @@ projectile_speed = 280.0
 [resource]
 script = ExtResource("1")
 id = "water_ranged"
-display_name = "Moonwater Rangers"
-short_name = "Moonwater"
+display_name = "Snowmen"
+short_name = "Snowman"
 set_id = "water"
 role = "ranged"
 group_size = 3
-description = "Long-range archers who keep a safe distance behind allies."
+description = "Snowmen with long-range snowball attacks. Keep them safe behind allies."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

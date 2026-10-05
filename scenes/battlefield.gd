@@ -6,6 +6,13 @@ var interpolation: float = 0.0
 var reduced_effects: bool = false
 var clock: float = 0.0
 var sparks: Array = []
+var preview_units: Array = []
+
+func rebuild_preview() -> void:
+	preview_units.clear()
+	if state:
+		for side in range(2):
+			preview_units.append_array(CombatSimulation.spawn_layout(state, side))
 
 func _process(delta: float) -> void:
 	clock += delta
@@ -33,10 +40,10 @@ func _draw_unit(texture: Texture2D, location: Vector2, frame: int, side: int, ra
 	# Mirror around the unit's actual center, so its portrait, HP and position
 	# remain aligned. Negative destination widths alone offset Godot regions.
 	draw_set_transform(location, 0.0, Vector2(-1 if side==1 else 1, 1))
-	draw_texture_rect_region(texture, Rect2(-16, -24, 32, 32), Rect2(frame*32, 0, 32, 32), tint)
+	draw_texture_rect_region(texture, Rect2(-12, -18, 24, 24), Rect2(frame*32, 0, 32, 32), tint)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for star in range(rank_value-1):
-		draw_rect(Rect2(location.x-4+star*6, location.y-29, 4, 3), Color("e8ba61"))
+		draw_rect(Rect2(location.x-4+star*6, location.y-25, 4, 2), Color("e8ba61"))
 
 func _draw() -> void:
 	if simulation:
@@ -50,33 +57,29 @@ func _draw() -> void:
 				frame = 0
 			if simulation.tick-int(unit.attack_at) < 4 and not reduced_effects:
 				frame = 3
-			draw_rect(Rect2(location.x-9, location.y+5, 18, 3), Color("91a471"))
+			draw_rect(Rect2(location.x-8, location.y+5, 16, 2), Color("91a471"))
 			_draw_unit(state.cards[unit.card_id].sprite, location, frame, unit.side, unit.rank, simulation.tick-int(unit.hit_at)<3)
 			var color := Color("659789") if unit.side == 0 else Color("c57857")
-			draw_rect(Rect2(location.x-11, location.y-25, 22, 3), Color("51372f"))
-			draw_rect(Rect2(location.x-10, location.y-24, 20*unit.hp/unit.max_hp, 1), color)
+			draw_rect(Rect2(location.x-10, location.y-20, 20, 3), Color("51372f"))
+			draw_rect(Rect2(location.x-9, location.y-19, 18*unit.hp/unit.max_hp, 1), color)
 			if int(unit.burn_until) >= simulation.tick and unit.burn_until > 0:
-				draw_rect(Rect2(location.x+10, location.y-20, 3, 5), Color("d57346"))
-				draw_rect(Rect2(location.x+11, location.y-19, 1, 3), Color("f9e4b5"))
+				draw_rect(Rect2(location.x+9, location.y-16, 2, 4), Color("d57346"))
+				draw_rect(Rect2(location.x+10, location.y-15, 1, 2), Color("f9e4b5"))
 			if unit.shield > 0.0:
-				draw_rect(Rect2(location.x-11, location.y-28, 22, 2), Color("8fc6cb"))
+				draw_rect(Rect2(location.x-10, location.y-23, 20, 2), Color("8fc6cb"))
 			if unit.slow_until > simulation.tick:
-				draw_rect(Rect2(location.x+10, location.y-12, 3, 3), Color("659fbb"))
+				draw_rect(Rect2(location.x+9, location.y-9, 2, 2), Color("659fbb"))
 			if simulation.tick-int(unit.heal_at) < 5 and not reduced_effects:
-				draw_rect(Rect2(location.x-14, location.y-15, 5, 1), Color("7dba9d"))
-				draw_rect(Rect2(location.x-12, location.y-17, 1, 5), Color("7dba9d"))
+				draw_rect(Rect2(location.x-12, location.y-12, 5, 1), Color("7dba9d"))
+				draw_rect(Rect2(location.x-10, location.y-14, 1, 5), Color("7dba9d"))
 		for projectile in simulation.projectiles:
 			var card: ArmyCardData = state.cards[projectile.card_id]
 			var size := Vector2(6, 6) if card.role == "siege" else Vector2(4, 4) if card.role == "mage" else Vector2(6, 2)
 			draw_rect(Rect2(projectile.position-size/2, size), GameCatalog.realm_color(card.set_id))
 			draw_rect(Rect2(projectile.position, Vector2(2, 2)), Color("f9e4b5"))
 	elif state:
-		for side in range(2):
-			for card_id in state.warband_for(side):
-				var army: Dictionary = state.sides[side].roster[card_id]
-				for index in range(int(army.count)):
-					var location: Vector2 = CombatSimulation.formation(side, state.cards[card_id].role, index)
-					_draw_unit(state.cards[card_id].sprite, location, 0 if reduced_effects else int(clock*3+index)%6, side, army.rank)
+		for entry in preview_units:
+			_draw_unit(state.cards[entry.card_id].sprite, entry.position, 0 if reduced_effects else int(clock*3+entry.index)%6, entry.side, entry.rank)
 	for spark in sparks:
 		for index in range(5):
 			var offset := Vector2(sin(float(index)*2.4)*spark.age*21, -spark.age*25+cos(float(index))*7)

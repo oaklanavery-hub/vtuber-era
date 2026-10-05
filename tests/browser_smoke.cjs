@@ -130,13 +130,16 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await click(509, 336);
   await waitScreen('battle');
   const initial = await snapshot();
+  assert.equal(initial.release, 'creature-armies-solid-collision');
+  assert.deepEqual(initial.arena, [600, 202]);
+  assert.equal(initial.body_size, 24);
   assert.equal(initial.commander, `${leaderRealm}_commander`);
   assert.equal(initial.commanders[1], `${rival}_commander`);
   assert.deepEqual(initial.warbands[0], chosenCards);
   assert.equal(initial.bond, scenario === 'mixed' ? '' : ({ fire: 'wildfire', water: 'tidal_recovery', earth: 'earthen_guard' })[scenario]);
   console.log(`PASS: ${scenario} warband and ${leaderRealm} commander enter a real match against ${rival}.`);
   const initialOffers = JSON.stringify(initial.offers);
-  await click(540, 280);
+  await click(540, 307);
   let now = await snapshot();
   assert.equal(now.points, 2);
   assert.equal(now.spell, true);
@@ -169,7 +172,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
         if (!choices.length) break;
         const { choice, index } = choices[0];
         const before = now;
-        await click(87 + index * 145, 302);
+        await click(87 + index * 145, 322);
         if (choice.kind === 'reinforce') {
           await page.waitForFunction(() => window.vtuberEraQA?.modal === 'reinforce');
           await screenshot('reinforcement-confirmation');
@@ -191,6 +194,14 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
         actions.push({ round: now.round, choice });
       }
       await screenshot(`command-round-${now.round}`);
+      assert.equal(now.preview.length, now.total + now.preview.filter(unit => unit[0] === 1).length);
+      for (let a = 0; a < now.preview.length; a++) {
+        for (let b = a + 1; b < now.preview.length; b++) {
+          const first = now.preview[a], second = now.preview[b];
+          assert(Math.abs(first[2] - second[2]) >= 24 || Math.abs(first[3] - second[3]) >= 24,
+            'all preview/spawn creature footprints must be separate');
+        }
+      }
       if (now.round === 1) {
         await page.setViewportSize({ width: 1000, height: 720 });
         await page.waitForTimeout(100);
@@ -203,7 +214,18 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
       await page.waitForFunction(() => window.vtuberEraQA?.phase === 'combat');
       await page.waitForTimeout(700);
       await screenshot(`combat-round-${now.round}`);
-      await page.waitForFunction(() => ['round_result', 'finished'].includes(window.vtuberEraQA?.phase), null, { timeout: 90000 });
+      await page.waitForFunction(() => {
+        const state = window.vtuberEraQA;
+        const bodies = state?.combat_positions || [];
+        for (let a = 0; a < bodies.length; a++) {
+          for (let b = a + 1; b < bodies.length; b++) {
+            if (Math.abs(bodies[a][2] - bodies[b][2]) < 23.999 && Math.abs(bodies[a][3] - bodies[b][3]) < 23.999) {
+              throw new Error(`Solid bodies overlapped: ${bodies[a][0]} / ${bodies[b][0]}`);
+            }
+          }
+        }
+        return ['round_result', 'finished'].includes(state?.phase);
+      }, null, { timeout: 90000 });
       now = await snapshot();
       const heartLoss = hearts[0] + hearts[1] - now.hearts[0] - now.hearts[1];
       assert(heartLoss === 0 || heartLoss === 1, 'a result consumes at most one Heart');
@@ -241,7 +263,8 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   const report = { status: 'passed', scenario, rival, commander: `${leaderRealm}_commander`, warband: chosenCards,
     browser: await browser.version(), screens: [...visited],
     seed: initial.seed, rounds, actions, stats, errors, headers: 'ordinary HTTP; no cross-origin isolation',
-    testedViewport: ['1280x720', '1000x720'], settingsPersisted: true, rematchPassed: true };
+    testedViewport: ['1280x720', '1000x720'], arena: initial.arena, bodySize: initial.body_size,
+    spawnCollisionPassed: true, combatCollisionPassed: true, settingsPersisted: true, rematchPassed: true };
   fs.writeFileSync(path.join(output, 'report.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
 })().catch(async error => {

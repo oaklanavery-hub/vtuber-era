@@ -125,7 +125,7 @@ func _shields() -> void:
 	var guard: Dictionary = unit(hit,"earth_tank")
 	var attacker: Dictionary = unit(hit,"fire_melee",1)
 	guard.position = Vector2(200,70)
-	attacker.position = Vector2(220,70)
+	attacker.position = Vector2(224,70)
 	attacker.cooldown = 0
 	attacker.damage = 10.0
 	var before: float = guard.shield
@@ -173,7 +173,7 @@ func _slow_and_splash() -> void:
 	var mage: Dictionary = unit(slow,"water_mage")
 	var target: Dictionary = unit(slow,"fire_tank",1)
 	mage.position = Vector2(200,70)
-	target.position = Vector2(220,70)
+	target.position = Vector2(224,70)
 	slow.cards.fire_tank.stats.move_speed = 27.0
 	mage.cooldown = 0
 	for index in range(4):
@@ -195,7 +195,7 @@ func _slow_and_splash() -> void:
 	for value in siege.units:
 		if value.side == 1:
 			value.shield = 0.0
-			value.position = Vector2(300+clustered.size()*10,70) if value.role != "ranged" else Vector2(350,126)
+			value.position = [Vector2(300,70),Vector2(300,94),Vector2(300,46),Vector2(350,142)][clustered.size()]
 			clustered.append(value)
 	expect(siege._target(launcher) == clustered[0].id, "siege targets a reachable dense cluster")
 	launcher.cooldown = 0
@@ -216,7 +216,7 @@ func _lifesteal() -> void:
 	var blade: Dictionary = unit(life,"water_melee")
 	var target: Dictionary = unit(life,"fire_tank",1)
 	blade.position = Vector2(200,70)
-	target.position = Vector2(220,70)
+	target.position = Vector2(224,70)
 	blade.hp = blade.max_hp*.5
 	blade.damage = 1000.0
 	blade.cooldown = 0
@@ -239,7 +239,7 @@ func _lifesteal() -> void:
 	blade = unit(tidal,"water_melee")
 	target = unit(tidal,"fire_tank",1)
 	blade.position = Vector2(200,70)
-	target.position = Vector2(220,70)
+	target.position = Vector2(224,70)
 	blade.hp = blade.max_hp*.49
 	blade.damage = 100.0
 	blade.cooldown = 0

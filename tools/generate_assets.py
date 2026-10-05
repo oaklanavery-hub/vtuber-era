@@ -7,6 +7,7 @@ from pathlib import Path
 import math
 import struct
 import wave
+from army_sprites import army_figure
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTLINE = '#51372f'
@@ -170,29 +171,29 @@ def svg(w, h, inner):
 
 
 def art():
-    names = [('fire_archer', 'Emberbow Rangers', 'Emberbow', 'ranged', 3, 34, 9, 1.0, 34, 138,
-              'Quick archers. Protect them with a frontline.'),
-             ('fire_melee', 'Ashblade Warriors', 'Ashblade', 'melee', 3, 64, 8, 1.05, 39, 20,
-              'Brave fighters who rush into the festival contest.'),
-             ('fire_tank', 'Cinderwall Guardians', 'Cinderwall', 'tank', 1, 220, 7, .65, 27, 23,
-              'A sturdy guardian to absorb attacks and protect allies.'),
-             ('fire_assassin', 'Flameveil Stalkers', 'Flameveil', 'assassin', 1, 60, 13, 1.55, 62, 19,
+    names = [('fire_archer', 'Fire Lizards', 'Fire Lizard', 'ranged', 3, 34, 9, 1.0, 34, 138,
+              'Long-tailed fire lizards with quick ranged attacks. Protect them with a frontline.'),
+             ('fire_melee', 'Fire Imps', 'Fire Imp', 'melee', 3, 64, 8, 1.05, 39, 20,
+              'Horned, clawed imps who rush into close combat.'),
+             ('fire_tank', 'Magma Golems', 'Magma Golem', 'tank', 1, 220, 7, .65, 27, 23,
+              'Heavy basalt golems with molten cores. Absorb attacks and protect allies.'),
+             ('fire_assassin', 'Red Ninjas', 'Red Ninja', 'assassin', 1, 60, 13, 1.55, 62, 19,
               'Fast flankers who hunt archers, mages and siege behind the frontline.'),
-             ('water_mage', 'Tidecallers', 'Tidecallers', 'mage', 2, 34, 6, .60, 30, 146,
+             ('water_mage', 'Water Wizards', 'Water Wizard', 'mage', 2, 34, 6, .60, 30, 146,
               'Splash spells slow enemy movement by 25% for 2s. Slow never stacks.'),
-             ('water_tank', 'Coral Wardens', 'Coral Wardens', 'tank', 1, 180, 6, .55, 24, 23,
+             ('water_tank', 'Ice Golems', 'Ice Golem', 'tank', 1, 180, 6, .55, 24, 23,
               'At battle start, shield nearby allies for 8% of their max HP for 8s.'),
-             ('water_melee', 'Waveblade Fighters', 'Waveblade', 'melee', 3, 52, 6, .90, 35, 21,
+             ('water_melee', 'Water Slimes', 'Water Slime', 'melee', 3, 52, 6, .90, 35, 21,
               'Heal for 15% of HP damage dealt, capped at 2% max HP per second.'),
-             ('water_ranged', 'Moonwater Rangers', 'Moonwater', 'ranged', 3, 34, 7, 1.0, 32, 154,
-              'Long-range archers who keep a safe distance behind allies.'),
-             ('earth_tank', 'Stoneguard Sentinels', 'Stoneguard', 'tank', 1, 250, 6, .55, 22, 25,
-              'The toughest single guardian. Holds the frontline with a great stone shield.'),
-             ('earth_melee', 'Ironroot Warriors', 'Ironroot', 'melee', 2, 80, 10, .75, 32, 23,
-              'Durable bruisers who strike hard with heavy runed hammers.'),
-             ('earth_ranged', 'Runestone Marksmen', 'Runestone', 'ranged', 2, 44, 13, .65, 28, 150,
+             ('water_ranged', 'Snowmen', 'Snowman', 'ranged', 3, 34, 7, 1.0, 32, 154,
+              'Snowmen with long-range snowball attacks. Keep them safe behind allies.'),
+             ('earth_tank', 'Trees', 'Tree', 'tank', 1, 250, 6, .55, 22, 25,
+              'Walking trees with tough bark and branch arms. Hold the frontline.'),
+             ('earth_melee', 'Armadillos', 'Armadillo', 'melee', 2, 80, 10, .75, 32, 23,
+              'Durable, shell-plated armadillos who strike hard in close combat.'),
+             ('earth_ranged', 'Wood Archers', 'Wood Archer', 'ranged', 2, 44, 13, .65, 28, 150,
               'Steady marksmen with slow, heavy ranged attacks.'),
-             ('earth_siege', 'Runewood Trebuchet', 'Runewood', 'siege', 1, 75, 20, .20, 17, 220,
+             ('earth_siege', 'Wooden Siege', 'Wooden Siege', 'siege', 1, 75, 20, .20, 17, 220,
               'Slow, long-range stones hit enemy clusters. Small group size; protect it.')]
     extras = {
         'water_mage': dict(projectile_speed=220.0, splash_radius=22.0, splash_falloff=.50, slow_fraction=.25, slow_duration=2.0),
@@ -204,7 +205,7 @@ def art():
     }
     for ident, name, short, role, group, hp, damage, aps, speed, reach, description in names:
         realm = ident.split('_')[0]
-        content = ''.join(f'<g transform="translate({frame*32} 0)">{figure(role, frame, realm)}</g>' for frame in range(6))
+        content = ''.join(f'<g transform="translate({frame*32} 0)">{army_figure(ident, frame)}</g>' for frame in range(6))
         (ROOT / f'assets/units/{ident}.svg').write_text(svg(192, 32, content))
         resource = f'''[gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
 [ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]

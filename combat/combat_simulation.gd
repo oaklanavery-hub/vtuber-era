@@ -23,6 +23,12 @@ var next_projectile_id: int = 0
 var target_clusters: Dictionary = {}
 var reading_movement_snapshot: bool = false
 const BACKLINE := ["ranged", "mage", "siege"]
+const ARENA_SIZE := Vector2(600, 202)
+const BODY_SIZE: float = 24.0
+const DETOUR_COMMITMENT: float = 1.4
+const MIN_POSITION := Vector2(16, 28)
+const MAX_POSITION := Vector2(584, 180)
+const SPAWN_ROWS := [100.0, 76.0, 124.0, 52.0, 148.0, 28.0, 172.0]
 
 func _init(state) -> void:
 	config = state.config
@@ -35,23 +41,24 @@ func _init(state) -> void:
 	for side in range(2):
 		var leader: CommanderData = commanders[side]
 		spell_prepared[side] = state.sides[side].spell
-		for card_id in state.warband_for(side):
+		for entry in spawn_layout(state, side):
+			var card_id: String = entry.card_id
 			var army: Dictionary = state.sides[side].roster[card_id]
 			var card: ArmyCardData = cards[card_id]
 			var hp_bonus: float = leader.max_hp_bonus + (leader.matching_max_hp_bonus if card.set_id == leader.set_id else 0.0)
-			for index in range(int(army.count)):
-				var hp: float = card.stats.max_hp * config.rank_hp[int(army.rank)-1] * (1.0 + hp_bonus)
-				var location: Vector2 = formation(side, card.role, index)
-				units.append({"id":units.size(), "side":side, "card_id":card_id,
-					"role":card.role, "rank":army.rank, "hp":hp, "max_hp":hp,
-					"damage":card.stats.damage * config.rank_damage[int(army.rank)-1] * (1.0 + leader.attack_damage_bonus),
-					"position":location, "previous_position":location, "cooldown":0,
-					"target":-1, "burn_until":0, "burn_next":0, "burn_dps":0.0, "first_attack":true,
-					"slow_until":0, "slow_fraction":0.0, "shield":0.0, "shield_until":0,
-					"recovery_used":false, "recovery_next":0, "recovery_remaining":0,
-					"lifesteal_window":0, "lifesteal_healed":0.0,
-					"hit_at":-100, "heal_at":-100, "attack_at":-100, "flanking":card.role=="assassin"})
-				initial_hp[side] += hp
+			var hp: float = card.stats.max_hp * config.rank_hp[int(army.rank)-1] * (1.0 + hp_bonus)
+			var location: Vector2 = entry.position
+			units.append({"id":units.size(), "side":side, "card_id":card_id,
+				"role":card.role, "rank":army.rank, "hp":hp, "max_hp":hp,
+				"damage":card.stats.damage * config.rank_damage[int(army.rank)-1] * (1.0 + leader.attack_damage_bonus),
+				"position":location, "previous_position":location, "cooldown":0,
+				"target":-1, "burn_until":0, "burn_next":0, "burn_dps":0.0, "first_attack":true,
+				"slow_until":0, "slow_fraction":0.0, "shield":0.0, "shield_until":0,
+				"recovery_used":false, "recovery_next":0, "recovery_remaining":0,
+				"lifesteal_window":0, "lifesteal_healed":0.0,
+				"navigation_bias":(-1.0 if location.y <= 100.0 else 1.0) * (1.0 if side == 0 else -1.0),
+				"hit_at":-100, "heal_at":-100, "attack_at":-100, "flanking":card.role=="assassin"})
+			initial_hp[side] += hp
 	# Every recipient uses its own commander affinity; nearby shields do not stack.
 	for unit in units:
 		var realm: SetBonusData = bonds[int(unit.side)]
@@ -66,13 +73,58 @@ func _init(state) -> void:
 				_grant_shield(ally, ally.max_hp * stats.ally_shield_fraction, int(round(stats.ally_shield_duration * config.ticks_per_second)))
 
 static func formation(side: int, role: String, index: int) -> Vector2:
-	var x: float = {"tank":209.0, "melee":174.0, "ranged":104.0, "mage":92.0, "siege":60.0, "assassin":151.0}[role]
-	var y: float = [70.0, 51.0, 89.0, 32.0, 108.0, 17.0, 125.0][index%7]
-	x -= float(index/7)*22.0
+	var x: float = {"tank":244.0, "melee":220.0, "ranged":100.0, "mage":76.0, "siege":52.0, "assassin":196.0}[role]
+	var y: float = SPAWN_ROWS[index%7]
+	x -= float(index/7)*BODY_SIZE
 	if role == "assassin":
-		y = 16.0 if index%2 == 0 else 126.0
-		x -= float(index/2)*13.0
-	return Vector2(x if side == 0 else 560.0-x, y)
+		y = 28.0 if index%2 == 0 else 172.0
+		x -= float(index/2)*BODY_SIZE
+	return Vector2(x if side == 0 else ARENA_SIZE.x-x, y)
+
+static func spawn_layout(state, side: int) -> Array:
+	# One shared allocator for preview and combat. Mixed armies never reuse a
+	# role's positions. The 77 slots accommodate the 72-unit per-side cap.
+	var entries: Array = []
+	var role_counts: Dictionary = {}
+	var priority := {"tank":0, "melee":1, "assassin":2, "ranged":3, "mage":4, "siege":5}
+	for card_id in state.warband_for(side):
+		var army: Dictionary = state.sides[side].roster[card_id]
+		var role: String = state.cards[card_id].role
+		for index in range(int(army.count)):
+			var role_index: int = int(role_counts.get(role, 0))
+			role_counts[role] = role_index+1
+			entries.append({"card_id":card_id, "index":index, "rank":army.rank,
+				"order":entries.size(), "priority":priority[role],
+				"preferred":formation(0, role, role_index), "position":Vector2.ZERO, "side":side})
+	var placement: Array = entries.duplicate()
+	placement.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return a.priority < b.priority if a.priority != b.priority else a.order < b.order)
+	var slots: Array[Vector2] = []
+	for column in range(11):
+		for row in SPAWN_ROWS:
+			slots.append(Vector2(28.0+column*BODY_SIZE, row))
+	for entry in placement:
+		var best: int = 0
+		var best_distance: float = INF
+		for index in range(slots.size()):
+			var distance: float = slots[index].distance_squared_to(entry.preferred)
+			if distance < best_distance:
+				best = index
+				best_distance = distance
+		var position: Vector2 = slots[best]
+		slots.remove_at(best)
+		entry.position = Vector2(position.x if side == 0 else ARENA_SIZE.x-position.x, position.y)
+	return entries
+
+func in_attack_range(unit: Dictionary, target: Dictionary) -> bool:
+	var reach: float = cards[unit.card_id].stats.attack_range
+	var delta: Vector2 = (unit.position-target.position).abs()
+	if unit.role in BACKLINE:
+		return delta.length_squared() <= reach*reach
+	# Melee attacks meet at the body edges. A short-range attacker can make
+	# contact with a solid enemy without having to enter the enemy's footprint.
+	var gap := Vector2(maxf(0.0, delta.x-BODY_SIZE), maxf(0.0, delta.y-BODY_SIZE))
+	return gap.length() <= maxf(0.0, reach-BODY_SIZE)+0.06
 
 func alive_count(side: int) -> int:
 	var count := 0
@@ -188,28 +240,122 @@ func _move(unit: Dictionary, dt: float) -> Vector2:
 	if unit.target < 0:
 		return next_position
 	var target: Dictionary = units[int(unit.target)]
-	var stats: UnitStats = cards[unit.card_id].stats
 	var destination: Vector2 = target.position
 	if unit.flanking:
-		var flank_y: float = 16.0 if int(unit.id)%2 == 0 else 126.0
-		var waypoint := Vector2(334.0 if unit.side == 0 else 226.0, flank_y)
-		if unit.position.distance_to(waypoint) < 12.0 or (unit.side == 0 and unit.position.x >= 326.0) or (unit.side == 1 and unit.position.x <= 234.0):
+		var flank_y: float = 28.0 if int(unit.id)%2 == 0 else 172.0
+		var waypoint := Vector2(354.0 if unit.side == 0 else 246.0, flank_y)
+		if unit.position.distance_to(waypoint) < 12.0 or (unit.side == 0 and unit.position.x >= 346.0) or (unit.side == 1 and unit.position.x <= 254.0):
 			unit.flanking = false
 		else:
 			destination = waypoint
-	if unit.position.distance_to(target.position) > stats.attack_range or unit.flanking:
+	if not in_attack_range(unit, target) or unit.flanking:
 		next_position = unit.position.move_toward(destination, move_speed(unit)*dt)
-	var separation := Vector2.ZERO
-	for ally in units:
-		if ally.id == unit.id or ally.side != unit.side or ally.hp <= 0.0:
+	return next_position
+
+func _clip_motion(origin: Vector2, motion: Vector2, neighbors: Array, reservations: Array, own_id: int) -> Vector2:
+	var limit: float = 1.0
+	for axis in range(2):
+		if motion[axis] > 0.000001:
+			limit = minf(limit, (MAX_POSITION[axis]-origin[axis])/motion[axis])
+		elif motion[axis] < -0.000001:
+			limit = minf(limit, (MIN_POSITION[axis]-origin[axis])/motion[axis])
+	for id in neighbors:
+		if id == own_id:
 			continue
-		var offset: Vector2 = unit.position-ally.position
-		var distance: float = offset.length()
-		if distance < 12.0:
-			var direction: Vector2 = offset/distance if distance > 0.001 else Vector2(0, -1 if unit.id < ally.id else 1)
-			separation += direction*(12.0-distance)*dt*3.0
-	next_position += separation
-	return Vector2(clampf(next_position.x, 12.0, 548.0), clampf(next_position.y, 16.0, 126.0))
+		var obstacle: Rect2 = reservations[id]
+		# A diagonal path's conservative reservation can surround a neighbor's
+		# old corner without the actual bodies touching. That neighbor waits
+		# this tick; treating a negative ray entry as clear would let it clip.
+		if origin.x > obstacle.position.x+0.000001 and origin.x < obstacle.end.x-0.000001 and origin.y > obstacle.position.y+0.000001 and origin.y < obstacle.end.y-0.000001:
+			return Vector2.ZERO
+		var entry: float = -INF
+		var leave: float = INF
+		var possible: bool = true
+		for axis in range(2):
+			if absf(motion[axis]) < 0.000001:
+				# Exact edge contact is legal: slide along, never into, a body.
+				if origin[axis] <= obstacle.position[axis]+0.000001 or origin[axis] >= obstacle.end[axis]-0.000001:
+					possible = false
+					break
+			else:
+				var first: float = (obstacle.position[axis]-origin[axis])/motion[axis]
+				var last: float = (obstacle.end[axis]-origin[axis])/motion[axis]
+				entry = maxf(entry, minf(first, last))
+				leave = minf(leave, maxf(first, last))
+		if possible and entry <= leave and leave > 0.000001 and entry >= -0.000001:
+			limit = minf(limit, maxf(0.0, entry-0.00001))
+	return motion*clampf(limit, 0.0, 1.0)
+
+func _resolve_movements(movements: Array) -> void:
+	# Permanent swept-box collision for BOTH teams. Reservations include the
+	# entire path this tick, so interpolated sprites cannot cross one another.
+	# Rotate priority each tick; no unit/team always wins a crowded lane.
+	var grid: Dictionary = {}
+	var reservations: Array = []
+	for unit in units:
+		var location: Vector2 = unit.position
+		reservations.append(Rect2(location-Vector2.ONE*BODY_SIZE, Vector2.ONE*BODY_SIZE*2.0))
+		if unit.hp <= 0.0:
+			continue
+		var cell := Vector2i(floori(location.x/BODY_SIZE), floori(location.y/BODY_SIZE))
+		if not grid.has(cell):
+			grid[cell] = []
+		grid[cell].append(unit.id)
+	for order in range(units.size()):
+		var id: int = (order+tick)%units.size()
+		var unit: Dictionary = units[id]
+		var origin: Vector2 = unit.position
+		var desired: Vector2 = movements[id]-origin
+		if unit.hp <= 0.0 or desired.length_squared() < 0.000001:
+			continue
+		var neighbors: Array = []
+		var cell := Vector2i(floori(origin.x/BODY_SIZE), floori(origin.y/BODY_SIZE))
+		for x in range(cell.x-2, cell.x+3):
+			for y in range(cell.y-2, cell.y+3):
+				neighbors.append_array(grid.get(Vector2i(x,y), []))
+		var best: Vector2 = _clip_motion(origin, desired, neighbors, reservations, id)
+		var at_contact: bool = false
+		if unit.target >= 0 and not unit.flanking:
+			var projected: Dictionary = unit.duplicate()
+			projected.position = origin+best
+			at_contact = in_attack_range(projected, units[int(unit.target)])
+		if not at_contact and best.length_squared() < desired.length_squared()*0.95:
+			# A blocked, out-of-range unit seeks a free lane. Test both sides and
+			# allow sideways/backward steps when a direct approach is congested.
+			var direction: Vector2 = desired.normalized()
+			var best_score: float = best.length()+best.dot(direction)*0.65
+			var escape_bias: float = float(unit.navigation_bias)
+			for angle in [PI/4.0, PI/2.0, PI*3.0/4.0]:
+				for sign_value in [float(unit.navigation_bias), -float(unit.navigation_bias)]:
+					var candidate: Vector2 = _clip_motion(origin, desired.rotated(angle*sign_value), neighbors, reservations, id)
+					var score: float = candidate.length()+candidate.dot(direction)*0.65
+					if sign_value == float(unit.navigation_bias):
+						score += candidate.length()*DETOUR_COMMITMENT
+					if score > best_score+0.00001:
+						best = candidate
+						best_score = score
+						escape_bias = sign_value
+			# Axis-aligned lanes matter for square bodies: a rotated tangent
+			# may still point into a long wall. Keep a stable escape-side bias
+			# so the unit does not oscillate between two blocked approaches.
+			var vertical_bias: float = float(unit.navigation_bias)*(1.0 if unit.side == 0 else -1.0)
+			for sign_value in [vertical_bias, -vertical_bias]:
+				var candidate: Vector2 = _clip_motion(origin, Vector2(0,sign_value)*desired.length(), neighbors, reservations, id)
+				var score: float = candidate.length()+candidate.dot(direction)*0.65
+				if sign_value == vertical_bias:
+					score += candidate.length()*DETOUR_COMMITMENT
+				if score > best_score+0.00001:
+					best = candidate
+					best_score = score
+					escape_bias = sign_value*(1.0 if unit.side == 0 else -1.0)
+			if best.length_squared() >= desired.length_squared()*0.5:
+				# If the preferred lane is closed (especially at an arena edge),
+				# commit to the other escape side rather than bouncing back.
+				unit.navigation_bias = escape_bias
+		movements[id] = origin+best
+		var minimum := Vector2(minf(origin.x, movements[id].x), minf(origin.y, movements[id].y))
+		var maximum := Vector2(maxf(origin.x, movements[id].x), maxf(origin.y, movements[id].y))
+		reservations[id] = Rect2(minimum-Vector2.ONE*BODY_SIZE, maximum-minimum+Vector2.ONE*BODY_SIZE*2.0)
 
 func step() -> void:
 	if finished:
@@ -231,6 +377,7 @@ func step() -> void:
 			unit.slow_fraction = 0.0
 		movements.append(_move(unit, dt))
 	reading_movement_snapshot = false
+	_resolve_movements(movements)
 	for unit in units:
 		if unit.hp <= 0.0:
 			continue
@@ -238,7 +385,7 @@ func step() -> void:
 		if unit.target >= 0 and unit.cooldown == 0 and not unit.flanking:
 			var target: Dictionary = units[int(unit.target)]
 			var stats: UnitStats = cards[unit.card_id].stats
-			if unit.position.distance_to(target.position) <= stats.attack_range:
+			if in_attack_range(unit, target):
 				unit.attack_at = tick
 				unit.cooldown = maxi(1, int(ceil(float(config.ticks_per_second)/(stats.attacks_per_second*attack_speed(unit)))))
 				if unit.role in BACKLINE:
@@ -365,5 +512,6 @@ func signature() -> String:
 	var snapshot: Array = []
 	for unit in units:
 		snapshot.append([unit.id, unit.hp, unit.position.x, unit.position.y, unit.cooldown, unit.burn_until,
-			unit.shield, unit.slow_until, unit.recovery_used, unit.recovery_remaining, unit.lifesteal_healed])
+			unit.shield, unit.slow_until, unit.recovery_used, unit.recovery_remaining, unit.lifesteal_healed,
+			unit.navigation_bias, unit.flanking])
 	return JSON.stringify([tick, snapshot, projectiles, result]).sha256_text()

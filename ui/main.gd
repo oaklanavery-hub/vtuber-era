@@ -41,7 +41,7 @@ func _ready() -> void:
 	world = World.new()
 	add_child(world)
 	battlefield = Battlefield.new()
-	battlefield.position = Vector2(40, 79)
+	battlefield.position = Vector2(20, 64)
 	add_child(battlefield)
 	battlefield.visible = false
 	surface = Control.new()
@@ -258,85 +258,96 @@ func new_match() -> void:
 
 func _roster_text(side: int, abbreviated: bool = false) -> String:
 	var pieces: Array[String] = []
+	var abbreviations := {"fire_archer":"Liza", "fire_melee":"Imp", "fire_tank":"Magma", "fire_assassin":"Ninja",
+		"water_mage":"Wiz", "water_tank":"Ice", "water_melee":"Slime", "water_ranged":"Snow",
+		"earth_tank":"Tree", "earth_melee":"Arma", "earth_ranged":"Bow", "earth_siege":"Siege"}
 	for id in state.warband_for(side):
 		var army: Dictionary = state.sides[side].roster[id]
-		var army_name: String = state.cards[id].short_name.left(4) if abbreviated else state.cards[id].short_name
+		var army_name: String = abbreviations[id] if abbreviated else state.cards[id].short_name
 		pieces.append("%s %d%s" % [army_name, army.count, " Ⅱ" if army.rank==2 else " Ⅲ" if army.rank==3 else ""])
 	return "  ·  ".join(pieces)
 
 func show_battle() -> void:
 	_reset("battle")
-	_panel(Rect2(15, 7, 610, 60))
-	_portrait(Rect2(23, 14, 38, 38), null, state.commander_for(0))
-	_portrait(Rect2(579, 14, 38, 38), null, state.commander_for(1))
-	_label("YOU · %d units" % state.total_units(0), Rect2(71, 10, 140, 18), 10)
-	_label("%s AI · %d units" % [state.commander_for(1).set_id.to_upper(), state.total_units(1)], Rect2(433, 10, 134, 18), 10)
-	var hearts_left := _label("♥ ".repeat(state.sides[0].hearts), Rect2(71, 27, 160, 21), 16)
+	battlefield.rebuild_preview()
+	_panel(Rect2(12, 4, 616, 54))
+	_portrait(Rect2(18, 10, 30, 30), null, state.commander_for(0))
+	_portrait(Rect2(590, 10, 30, 30), null, state.commander_for(1))
+	_label("YOU · %d units" % state.total_units(0), Rect2(62, 8, 140, 15), 9)
+	_label("%s AI · %d units" % [state.commander_for(1).set_id.to_upper(), state.total_units(1)], Rect2(428, 8, 148, 15), 9)
+	var hearts_left := _label("♥ ".repeat(state.sides[0].hearts), Rect2(62, 23, 160, 18), 12)
 	hearts_left.add_theme_color_override("font_color", StoryStyle.EMBER)
-	var hearts_right := _label("♥ ".repeat(state.sides[1].hearts), Rect2(433, 27, 143, 21), 16)
+	var hearts_right := _label("♥ ".repeat(state.sides[1].hearts), Rect2(428, 23, 148, 18), 12)
 	hearts_right.add_theme_color_override("font_color", StoryStyle.EMBER)
-	_label("Round %d" % state.round_number, Rect2(234, 9, 172, 22), 15, true, true)
-	phase_label = _label("Command Phase" if state.phase=="command" else "Automatic combat", Rect2(231, 31, 178, 18), 10, true)
-	var bond_label := _label("Bond: %s" % state.bond.display_name if state.bond else "Mixed Warband", Rect2(237, 49, 166, 17), 9, true)
+	_label("Round %d" % state.round_number, Rect2(234, 7, 172, 20), 14, true, true)
+	phase_label = _label("Command Phase" if state.phase=="command" else "Automatic combat", Rect2(231, 27, 178, 14), 9, true)
+	var bond_label := _label("Bond: %s" % state.bond.display_name if state.bond else "Mixed Warband", Rect2(237, 39, 166, 14), 8, true)
 	bond_label.tooltip_text = "You: %s\nRival: %s" % [state.bond.description if state.bond else "No Realm Bond", state.bond_for(1).description if state.bond_for(1) else "No Realm Bond"]
 	bond_label.mouse_filter = Control.MOUSE_FILTER_STOP
-	var player_armies := _label(_roster_text(0, true), Rect2(20, 50, 217, 14), 8)
+	var player_armies := _label(_roster_text(0, true), Rect2(18, 39, 217, 14), 7)
 	player_armies.tooltip_text = _roster_tooltip(0)
 	player_armies.mouse_filter = Control.MOUSE_FILTER_STOP
-	var ai_armies := _label(_roster_text(1, true), Rect2(411, 50, 211, 14), 8)
+	var ai_armies := _label(_roster_text(1, true), Rect2(414, 39, 208, 14), 7)
 	ai_armies.tooltip_text = _roster_tooltip(1)
 	ai_armies.mouse_filter = Control.MOUSE_FILTER_STOP
 	runes = Runes.new()
-	runes.position = Vector2(19, 225)
+	runes.position = Vector2(19, 271)
 	runes.size = Vector2(105, 23)
+	runes.scale = Vector2(0.75, 0.75)
 	runes.available = state.sides[0].points
 	runes.capacity = state.config.command_points + (state.config.comeback_points if state.previous_loser==0 else 0)
 	runes.tooltip_text = "One rune per Command Point. The teal rune is your comeback point."
 	surface.add_child(runes)
-	_label("%d Command Points" % state.sides[0].points if state.phase=="command" else "Watch your warband", Rect2(128, 226, 225, 20), 10)
-	_button("Options", Rect2(546, 226, 75, 21), func(): settings_return="battle"; show_settings())
-	clock_label = _label("", Rect2(256, 198, 128, 18), 9, true)
+	_label("%d Command Points" % state.sides[0].points if state.phase=="command" else "Watch your warband", Rect2(108, 272, 225, 16), 9)
+	var options := _button("Options", Rect2(551, 273, 70, 18), func(): settings_return="battle"; show_settings())
+	options.add_theme_font_size_override("font_size", 9)
+	options.size = Vector2(70, 18)
+	clock_label = _label("", Rect2(256, 249, 128, 15), 8, true)
 	for index in range(3):
 		var choice: Dictionary = state.sides[0].offers[index]
 		var card: ArmyCardData = state.cards[choice.card_id]
 		var army: Dictionary = state.sides[0].roster[choice.card_id]
-		var tile := _button("", Rect2(18+index*145, 254, 138, 96), _pick.bind(index))
+		var tile := _button("", Rect2(18+index*145, 291, 138, 64), _pick.bind(index))
 		tile.name = "Offer%d" % index
 		tile.disabled = not state.can_choose(0, choice)
 		offer_buttons.append(tile)
 		var action_title: String = {"summon": "SUMMON ARMY", "reinforce": "REINFORCE", "promote": "PROMOTE"}[choice.kind]
-		_label(action_title, Rect2(8, 4, 112, 17), 8, false, false, tile)
-		_label(str(index+1), Rect2(120, 4, 12, 16), 9, true, false, tile)
-		_sprite(card, Rect2(6, 27, 32, 32), tile)
-		_label(card.short_name, Rect2(39, 25, 96, 21), 10, false, true, tile)
+		_label(action_title, Rect2(8, 3, 112, 13), 7, false, false, tile)
+		_label(str(index+1), Rect2(120, 3, 12, 13), 8, true, false, tile)
+		_sprite(card, Rect2(6, 19, 24, 24), tile)
+		_label(card.short_name, Rect2(35, 17, 99, 17), 9, false, true, tile)
 		var detail: String = "+%d %s" % [card.group_size, "units" if card.group_size>1 else "unit"]
 		if choice.kind == "reinforce":
 			detail = "%d → %d units" % [army.count, army.count*2]
 		elif choice.kind == "promote":
 			detail = "Rank %d → %d" % [army.rank, army.rank+1]
-		_label(detail, Rect2(39, 47, 96, 18), 10, false, false, tile)
-		_label("1 Command Point" if state.eligible(0, choice) else "Unit cap reached", Rect2(8, 71, 121, 17), 9, false, false, tile)
+		_label(detail, Rect2(35, 33, 99, 14), 8, false, false, tile)
+		_label("1 Command Point" if state.eligible(0, choice) else "Unit cap reached", Rect2(8, 49, 121, 13), 7, false, false, tile)
 		var seal := Seal.new()
-		seal.position = Vector2(124, 80)
+		seal.position = Vector2(124, 54)
+		seal.scale = Vector2(0.7, 0.7)
 		tile.add_child(seal)
 		tile.tooltip_text = "%s\n%s\nHP %d · damage %d · %.2f attacks/s\nOwned: %d · Rank %d · normal summons: %d\nReinforcements used: %d / 2" % [card.display_name, card.description, card.stats.max_hp, card.stats.damage, card.stats.attacks_per_second, army.count, army.rank, army.summons, army.reinforcements]
-	var spell_text := "%s\n%s\n1 Command Point" % [state.commander.spell_name, state.commander.spell_description]
+	var spell_text := "%s\nPrepare · 1 Command Point" % state.commander.spell_name
 	if state.sides[0].spell:
-		spell_text = "%s\nQueued for next battle\n%s" % [state.commander.spell_name, state.commander.spell_description]
+		spell_text = "%s\nQueued for next battle" % state.commander.spell_name
 	if state.phase == "combat":
 		spell_text = "%s\nPrepared before battle" % state.commander.spell_name
-	spell_button = _button(spell_text, Rect2(459, 254, 162, 61), prepare_spell)
+	spell_button = _button(spell_text, Rect2(459, 291, 162, 36), prepare_spell)
 	spell_button.name = "CommandSpell"
 	spell_button.disabled = not state.can_prepare_spell(0)
-	spell_button.add_theme_font_size_override("font_size", 10)
-	spell_button.size = Vector2(162, 61)
-	battle_button = _button("Begin battle  →" if state.phase=="command" else "Battle in progress", Rect2(459, 322, 162, 28), begin_battle, true)
+	spell_button.add_theme_font_size_override("font_size", 9)
+	spell_button.size = Vector2(162, 36)
+	spell_button.tooltip_text = state.commander.spell_description
+	battle_button = _button("Begin battle  →" if state.phase=="command" else "Battle in progress", Rect2(459, 333, 162, 22), begin_battle, true)
+	battle_button.add_theme_font_size_override("font_size", 9)
+	battle_button.size = Vector2(162, 22)
 	battle_button.name = "BeginBattle"
 	battle_button.disabled = state.phase!="command" or state.total_units(0)==0
 	battle_button.tooltip_text = "Enter automatic combat. Unused Command Points are discarded.\nSpace: begin battle · Escape: settings · F3: AI explanation"
-	spell_label = _label(state.commander.spell_name+" queued" if state.sides[0].spell else "", Rect2(32, 76, 240, 18), 9)
+	spell_label = _label(state.commander.spell_name+" queued" if state.sides[0].spell else "", Rect2(20, 62, 240, 15), 8)
 	if state.sides[1].spell:
-		_label("AI · %s %s" % [state.commander_for(1).spell_name, "queued" if state.phase=="command" else "prepared"], Rect2(362, 76, 251, 18), 9)
+		_label("AI · %s %s" % [state.commander_for(1).spell_name, "queued" if state.phase=="command" else "prepared"], Rect2(362, 62, 251, 15), 8)
 	if debug_ai:
 		var debug_panel := _panel(Rect2(354, 90, 250, 89))
 		_label("AI decisions · previous-round information", Rect2(8, 4, 236, 15), 8, false, false, debug_panel)
@@ -573,7 +584,7 @@ func _publish() -> void:
 	if not qa_enabled:
 		return
 	var snapshot := {"screen": screen, "modal": modal_kind, "settings": SaveStore.settings,
-		"release": "phase2-water-earth",
+		"release": "creature-armies-solid-collision",
 		"selected_commander": selected_commander_id, "selected_warband": selected_warband,
 		"rival": rival_realm, "compendium_realm": compendium_realm}
 	if state:
@@ -587,6 +598,15 @@ func _publish() -> void:
 			"bond": state.bond.id if state.bond else "", "groups": {}})
 		for id in state.cards:
 			snapshot.groups[id] = state.cards[id].group_size
+		snapshot["arena"] = [CombatSimulation.ARENA_SIZE.x, CombatSimulation.ARENA_SIZE.y]
+		snapshot["body_size"] = CombatSimulation.BODY_SIZE
+		snapshot["preview"] = []
+		for entry in battlefield.preview_units:
+			snapshot.preview.append([entry.side, entry.card_id, entry.position.x, entry.position.y])
 		if simulation:
 			snapshot["tick"] = simulation.tick
+			snapshot["combat_positions"] = []
+			for unit in simulation.units:
+				if unit.hp > 0.0:
+					snapshot.combat_positions.append([unit.id, unit.side, unit.position.x, unit.position.y])
 	JavaScriptBridge.eval("window.vtuberEraQA = %s;" % JSON.stringify(snapshot))

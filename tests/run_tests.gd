@@ -188,7 +188,7 @@ func _test_combat_effects() -> void:
 	var state := combat_fixture()
 	var sim := CombatSimulation.new(state)
 	sim.units[0].position = Vector2(272, 70)
-	sim.units[1].position = Vector2(290, 70)
+	sim.units[1].position = Vector2(296, 70)
 	sim.step()
 	expect(sim.units[0].hp < sim.units[0].max_hp, "melee damage lands")
 	expect(sim.units[0].burn_until>0 and sim.units[1].burn_until>0, "first successful attacks apply Wildfire burn")
@@ -209,7 +209,7 @@ func _test_combat_effects() -> void:
 	take(ranged_state, 1, "fire_tank")
 	var ranged := CombatSimulation.new(ranged_state)
 	for unit in ranged.units:
-		unit.position = Vector2(230 if unit.side==0 else 320, 50+unit.id*2)
+		unit.position = Vector2(230 if unit.side==0 else 320, 40+unit.id*24)
 	ranged.step()
 	expect(not ranged.projectiles.is_empty(), "ranged attacks create simulated projectiles")
 	for _index in range(20):
@@ -230,7 +230,7 @@ func _test_combat_effects() -> void:
 	var draw := CombatSimulation.new(combat_fixture())
 	for unit in draw.units:
 		unit.hp = 1.0
-		unit.position = Vector2(279+unit.side*2, 70)
+		unit.position = Vector2(279+unit.side*24, 70)
 	draw.step()
 	expect(draw.finished and draw.result.winner==-1, "simultaneous dispersal is a visible draw, never an arbitrary winner")
 

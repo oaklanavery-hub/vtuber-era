@@ -13,8 +13,8 @@ attack_range = 19.0
 [resource]
 script = ExtResource("1")
 id = "fire_assassin"
-display_name = "Flameveil Stalkers"
-short_name = "Flameveil"
+display_name = "Red Ninjas"
+short_name = "Red Ninja"
 set_id = "fire"
 role = "assassin"
 group_size = 1

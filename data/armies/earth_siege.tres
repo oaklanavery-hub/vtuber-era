@@ -14,8 +14,8 @@ splash_radius = 34.0
 [resource]
 script = ExtResource("1")
 id = "earth_siege"
-display_name = "Runewood Trebuchet"
-short_name = "Runewood"
+display_name = "Wooden Siege"
+short_name = "Wooden Siege"
 set_id = "earth"
 role = "siege"
 group_size = 1

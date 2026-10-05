@@ -6,18 +6,18 @@ initial unit values; preserve custom tuning before rebuilding assets.
 
 | Army | Group | Base HP/unit | Damage | Attacks/s | Move px/s | Range px |
 |---|---:|---:|---:|---:|---:|---:|
-| Ironroot Warriors | 2 | 80 | 10 | 0.75 | 32 | 23 |
-| Runestone Marksmen | 2 | 44 | 13 | 0.65 | 28 | 150 |
-| Runewood Trebuchet | 1 | 75 | 20 | 0.2 | 17 | 220 |
-| Stoneguard Sentinels | 1 | 250 | 6 | 0.55 | 22 | 25 |
-| Emberbow Rangers | 3 | 34 | 9 | 1 | 34 | 138 |
-| Flameveil Stalkers | 1 | 60 | 13 | 1.55 | 62 | 19 |
-| Ashblade Warriors | 3 | 64 | 8 | 1.05 | 39 | 20 |
-| Cinderwall Guardians | 1 | 220 | 7 | 0.65 | 27 | 23 |
-| Tidecallers | 2 | 34 | 6 | 0.6 | 30 | 146 |
-| Waveblade Fighters | 3 | 52 | 6 | 0.9 | 35 | 21 |
-| Moonwater Rangers | 3 | 34 | 7 | 1 | 32 | 154 |
-| Coral Wardens | 1 | 180 | 6 | 0.55 | 24 | 23 |
+| Armadillos | 2 | 80 | 10 | 0.75 | 32 | 23 |
+| Wood Archers | 2 | 44 | 13 | 0.65 | 28 | 150 |
+| Wooden Siege | 1 | 75 | 20 | 0.2 | 17 | 220 |
+| Trees | 1 | 250 | 6 | 0.55 | 22 | 25 |
+| Fire Lizards | 3 | 34 | 9 | 1 | 34 | 138 |
+| Red Ninjas | 1 | 60 | 13 | 1.55 | 62 | 19 |
+| Fire Imps | 3 | 64 | 8 | 1.05 | 39 | 20 |
+| Magma Golems | 1 | 220 | 7 | 0.65 | 27 | 23 |
+| Water Wizards | 2 | 34 | 6 | 0.6 | 30 | 146 |
+| Water Slimes | 3 | 52 | 6 | 0.9 | 35 | 21 |
+| Snowmen | 3 | 34 | 7 | 1 | 32 | 154 |
+| Ice Golems | 1 | 180 | 6 | 0.55 | 24 | 23 |
 
 | Rank | HP multiplier | Damage multiplier |
 |---|---:|---:|
@@ -36,11 +36,11 @@ and 0.76x during Stonewall. Attack intervals round up to whole 30Hz ticks.
 | Wildfire | First successful hit per unit: non-stacking 3s Burn, 3 HP/s |
 | Tidal Recovery | Once below 50% HP: 12% max HP in three one-second ticks |
 | Earthen Guard | Initial shield: 10% max HP |
-| Coral Warden | Initial nearby shield: 8% max HP, 58px radius, 8s duration |
-| Tidecaller | 25% movement Slow for 2s; 22px splash, 50% secondary damage |
-| Waveblade | 15% actual HP-damage lifesteal; cap 2% max HP per second |
-| Runewood | 34px splash, 70% secondary damage; fixed landing position |
-| Projectile speeds | Fire 260, Tide 220, Moonwater 280, Runestone 240, Runewood 140 px/s |
+| Ice Golem | Initial nearby shield: 8% max HP, 58px radius, 8s duration |
+| Water Wizard | 25% movement Slow for 2s; 22px splash, 50% secondary damage |
+| Water Slime | 15% actual HP-damage lifesteal; cap 2% max HP per second |
+| Wooden Siege | 34px splash, 70% secondary damage; fixed landing position |
+| Projectile speeds | Fire 260, Water Wizard 220, Snowman 280, Wood Archer 240, Wooden Siege 140 px/s |
 
 Water affinity boosts Tidal Recovery to 13.2% and five Healing Current ticks to
 16.5% max HP on Water units. Healing is capped by missing HP; the lifesteal cap
@@ -63,6 +63,12 @@ use filtered 70% summon / 15% reinforce / 15% promote weights. Spell preparation
 is independent of the offers. Commander choice and warband realm are independent.
 
 ## Balance sample
+
+The table below is historical evidence from **before solid collision**. The
+creature update preserves all base stats, roles and effects, but its larger
+arena and permanent body blocking change engagements; these earlier win rates
+must not be treated as measurements of the new movement system. Melee contact
+uses a 24px solid body footprint; ranged reach remains centre-to-centre.
 
 `tests/balance_simulations.gd` runs both sides with the same NormalAI and shared
 budgets over eight fixed seeds for every ordered realm pairing (72 full matches).

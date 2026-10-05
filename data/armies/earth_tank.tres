@@ -13,11 +13,11 @@ attack_range = 25.0
 [resource]
 script = ExtResource("1")
 id = "earth_tank"
-display_name = "Stoneguard Sentinels"
-short_name = "Stoneguard"
+display_name = "Trees"
+short_name = "Tree"
 set_id = "earth"
 role = "tank"
 group_size = 1
-description = "The toughest single guardian. Holds the frontline with a great stone shield."
+description = "Walking trees with tough bark and branch arms. Hold the frontline."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

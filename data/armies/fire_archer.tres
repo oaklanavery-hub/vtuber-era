@@ -13,11 +13,11 @@ attack_range = 138.0
 [resource]
 script = ExtResource("1")
 id = "fire_archer"
-display_name = "Emberbow Rangers"
-short_name = "Emberbow"
+display_name = "Fire Lizards"
+short_name = "Fire Lizard"
 set_id = "fire"
 role = "ranged"
 group_size = 3
-description = "Quick archers. Protect them with a frontline."
+description = "Long-tailed fire lizards with quick ranged attacks. Protect them with a frontline."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

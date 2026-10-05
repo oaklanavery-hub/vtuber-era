@@ -13,11 +13,11 @@ attack_range = 20.0
 [resource]
 script = ExtResource("1")
 id = "fire_melee"
-display_name = "Ashblade Warriors"
-short_name = "Ashblade"
+display_name = "Fire Imps"
+short_name = "Fire Imp"
 set_id = "fire"
 role = "melee"
 group_size = 3
-description = "Brave fighters who rush into the festival contest."
+description = "Horned, clawed imps who rush into close combat."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

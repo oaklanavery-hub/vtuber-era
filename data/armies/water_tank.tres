@@ -15,8 +15,8 @@ ally_shield_duration = 8.0
 [resource]
 script = ExtResource("1")
 id = "water_tank"
-display_name = "Coral Wardens"
-short_name = "Coral Wardens"
+display_name = "Ice Golems"
+short_name = "Ice Golem"
 set_id = "water"
 role = "tank"
 group_size = 1

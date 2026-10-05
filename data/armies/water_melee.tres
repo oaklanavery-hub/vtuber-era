@@ -14,8 +14,8 @@ lifesteal_cap_per_second = 0.02
 [resource]
 script = ExtResource("1")
 id = "water_melee"
-display_name = "Waveblade Fighters"
-short_name = "Waveblade"
+display_name = "Water Slimes"
+short_name = "Water Slime"
 set_id = "water"
 role = "melee"
 group_size = 3

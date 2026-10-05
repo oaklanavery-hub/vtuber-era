@@ -32,18 +32,18 @@ Healing never resurrects and never exceeds max HP.
 
 | Realm | Army | Role | Group |
 |---|---|---|---:|
-| Fire | Emberbow Rangers | Ranged | 3 |
-| Fire | Ashblade Warriors | Melee | 3 |
-| Fire | Cinderwall Guardians | Tank | 1 |
-| Fire | Flameveil Stalkers | Assassin | 1 |
-| Water | Tidecallers | Mage: splash and non-stacking movement Slow | 2 |
-| Water | Coral Wardens | Tank: nearby initial shields | 1 |
-| Water | Waveblade Fighters | Melee: capped lifesteal | 3 |
-| Water | Moonwater Rangers | Long-range ranged | 3 |
-| Earth | Stoneguard Sentinels | Highest-base-HP tank | 1 |
-| Earth | Ironroot Warriors | Durable melee bruisers | 2 |
-| Earth | Runestone Marksmen | Heavy ranged hits | 2 |
-| Earth | Runewood Trebuchet | Slow, long-range cluster splash | 1 |
+| Fire | Fire Lizards | Ranged | 3 |
+| Fire | Fire Imps | Melee | 3 |
+| Fire | Magma Golems | Tank | 1 |
+| Fire | Red Ninjas | Assassin | 1 |
+| Water | Water Wizards | Mage: splash and non-stacking movement Slow | 2 |
+| Water | Ice Golems | Tank: nearby initial shields | 1 |
+| Water | Water Slimes | Melee: capped lifesteal | 3 |
+| Water | Snowmen | Long-range ranged | 3 |
+| Earth | Trees | Highest-base-HP tank | 1 |
+| Earth | Armadillos | Durable melee bruisers | 2 |
+| Earth | Wood Archers | Heavy ranged hits | 2 |
+| Earth | Wooden Siege | Slow, long-range cluster splash | 1 |
 
 Wildfire gives each Fire unit one first-hit, non-stacking Burn: 3 damage/s for
 3s. Existing Burn is neither stacked nor refreshed; missed arrows do not consume
@@ -52,11 +52,11 @@ when damage first leaves it below 50% HP, healing 12% max HP over 3s. The thresh
 is recorded before same-tick lifesteal can raise HP again. Earthen Guard grants
 every deployed Earth unit an initial 10%-max-HP shield. Mixed warbands get no bond.
 
-Coral Wardens shield themselves and allies within 58px at battle start for 8%
+Ice Golems shield themselves and allies within 58px at battle start for 8%
 of the recipient's max HP, expiring after 8s. Multiple shields use the strongest
 value and never sum. Shields absorb reduced incoming damage before HP.
-Tidecaller Slow reduces movement by 25% for 2s, can refresh and never adds
-strength. Waveblade lifesteal heals 15% of actual HP damage dealt, excluding
+Water Wizard Slow reduces movement by 25% for 2s, can refresh and never adds
+strength. Water Slime lifesteal heals 15% of actual HP damage dealt, excluding
 shields, Burn and overkill, capped at 2% actual max HP per one-second window.
 Buffered simultaneous hit credit is prorated fairly among attackers.
 
@@ -89,9 +89,25 @@ Arrows and tide projectiles travel in the simulation. Siege stones aim at a fixe
 landing location, so moving targets can leave the splash area. No elemental
 rock-paper-scissors damage multipliers are used.
 
+Preview and combat share a unique-slot allocator, including mixed armies with
+duplicate roles. Each side has 77 potential 24px-spaced slots for its 72-unit
+cap. Alive units on both teams keep solid 24×24 bodies throughout combat.
+Swept movement reserves the whole tick's path, preventing both simulation
+penetration and interpolated sprite crossing. Dead units do not block movement.
+Spatial buckets limit collision checks; deterministic rotating movement priority
+avoids permanent first-unit/first-team lane priority.
+
+Out-of-range units advance toward their selected target, testing side lanes and
+backward detours when blocked. A stable escape-side bias prevents oscillation
+against a wall. Crowded units wait if no safe lane is free; they never jump over
+or pass through allies or enemies. Short-range melee attacks meet at solid body
+edges (a 24px minimum contact distance), with any reach above 24 extending the
+edge gap. Ranged attacks retain their Resource-defined centre distance. This
+keeps short-range melee functional without changing any stored army stats.
+
 At 45s compare remaining HP fractions, then survivors. Exact ties enter escalating
 sudden death. Simultaneous dispersal yields a visible draw, no Heart loss and no
-comeback point. There is no random winner or unit-ID initiative advantage.
+comeback point. There is no random winner or unit-ID attack initiative advantage.
 
 The AI uses identical legal offers, costs, spells and caps. It scores frontline
 need, army size, upgrade value, enemy backline concentration and previous loss.
@@ -101,7 +117,9 @@ player actions. F3 shows decisions and scores.
 
 ## Presentation and saves
 
-Parchment and a sunny woodland frame original six-frame 32×32 sprites. Fire uses
+Parchment and a sunny woodland frame original six-frame 32×32 creature sprites,
+drawn at 24×24 in battle. Compact cards and header open a 600×202 arena within
+the same 640×360 logical resolution, up from 560×142. Fire uses
 honey/coral/orange, Water turquoise/seafoam/pearl/lavender, Earth moss/ochre/stone.
 Health bars, shield lines, Slow marks and healing crosses expose combat effects.
 Reduced effects removes bounces, flashes and particles. All values live in custom

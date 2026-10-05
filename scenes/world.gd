@@ -51,14 +51,14 @@ func _draw() -> void:
 		draw_rect(Rect2(x-3, 175, 9, 12), Color("f2ce79"))
 		draw_rect(Rect2(x-1, 179, 5, 5), Color("fae7b5"))
 	if battle_mode:
-		draw_rect(Rect2(17, 71, 606, 150), BROWN)
-		draw_rect(Rect2(20, 74, 600, 144), Color("b2be84"))
-		draw_rect(Rect2(23, 78, 594, 136), Color("c6cc92"))
-		for index in range(25):
-			var x: float = float(31+(index*73)%564)
-			var y: float = float(85+(index*37)%115)
+		draw_rect(Rect2(12, 60, 616, 210), BROWN)
+		draw_rect(Rect2(15, 63, 610, 204), Color("b2be84"))
+		draw_rect(Rect2(18, 64, 604, 202), Color("c6cc92"))
+		for index in range(35):
+			var x: float = float(27+(index*73)%586)
+			var y: float = float(74+(index*37)%178)
 			draw_rect(Rect2(x, y, 4, 2), Color("bac58b"))
-		draw_line(Vector2(320, 79), Vector2(320, 213), Color("b7c18a"), 1)
+		draw_line(Vector2(320, 64), Vector2(320, 266), Color("b7c18a"), 1)
 	else:
 		# Bunting behind the title, tied between the woodland trees.
 		draw_line(Vector2(58, 23), Vector2(584, 23), BROWN, 2)
