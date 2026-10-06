@@ -10,6 +10,8 @@ attacks_per_second = 0.65
 move_speed = 28.0
 attack_range = 150.0
 projectile_speed = 240.0
+split_shot_interval = 5.0
+
 [resource]
 script = ExtResource("1")
 id = "earth_ranged"
@@ -18,6 +20,6 @@ short_name = "Wood Archer"
 set_id = "earth"
 role = "ranged"
 group_size = 2
-description = "Steady marksmen with slow, heavy ranged attacks."
+description = "Every 5s in range, fires 3 arrows sharing one attack's damage across nearby enemies."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

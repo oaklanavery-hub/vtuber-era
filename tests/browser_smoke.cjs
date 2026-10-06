@@ -67,7 +67,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   const waitScreen = async screen => {
     await page.waitForFunction(screen => window.vtuberEraQA?.screen === screen, screen, { timeout: 60000 });
     visited.add(screen);
-    assert.equal((await snapshot()).pixel_font, 'Tiny5');
+    assert.equal((await snapshot()).text_font, 'DejaVu Sans');
     assert.equal((await snapshot()).text_overflows, 0, 'text stays inside its UI boxes');
   };
   const click = async (x, y) => { await page.mouse.click(x * 2, y * 2); await page.waitForTimeout(100); };
@@ -144,7 +144,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await click(509, 336);
   await waitScreen('battle');
   const initial = await snapshot();
-  assert.equal(initial.release, 'compact-collision-pixel-audio');
+  assert.equal(initial.release, 'army-passives-readable-font');
   assert.deepEqual(initial.arena, [600, 202]);
   assert.equal(initial.body_size, 7.2);
   assert.equal(initial.spawn_spacing, 24);
@@ -245,7 +245,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
       now = await snapshot();
       const heartLoss = hearts[0] + hearts[1] - now.hearts[0] - now.hearts[1];
       assert(heartLoss === 0 || heartLoss === 1, 'a result consumes at most one Heart');
-      rounds.push({ round: now.round, hearts: now.hearts, heartLoss });
+      rounds.push({ round: now.round, hearts: now.hearts, heartLoss, passives: now.passives });
       console.log(`PASS: round ${now.round} resolved; Hearts ${now.hearts.join(' / ')}.`);
     }
     if (now.phase === 'round_result') {
@@ -258,6 +258,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   visited.add('results');
   const final = await snapshot();
   assert(final.combat_sounds > 0, 'combat events play actual sound effects');
+  assert(Object.keys(final.passives || {}).length > 0, 'new army passives trigger in real browser combat');
   const audio = await page.evaluate(() => window.vtuberEraAudioQA);
   assert(audio.shortEffects > 0, 'new combat samples start in WebAudio');
   assert(final.hearts.includes(0), 'four-Heart match reaches a real result');
@@ -284,7 +285,8 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
     seed: initial.seed, rounds, actions, stats, errors, headers: 'ordinary HTTP; no cross-origin isolation',
     testedViewport: ['1280x720', '1000x720'], arena: initial.arena, bodySize: initial.body_size,
     spawnCollisionPassed: true, combatCollisionPassed: true, settingsPersisted: true, rematchPassed: true };
-  report.pixelFont = final.pixel_font;
+  report.textFont = final.text_font;
+  report.passives = final.passives;
   report.textOverflows = final.text_overflows;
   report.combatSoundsPlayed = final.combat_sounds;
   report.webAudio = audio;

@@ -10,7 +10,8 @@ attacks_per_second = 0.2
 move_speed = 17.0
 attack_range = 220.0
 projectile_speed = 140.0
-splash_radius = 34.0
+splash_radius = 64.0
+
 [resource]
 script = ExtResource("1")
 id = "earth_siege"
@@ -19,6 +20,6 @@ short_name = "Wooden Siege"
 set_id = "earth"
 role = "siege"
 group_size = 1
-description = "Slow, long-range stones hit enemy clusters. Small group size; protect it."
+description = "Long-range stones blast a huge 64px area. Nearby enemies take 70% damage."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

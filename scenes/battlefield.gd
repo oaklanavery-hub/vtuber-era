@@ -30,16 +30,17 @@ func ingest(events: Array) -> void:
 	for event in events:
 		if event.kind == "defeat":
 			sparks.append({"position": event.position, "age": 0.0, "color": GameCatalog.realm_color(event.get("set_id", "fire"))})
-		elif event.kind == "splash":
-			sparks.append({"position": event.position, "age": 0.0, "color": GameCatalog.realm_color(event.set_id)})
+		elif event.kind == "splash" or event.kind == "passive":
+			sparks.append({"position": event.position, "age": 0.0, "color": GameCatalog.realm_color(event.set_id),
+				"radius":event.get("radius",0.0), "ability":event.get("ability","")})
 
-func _draw_unit(texture: Texture2D, location: Vector2, frame: int, side: int, rank_value: int, hurt: bool = false) -> void:
+func _draw_unit(texture: Texture2D, location: Vector2, frame: int, side: int, rank_value: int, hurt: bool = false, visual_scale: float = 1.0) -> void:
 	var tint := Color.WHITE
 	if hurt and not reduced_effects:
 		tint = Color(1.0, 0.68, 0.55)
 	# Mirror around the unit's actual center, so its portrait, HP and position
 	# remain aligned. Negative destination widths alone offset Godot regions.
-	draw_set_transform(location, 0.0, Vector2(-1 if side==1 else 1, 1))
+	draw_set_transform(location, 0.0, Vector2(-1 if side==1 else 1, 1)*visual_scale)
 	draw_texture_rect_region(texture, Rect2(-12, -18, 24, 24), Rect2(frame*32, 0, 32, 32), tint)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for star in range(rank_value-1):
@@ -47,6 +48,19 @@ func _draw_unit(texture: Texture2D, location: Vector2, frame: int, side: int, ra
 
 func _draw() -> void:
 	if simulation:
+		# Fields carry gameplay information even with reduced cosmetic effects.
+		for field in simulation.fields:
+			var rectangle: Rect2 = field.rect
+			var color := Color(0.46,0.75,0.87,0.36) if field.kind == "ice" else Color(0.86,0.35,0.14,0.45)
+			draw_rect(rectangle, color)
+			draw_rect(rectangle, Color("b8e5e4") if field.kind == "ice" else Color("e8ba61"), false, 1.0)
+			if field.kind == "flame":
+				for index in range(int(rectangle.size.y/6.0)):
+					var height: float = 4.0 if reduced_effects else 3.0+float((simulation.tick/4+index)%3)
+					draw_rect(Rect2(rectangle.position+Vector2(2,index*6), Vector2(rectangle.size.x-4,height)), Color("e8ba61"))
+			else:
+				for index in range(int(rectangle.size.x/7.0)):
+					draw_line(rectangle.position+Vector2(index*7,rectangle.size.y), rectangle.position+Vector2(index*7+5,0), Color(0.80,0.94,0.94,0.45), 1.0)
 		# Sprites can overlap above their smaller feet. Paint rear units first;
 		# never reorder the simulation array, whose indices are stable unit IDs.
 		var visible_units: Array = simulation.units.filter(func(unit: Dictionary) -> bool: return unit.hp > 0.0)
@@ -65,22 +79,35 @@ func _draw() -> void:
 			if simulation.tick-int(unit.attack_at) < 4 and not reduced_effects:
 				frame = 3
 			draw_rect(Rect2(location.x-8, location.y+5, 16, 2), Color("91a471"))
-			_draw_unit(state.cards[unit.card_id].sprite, location, frame, unit.side, unit.rank, simulation.tick-int(unit.hit_at)<3)
+			var sprite_location: Vector2 = location
+			if simulation.tick-int(unit.bounce_at) < CombatSimulation.BOUNCE_TICKS and not reduced_effects:
+				sprite_location.y -= sin(float(simulation.tick-int(unit.bounce_at))/float(CombatSimulation.BOUNCE_TICKS)*PI)*7.0
+			_draw_unit(state.cards[unit.card_id].sprite, sprite_location, frame, unit.side, unit.rank, simulation.tick-int(unit.hit_at)<3, unit.visual_scale)
 			var color := Color("659789") if unit.side == 0 else Color("c57857")
 			draw_rect(Rect2(location.x-10, location.y-20, 20, 3), Color("51372f"))
 			draw_rect(Rect2(location.x-9, location.y-19, 18*unit.hp/unit.max_hp, 1), color)
-			if int(unit.burn_until) >= simulation.tick and unit.burn_until > 0:
+			if (int(unit.burn_until) >= simulation.tick and unit.burn_until > 0) or (int(unit.flame_until) >= simulation.tick and unit.flame_until > 0):
 				draw_rect(Rect2(location.x+9, location.y-16, 2, 4), Color("d57346"))
 				draw_rect(Rect2(location.x+10, location.y-15, 1, 2), Color("f9e4b5"))
 			if unit.shield > 0.0:
 				draw_rect(Rect2(location.x-10, location.y-23, 20, 2), Color("8fc6cb"))
-			if unit.slow_until > simulation.tick:
+			if unit.slow_until > simulation.tick or unit.ice_until > simulation.tick:
 				draw_rect(Rect2(location.x+9, location.y-9, 2, 2), Color("659fbb"))
+			if unit.attack_slow_until > simulation.tick:
+				draw_rect(Rect2(location.x+9, location.y-5, 2, 2), Color("e8ba61"))
+			if simulation.tick-int(unit.revive_at) < 15:
+				draw_arc(location-Vector2(0,7), 12.0, 0, TAU, 20, Color("e8ba61"), 1.0)
 			if simulation.tick-int(unit.heal_at) < 5 and not reduced_effects:
 				draw_rect(Rect2(location.x-12, location.y-12, 5, 1), Color("7dba9d"))
 				draw_rect(Rect2(location.x-10, location.y-14, 1, 5), Color("7dba9d"))
 		for projectile in simulation.projectiles:
 			var card: ArmyCardData = state.cards[projectile.card_id]
+			if projectile.posthumous:
+				# Snowman's head is distinct from its ordinary small snowballs.
+				draw_circle(projectile.position, 5.0, Color("edf1de"))
+				draw_rect(Rect2(projectile.position+Vector2(-3,-5), Vector2(6,2)), Color("51372f"))
+				draw_rect(Rect2(projectile.position+Vector2(2,0), Vector2(3,2)), Color("e8ba61"))
+				continue
 			var size := Vector2(6, 6) if card.role == "siege" else Vector2(4, 4) if card.role == "mage" else Vector2(6, 2)
 			draw_rect(Rect2(projectile.position-size/2, size), GameCatalog.realm_color(card.set_id))
 			draw_rect(Rect2(projectile.position, Vector2(2, 2)), Color("f9e4b5"))
@@ -88,6 +115,10 @@ func _draw() -> void:
 		for entry in preview_units:
 			_draw_unit(state.cards[entry.card_id].sprite, entry.position, 0 if reduced_effects else int(clock*3+entry.index)%6, entry.side, entry.rank)
 	for spark in sparks:
+		if float(spark.get("radius",0.0)) > 0.0:
+			var ring_color: Color = spark.color
+			ring_color.a = (1.0-spark.age/0.7)*0.7
+			draw_arc(spark.position, spark.radius*(0.5+spark.age/1.4), 0, TAU, 28, ring_color, 1.0)
 		for index in range(5):
 			var offset := Vector2(sin(float(index)*2.4)*spark.age*21, -spark.age*25+cos(float(index))*7)
 			var color: Color = spark.color if index%2==0 else Color("f9e4b5")

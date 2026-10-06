@@ -13,7 +13,9 @@ func check(condition: bool, message: String) -> void:
 func layout(ui, parent: Node = null) -> void:
 	for child in (parent if parent else ui.surface).get_children():
 		if child is Label or child is Button:
-			check(child.get_theme_font("font").get_font_name() == "Tiny5", "all interface text uses the pixel font: "+child.text)
+			check(child.get_theme_font("font").get_font_name() == "DejaVu Sans", "all interface text uses the readable font: "+child.text)
+			if child.has_meta("text_box"):
+				check(child.get_theme_font_size("font_size") >= 9, "text never shrinks below the readable minimum: "+child.text)
 		if child is Control and child.has_meta("text_box"):
 			check(StoryStyle.text_within_box(child), "text remains inside its assigned box: "+child.text)
 		layout(ui, child)

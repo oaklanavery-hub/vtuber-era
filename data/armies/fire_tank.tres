@@ -9,6 +9,7 @@ damage = 7.0
 attacks_per_second = 0.65
 move_speed = 27.0
 attack_range = 23.0
+flame_interval = 5.0
 
 [resource]
 script = ExtResource("1")
@@ -18,6 +19,6 @@ short_name = "Magma Golem"
 set_id = "fire"
 role = "tank"
 group_size = 1
-description = "Heavy basalt golems with molten cores. Absorb attacks and protect allies."
+description = "Every 5s, raises a 4s flame wall. Enemies crossing it burn for 3 damage/s for 2s."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

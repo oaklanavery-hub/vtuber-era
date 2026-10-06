@@ -5,7 +5,7 @@ const Battlefield = preload("res://scenes/battlefield.gd")
 const Runes = preload("res://ui/command_runes.gd")
 const Seal = preload("res://ui/wax_seal.gd")
 const Hearts = preload("res://ui/hearts.gd")
-const HEADING = StoryStyle.PIXEL_FONT
+const HEADING = StoryStyle.TEXT_FONT
 
 var world: Node2D
 var battlefield: Node2D
@@ -317,8 +317,8 @@ func show_battle() -> void:
 		tile.disabled = not state.can_choose(0, choice)
 		offer_buttons.append(tile)
 		var action_title: String = {"summon": "SUMMON ARMY", "reinforce": "REINFORCE", "promote": "PROMOTE"}[choice.kind]
-		_label(action_title, Rect2(8, 3, 112, 13), 7, false, false, tile)
-		_label(str(index+1), Rect2(120, 3, 12, 13), 8, true, false, tile)
+		_label(action_title, Rect2(8, 3, 112, 14), 9, false, false, tile)
+		_label(str(index+1), Rect2(120, 3, 12, 14), 9, true, false, tile)
 		_sprite(card, Rect2(6, 19, 24, 24), tile)
 		_label(card.short_name, Rect2(35, 17, 99, 17), 9, false, true, tile)
 		var detail: String = "+%d %s" % [card.group_size, "units" if card.group_size>1 else "unit"]
@@ -327,7 +327,7 @@ func show_battle() -> void:
 		elif choice.kind == "promote":
 			detail = "Rank %d → %d" % [army.rank, army.rank+1]
 		_label(detail, Rect2(35, 33, 99, 14), 8, false, false, tile)
-		_label("1 Command Point" if state.eligible(0, choice) else "Unit cap reached", Rect2(8, 49, 121, 13), 7, false, false, tile)
+		_label("1 Command Point" if state.eligible(0, choice) else "Unit cap reached", Rect2(8, 49, 121, 14), 9, false, false, tile)
 		var seal := Seal.new()
 		seal.position = Vector2(124, 54)
 		seal.scale = Vector2(0.7, 0.7)
@@ -514,13 +514,12 @@ func show_compendium() -> void:
 	var cards: Dictionary = GameCatalog.cards()
 	for index in range(4):
 		var card: ArmyCardData = cards[GameCatalog.realm_cards(compendium_realm)[index]]
-		var tile := _panel(Rect2(30+(index%2)*296, 132+int(index/2)*84, 284, 77))
-		_sprite(card, Rect2(6, 10, 48, 48), tile)
-		_label(card.display_name, Rect2(56, 6, 222, 19), 11, false, true, tile)
-		_label("%s · %d per summon · HP %d" % [card.role.capitalize(), card.group_size, card.stats.max_hp], Rect2(56, 29, 222, 18), 10, false, false, tile)
-		_label("Damage %d · %.2f attacks/s · range %d" % [card.stats.damage, card.stats.attacks_per_second, card.stats.attack_range], Rect2(56, 49, 222, 16), 9, false, false, tile)
-		tile.tooltip_text = card.description
-	_label("Hover a card for its ability · %s" % GameCatalog.bond(compendium_realm).display_name, Rect2(30, 297, 580, 16), 9, true)
+		var tile := _panel(Rect2(30+(index%2)*296, 115+int(index/2)*99, 284, 94))
+		_sprite(card, Rect2(6, 5, 40, 40), tile)
+		_label(card.display_name, Rect2(50, 5, 228, 18), 12, false, true, tile)
+		_label("HP %d · damage %d · %.2f attacks/s" % [card.stats.max_hp, card.stats.damage, card.stats.attacks_per_second], Rect2(50, 25, 228, 15), 10, false, false, tile)
+		_label(card.description, Rect2(10, 45, 264, 42), 10, false, false, tile)
+		tile.tooltip_text = "%s\n%s · %d per summon · range %d\n%s" % [card.display_name, card.role.capitalize(), card.group_size, card.stats.attack_range, card.description]
 	_button("← Main menu", Rect2(223, 318, 194, 31), show_menu)
 	_publish()
 
@@ -598,7 +597,7 @@ func _publish() -> void:
 	if not qa_enabled:
 		return
 	var snapshot := {"screen": screen, "modal": modal_kind, "settings": SaveStore.settings,
-		"release": "compact-collision-pixel-audio", "pixel_font": StoryStyle.PIXEL_FONT.get_font_name(),
+		"release": "army-passives-readable-font", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
 		"combat_sounds": Sound.combat_sounds_played, "text_overflows": _text_overflows(surface),
 		"selected_commander": selected_commander_id, "selected_warband": selected_warband,
 		"rival": rival_realm, "compendium_realm": compendium_realm}
@@ -621,6 +620,8 @@ func _publish() -> void:
 			snapshot.preview.append([entry.side, entry.card_id, entry.position.x, entry.position.y])
 		if simulation:
 			snapshot["tick"] = simulation.tick
+			snapshot["passives"] = simulation.passive_counts
+			snapshot["active_fields"] = simulation.fields.size()
 			snapshot["combat_positions"] = []
 			for unit in simulation.units:
 				if unit.hp > 0.0:

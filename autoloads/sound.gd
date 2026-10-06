@@ -45,10 +45,17 @@ func combat_requests(events: Array) -> Dictionary:
 	for event in events:
 		match event.kind:
 			"attack": requests[ATTACK_CUES.get(event.card_id, "swing")] = true
-			"splash": requests["siege_impact" if event.set_id == "earth" else "water_cast"] = true
+			"splash": requests["siege_impact" if event.set_id == "earth" else "fire_breath" if event.set_id == "fire" else "water_cast"] = true
 			"hit": requests["shield_hit" if event.absorbed > 0.0 else "impact"] = true
 			"heal": requests["heal"] = true
 			"defeat": requests["disperse"] = true
+			"passive":
+				var cue: String = {"imp_explosion":"fire_breath", "flame_wall":"fire_breath",
+					"ninja_revive":"slash", "ice_path":"water_cast", "slime_split":"water_cast",
+					"snow_head":"snowball", "tree_heal":"heal", "armadillo_bounce":"impact",
+					"split_arrows":"arrow", "siege_blast":"siege_impact"}.get(event.ability, "")
+				if not cue.is_empty():
+					requests[cue] = true
 	return requests
 
 func combat(events: Array) -> void:

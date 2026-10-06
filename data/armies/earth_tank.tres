@@ -9,6 +9,7 @@ damage = 6.0
 attacks_per_second = 0.55
 move_speed = 22.0
 attack_range = 25.0
+heal_interval = 2.0
 
 [resource]
 script = ExtResource("1")
@@ -18,6 +19,6 @@ short_name = "Tree"
 set_id = "earth"
 role = "tank"
 group_size = 1
-description = "Walking trees with tough bark and branch arms. Hold the frontline."
+description = "Every 2s, heals itself and allies within 48px for 5% of each unit's max HP."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

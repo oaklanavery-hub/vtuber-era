@@ -14,7 +14,7 @@ sample recordings, models, fonts or other source media.
 | Woodland, cottages, stream, lanterns, moss ruins, flowers, bunting | `scenes/world.gd` | Original Node2D drawing |
 | Parchment, rounded borders, wax seals and runes | `ui/style.gd`, `ui/wax_seal.gd`, `ui/command_runes.gd` | Original Godot drawing and styling |
 | Festival loop, six interface cues and twelve combat cues | `assets/audio/*.wav`, mono 22,050 Hz 16-bit PCM | Original synthesized score, plucked harmonics and short chirp/noise effects |
-| Hit, projectile, healing, shield, Slow and defeat-spark visuals | `scenes/battlefield.gd` | Original Godot drawing |
+| Hit, projectile, healing, shield, Slow, flame wall, ice path, revival, bounce, snow-head and defeat-spark visuals | `scenes/battlefield.gd` | Original Godot drawing |
 
 The art is placeholder work, not a final commissioned VTuber identity. No
 copyrighted game assets or specific character designs were copied. The project
@@ -39,14 +39,15 @@ army Resources; do not run it over tuned Resources without preserving changes.
 | Component | Upstream | Licence / included notices |
 |---|---|---|
 | Godot Engine 4.5 and Web templates | [Official 4.5 release](https://github.com/godotengine/godot-builds/releases/tag/4.5-stable) | MIT engine licence, plus its dependency notices in `assets/licenses/Godot-LICENSE.txt` and `Godot-COPYRIGHT.txt` |
-| DejaVu Sans (`body.ttf`) | [DejaVu fonts](https://dejavu-fonts.github.io/) | Bitstream Vera font licence with DejaVu changes in the public domain; complete packaged notices in `assets/fonts/LICENSE-DejaVu.txt` |
+| DejaVu Sans (`body.ttf`), used for all interface text | [DejaVu fonts](https://dejavu-fonts.github.io/) | Bitstream Vera font licence with DejaVu changes in the public domain; complete packaged notices in `assets/fonts/LICENSE-DejaVu.txt` |
 | DejaVu Serif Bold (`storybook.ttf`) | [DejaVu fonts](https://dejavu-fonts.github.io/) | Same font licence and notice file |
-| Tiny5 (`Tiny5-Regular.ttf`), used for all interface text | [Google Fonts Tiny5 distribution](https://github.com/google/fonts/tree/main/ofl/tiny5), [upstream](https://github.com/Gissio/font_tiny5) | SIL Open Font License 1.1; complete notice in `assets/fonts/Tiny5-OFL.txt` |
+| Tiny5 (`Tiny5-Regular.ttf`), retained as an unused resource | [Google Fonts Tiny5 distribution](https://github.com/google/fonts/tree/main/ofl/tiny5), [upstream](https://github.com/Gissio/font_tiny5) | SIL Open Font License 1.1; complete notice in `assets/fonts/Tiny5-OFL.txt` |
 
 Fonts were copied from the environment's `fonts-dejavu-core` package. The included
 notice also describes packaging files; those files are not game code. The
 original typeface names remain documented; only local file names were changed.
-The old DejaVu files remain available as unused original resources. Tiny5 was
+DejaVu Sans uses smooth antialiasing for readable compact text. The Serif Bold
+file remains an unused resource. Tiny5 was
 downloaded unchanged from Google Fonts with its licence; it is imported without
 antialiasing, system fallback or subpixel positioning for a crisp pixel style.
 Godot engine and templates were verified against the official SHA-512 release

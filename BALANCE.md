@@ -39,12 +39,42 @@ and 0.76x during Stonewall. Attack intervals round up to whole 30Hz ticks.
 | Ice Golem | Initial nearby shield: 8% max HP, 58px radius, 8s duration |
 | Water Wizard | 25% movement Slow for 2s; 22px splash, 50% secondary damage |
 | Water Slime | 15% actual HP-damage lifesteal; cap 2% max HP per second |
-| Wooden Siege | 34px splash, 70% secondary damage; fixed landing position |
+| Wooden Siege | 64px splash, 70% secondary damage; fixed landing position |
 | Projectile speeds | Fire 260, Water Wizard 220, Snowman 280, Wood Archer 240, Wooden Siege 140 px/s |
 
 Water affinity boosts Tidal Recovery to 13.2% and five Healing Current ticks to
 16.5% max HP on Water units. Healing is capped by missing HP; the lifesteal cap
 includes affinity. Shield absorption, Burn and overkill do not generate lifesteal.
+
+## Army passives
+
+The requested percentages and intervals are retained. Unspecified sizes, damage,
+lifetimes and repeat limits use these initial values; they are editable in each
+army Resource or the `UnitStats` defaults. This is a correctness-tested starting
+point, not a competitive balance claim.
+
+| Army | Passive |
+|---|---|
+| Fire Lizard | Every projectile splashes a 16px radius, full primary / 50% secondary damage |
+| Fire Imp | Death explosion: 24px radius, 100% current attack damage, enemies only |
+| Magma Golem | Wall every 5s: 10×44px, 4s lifetime; contact refreshes an independent 2s Burn at 3 HP/s |
+| Red Ninja | Once per battle, resurrects at 30% actual max HP after simultaneous death effects settle |
+| Water Wizard | Each splash projectile pushes affected enemies 12px; simultaneous pushes cap at 24px per tick and stop at bodies/arena edges |
+| Ice Golem | Leaves an 18px-wide path every 1s, lasting 4s; enemy contact refreshes 15% movement Slow for 3s |
+| Water Slime | Splits once into 2 mini Slimes, each 50% parent's current attack damage and max HP; children retain lifesteal and cannot split again |
+| Snowman | On death throws its head at the nearest surviving enemy; impact has a 24px radius and 100% current attack damage |
+| Tree | Every 2s, heals itself and living allies within 48px for 5% of each recipient's max HP, before any healing affinity |
+| Armadillo | Bounces every 3s; enemies within 36px receive 20% attack-speed Slow for 2s; strongest value wins |
+| Wood Archer | Every 5s when in range, fires 3 arrows sharing one attack's total damage; prefers distinct enemies, repeats targets when fewer than 3 |
+| Wooden Siege | Every stone explodes over a huge 64px radius, retaining 70% secondary damage |
+
+Wizard and ice movement Slow use separate expiry timers; only the strongest
+active value affects speed. Attack Slow reduces progress on the ongoing attack
+cooldown as well as subsequent cycles. Flame-wall Burn and Wildfire have
+independent timers. Rank and commander damage bonuses carry through split arrows,
+children and death blasts. Births use free collision positions and do not change
+persistent draft counts, summon caps, reinforcements or promotions. Last-unit
+resurrection/splitting and thrown heads settle before elimination resolves.
 
 | Match parameter | Value |
 |---|---:|
@@ -64,8 +94,8 @@ is independent of the offers. Commander choice and warband realm are independent
 
 ## Balance sample
 
-The table below is historical evidence from **before solid collision**. The
-creature update preserves all base stats, roles and effects, but its larger
+The table below is historical evidence from **before solid collision and army passives**. The
+creature update preserves all base stats and roles, but new passives, its larger
 arena and permanent body blocking change engagements; these earlier win rates
 must not be treated as measurements of the new movement system. Melee contact
 uses a 7.2px solid body footprint, reduced 70% in each dimension from 24px;

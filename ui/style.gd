@@ -6,18 +6,19 @@ const PARCHMENT := Color("f9e9c5")
 const HONEY := Color("e8ba61")
 const MOSS := Color("456951")
 const EMBER := Color("b75d3e")
-const PIXEL_FONT = preload("res://assets/fonts/Tiny5-Regular.ttf")
+const TEXT_FONT = preload("res://assets/fonts/body.ttf")
+const MIN_FONT_SIZE: int = 9
 
 # Font metrics are checked against the assigned rectangle, including wrapped
 # descriptions and explicit newlines. Clipping is a final safeguard for long
 # live rosters; their complete text is available in the existing tooltip.
 static func fit_label(node: Label, rectangle: Rect2, requested_size: int) -> void:
 	var font: Font = node.get_theme_font("font")
-	var font_size: int = maxi(8, requested_size)
+	var font_size: int = maxi(MIN_FONT_SIZE, requested_size)
 	node.clip_text = true
 	node.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	node.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if rectangle.size.y >= font.get_height(font_size)*1.8 else TextServer.AUTOWRAP_OFF
-	while font_size > 8 and not _label_size_fits(node, font, font_size, rectangle.size):
+	while font_size > MIN_FONT_SIZE and not _label_size_fits(node, font, font_size, rectangle.size):
 		font_size -= 1
 	node.add_theme_font_size_override("font_size", font_size)
 	node.position = rectangle.position
@@ -35,13 +36,13 @@ static func refit_label(node: Label) -> void:
 	if node.text != node.get_meta("fitted_text", ""):
 		fit_label(node, node.get_meta("text_box"), node.get_meta("text_size"))
 
-static func fit_button(node: Button, rectangle: Rect2, requested_size: int = 10) -> void:
+static func fit_button(node: Button, rectangle: Rect2, requested_size: int = 11) -> void:
 	node.clip_text = true
 	node.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	var font: Font = node.get_theme_font("font")
 	var available: Vector2 = rectangle.size-node.get_theme_stylebox("normal").get_minimum_size()
-	var font_size: int = requested_size
-	while font_size > 8:
+	var font_size: int = maxi(MIN_FONT_SIZE, requested_size)
+	while font_size > MIN_FONT_SIZE:
 		var measured: Vector2 = font.get_multiline_string_size(node.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
 		if measured.x <= available.x and measured.y <= available.y:
 			break
@@ -78,8 +79,8 @@ static func panel(color: Color = PARCHMENT, border: Color = INK, width: int = 2)
 
 static func theme() -> Theme:
 	var result := Theme.new()
-	result.default_font = PIXEL_FONT
-	result.default_font_size = 10
+	result.default_font = TEXT_FONT
+	result.default_font_size = 11
 	result.set_constant("line_spacing", "Label", 0)
 	result.set_color("font_color", "Label", INK)
 	result.set_color("font_color", "Button", INK)

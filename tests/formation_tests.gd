@@ -103,7 +103,7 @@ func _spawn_and_crowds() -> void:
 				for alpha in [.25,.5,.75]:
 					expect(clear_bodies(sim, alpha), "render interpolation cannot clip moving bodies")
 			for value in sim.units:
-				expect(value.position.distance_to(value.previous_position) <= sim.move_speed(value)/sim.config.ticks_per_second+0.001, "collision never teleports or accelerates a unit")
+				expect(value.position.distance_to(value.previous_position) <= sim.cards[value.card_id].stats.move_speed/sim.config.ticks_per_second+0.001, "collision never teleports or accelerates a unit")
 		# A single 24-unit army must also use unique slots.
 	for id in GameCatalog.cards():
 		var ids: Array = GameCatalog.realm_cards(id.get_slice("_",0))

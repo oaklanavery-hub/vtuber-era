@@ -1,0 +1,243 @@
+{
+  "status": "passed",
+  "scenario": "fire",
+  "rival": "fire",
+  "commander": "fire_commander",
+  "warband": [
+    "fire_archer",
+    "fire_melee",
+    "fire_tank",
+    "fire_assassin"
+  ],
+  "browser": "151.0.7922.34",
+  "screens": [
+    "menu",
+    "compendium",
+    "settings",
+    "commander",
+    "warband",
+    "battle",
+    "results"
+  ],
+  "seed": 1791245457,
+  "rounds": [
+    {
+      "round": 1,
+      "hearts": [
+        3,
+        4
+      ],
+      "heartLoss": 1
+    },
+    {
+      "round": 2,
+      "hearts": [
+        2,
+        4
+      ],
+      "heartLoss": 1
+    },
+    {
+      "round": 3,
+      "hearts": [
+        2,
+        3
+      ],
+      "heartLoss": 1
+    },
+    {
+      "round": 4,
+      "hearts": [
+        2,
+        2
+      ],
+      "heartLoss": 1
+    },
+    {
+      "round": 5,
+      "hearts": [
+        2,
+        1
+      ],
+      "heartLoss": 1
+    },
+    {
+      "round": 6,
+      "hearts": [
+        2,
+        0
+      ],
+      "heartLoss": 1
+    }
+  ],
+  "actions": [
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "fire_tank",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "fire_tank",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "fire_tank",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "fire_assassin",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "fire_tank",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "fire_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "fire_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "fire_tank",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "fire_melee",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "fire_melee",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "fire_assassin",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "fire_assassin",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "fire_assassin",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 6,
+      "choice": {
+        "card_id": "fire_melee",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 6,
+      "choice": {
+        "card_id": "fire_tank",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 6,
+      "choice": {
+        "card_id": "fire_tank",
+        "kind": "reinforce"
+      }
+    }
+  ],
+  "stats": {
+    "reinforcements": 6,
+    "promotions": 4,
+    "spell": 1,
+    "comeback": 2
+  },
+  "errors": [],
+  "headers": "ordinary HTTP; no cross-origin isolation",
+  "testedViewport": [
+    "1280x720",
+    "1000x720"
+  ],
+  "arena": [
+    600,
+    202
+  ],
+  "bodySize": 7.2,
+  "spawnCollisionPassed": true,
+  "combatCollisionPassed": true,
+  "settingsPersisted": true,
+  "rematchPassed": true,
+  "textFont": "DejaVu Sans",
+  "passives": {
+    "flame_burn": 35,
+    "flame_wall": 44,
+    "imp_explosion": 36,
+    "lizard_splash": 245,
+    "ninja_revive": 11
+  },
+  "textOverflows": 0,
+  "combatSoundsPlayed": 385,
+  "webAudio": {
+    "starts": 450,
+    "shortEffects": 385
+  }
+}

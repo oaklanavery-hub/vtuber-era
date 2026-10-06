@@ -9,6 +9,8 @@ damage = 9.0
 attacks_per_second = 1.0
 move_speed = 34.0
 attack_range = 138.0
+splash_radius = 16.0
+splash_falloff = 0.5
 
 [resource]
 script = ExtResource("1")
@@ -18,6 +20,6 @@ short_name = "Fire Lizard"
 set_id = "fire"
 role = "ranged"
 group_size = 3
-description = "Long-tailed fire lizards with quick ranged attacks. Protect them with a frontline."
+description = "Each projectile splashes a small area; nearby enemies take 50% damage."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

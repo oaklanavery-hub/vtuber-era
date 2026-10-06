@@ -11,6 +11,8 @@ move_speed = 35.0
 attack_range = 21.0
 lifesteal_fraction = 0.15
 lifesteal_cap_per_second = 0.02
+split_count = 2
+
 [resource]
 script = ExtResource("1")
 id = "water_melee"
@@ -19,6 +21,6 @@ short_name = "Water Slime"
 set_id = "water"
 role = "melee"
 group_size = 3
-description = "Heal for 15% of HP damage dealt, capped at 2% max HP per second."
+description = "Splits once into 2 small Slimes at 50% HP and damage each. Retains 15% lifesteal (2% HP/s cap)."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

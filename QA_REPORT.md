@@ -1,3 +1,55 @@
+# Army passives and readable text — 6 October 2026
+
+All interface text now uses smooth DejaVu Sans, with a 9px logical minimum and
+rectangle-based fitting. The compact HUD, 600×202 battlefield, 7.2×7.2 permanent
+collision bodies, depth order, existing save format and combat audio remain.
+Compendium cards explain all twelve passives directly and retain full stats in
+tooltips. Resource-backed parameters and unspecified defaults are in `BALANCE.md`.
+
+- Rules/economy/combat: **1,016 checks; 0 failures**.
+- Elemental mechanics and 33 complete matches/replays: **17,900 checks; 0 failures**.
+- All twelve army passives: **24,522 checks; 0 failures**.
+- Permanent collision and formations: **74,858 checks; 0 failures**.
+- Native UI, font fitting and audio resources/events: **0 failures**.
+
+The passive runner covers projectile splash, enemy-only death explosions and
+simultaneous explosion chains; two-second wall Burn independent of Wildfire;
+once-per-battle 30%-HP Ninja revival; swept pushback stopped by blockers and arena
+edges; separate, non-stacking Wizard/ice Slow timers; two half-damage Slime
+children without recursive splitting; the last Snowman's head landing before
+round resolution; 5%-max-HP Tree healing every 2s; 20% attack Slow and an in-place
+Armadillo bounce; three arrows sharing exactly one attack's damage every 5s;
+huge siege radius/falloff; and complete cleanup and new-battle reset.
+
+Maximum drafted crowds splitting every Slime produce 240 recorded units and
+192 living bodies (96 per side). Spawn positions, swept movement, interpolation,
+health bounds and deterministic replay all remain valid. Children never change
+persistent roster counts, caps, draft history or the next battle's base roster.
+
+Official Godot 4.5 engine and Web templates match the release SHA-512 checksums.
+All twelve army Resources reproduce from the original asset generator. The
+single-threaded WebAssembly/WebGL release passes four full browser match types
+with zero engine, JavaScript or HTTP errors, zero text-box overflows, settings
+and loadout persistence, real spell/draft actions, Hearts, results and Rematch.
+All twelve requested passives were observed across the browser scenarios.
+Fire/Fire is unaffected by the final Armadillo animation synchronization; the
+Water, Earth and mixed scenarios were rerun after that change.
+
+| Player | Rival | Rounds | Combat sounds played | New samples observed in WebAudio |
+|---|---|---:|---:|---:|
+| Fire | Fire | 6 | 385 | 385 |
+| Water | Earth | 4 | 296 | 296 |
+| Earth | Water | 5 | 730 | 730 |
+| Mixed | Fire | 6 | 266 | 266 |
+
+Reports: `docs/qa/army-passives-browser-*.json` and
+`docs/qa/army-passives-native.txt`. Visually inspected 1280×720 and 1000×720
+screenshots show readable text, bounded compact controls, visible ability
+descriptions and flame/ice/heal cues. Current examples:
+`docs/screenshots/passives-compendium.png` and `passives-battle.png`.
+
+The evidence below is historical and describes earlier releases.
+
 # Compact collisions, pixel fonts and combat audio — 5 October 2026
 Collision remains permanent on both teams. Its width and height are reduced by 70%, from 24px to 7.2px. Spawn spacing remains 24px, while depth-sorted sprites may partially overlap above the smaller bodies. Out-of-range pursuit and detours remain active.
 All UI text uses licensed Tiny5 with pixel rendering and rectangle-based fitting. Original pixel heart icons avoid unsupported font glyphs. Twelve new synthesized combat effects use event coalescing, cooldowns and a separate quiet six-voice pool; the existing volume setting controls them.

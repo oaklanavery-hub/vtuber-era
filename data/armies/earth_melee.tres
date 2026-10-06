@@ -9,6 +9,7 @@ damage = 10.0
 attacks_per_second = 0.75
 move_speed = 32.0
 attack_range = 23.0
+bounce_interval = 3.0
 
 [resource]
 script = ExtResource("1")
@@ -18,6 +19,6 @@ short_name = "Armadillo"
 set_id = "earth"
 role = "melee"
 group_size = 2
-description = "Durable, shell-plated armadillos who strike hard in close combat."
+description = "Bounces every 3s, slowing nearby enemies' attack speed by 20% for 2s."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

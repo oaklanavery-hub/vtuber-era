@@ -60,6 +60,19 @@ strength. Water Slime lifesteal heals 15% of actual HP damage dealt, excluding
 shields, Burn and overkill, capped at 2% actual max HP per one-second window.
 Buffered simultaneous hit credit is prorated fairly among attackers.
 
+Each army also has a Resource-backed passive. Fire Lizards splash with every
+projectile; Fire Imps explode on death. Magma Golems raise flame walls every 5s,
+burning enemies crossing them for 2s. Red Ninjas resurrect once per battle with
+30% max HP. Water Wizards push enemies back with every splash spell. Ice Golems
+leave paths applying a non-stacking 15% movement Slow for 3s. Water Slimes split
+once into two smaller children at 50% damage and HP each; children do not split.
+Snowmen throw their heads on death for a small area blast. Trees heal nearby
+living allies, including themselves, for 5% max HP every 2s. Armadillos bounce
+every 3s and reduce nearby enemies' attack speed by 20% for 2s. Wood Archers fire
+three arrows sharing one attack's damage every 5s when in range. Wooden Siege
+stones hit a huge 64px area. Exact initial parameters are documented in
+`BALANCE.md` and each card's description.
+
 ## Drafting and persistence
 
 Three unique offers always contain a normal card. Other slots use editable
@@ -73,6 +86,8 @@ There are two uses per army, Rank caps at 3, and unit caps are 24 per army and
 72 per side. Exceeding a cap is rejected, never silently clamped. Promotion affects
 current and future units. Counts, Ranks and action history survive rounds;
 combat HP, projectiles, shields, Burn, Slow and spell/recovery timers reset.
+Slime children exist only in combat; persistent roster counts stay unchanged.
+Revival eligibility also resets in each new battle.
 
 ## Deterministic combat and fair AI
 
@@ -98,6 +113,10 @@ Swept movement reserves the whole tick's path, preventing both simulation
 penetration and interpolated body crossing. Sprites are painted in depth order
 and may partially overlap above their feet, leaving rear creatures visible.
 Dead units do not block movement.
+Pushback uses the same swept collision solver, including blockers and arena
+edges. It cannot detour or tunnel through another body. Slime births search for
+free positions checked against other units' whole interpolation paths; if no
+position is available, they wait. Stable IDs remain valid when children append.
 Spatial buckets limit collision checks; deterministic rotating movement priority
 avoids permanent first-unit/first-team lane priority.
 
@@ -112,6 +131,9 @@ keeps short-range melee functional without changing any stored army stats.
 At 45s compare remaining HP fractions, then survivors. Exact ties enter escalating
 sudden death. Simultaneous dispersal yields a visible draw, no Heart loss and no
 comeback point. There is no random winner or unit-ID attack initiative advantage.
+Death explosions resolve in simultaneous waves, with each dead unit triggering
+once. Ninjas revive after the waves, and Slime children spawn in free slots.
+The last Snowman's head is allowed to land before declaring the round's winner.
 
 The AI uses identical legal offers, costs, spells and caps. It scores frontline
 need, army size, upgrade value, enemy backline concentration and previous loss.
@@ -129,11 +151,14 @@ Health bars, shield lines, Slow marks and healing crosses expose combat effects.
 Reduced effects removes bounces, flashes and particles. All values live in custom
 Resources; portraits and sprites remain replaceable placeholders.
 
-All interface text uses the Tiny5 pixel font with antialiasing and subpixel
-positioning disabled. Labels measure their text, wrap descriptions where room
+All interface text uses smooth DejaVu Sans with antialiasing and a 9px minimum
+logical font size (18px in a 1280×720 window). Labels measure their text, wrap descriptions where room
 permits, and reduce the font size to fit their assigned rectangles. Buttons
 account for their inner margins; compact rosters use ellipsis and full tooltips
 when needed. Hearts are original pixel icons rather than fallback font glyphs.
+Compendium cards show each passive directly, with full stats in their tooltip.
+Flame walls and ice paths stay visible in Reduced Effects mode because they
+affect gameplay. Cosmetic bounce motion never moves a unit's collision body.
 
 Twelve original short combat cues cover melee, ninja slashes, arrows, snowballs,
 fire breath, water magic, siege launches/impacts, shield hits, impacts, healing

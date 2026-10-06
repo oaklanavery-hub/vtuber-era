@@ -173,36 +173,42 @@ def svg(w, h, inner):
 
 def art():
     names = [('fire_archer', 'Fire Lizards', 'Fire Lizard', 'ranged', 3, 34, 9, 1.0, 34, 138,
-              'Long-tailed fire lizards with quick ranged attacks. Protect them with a frontline.'),
+              'Each projectile splashes a small area; nearby enemies take 50% damage.'),
              ('fire_melee', 'Fire Imps', 'Fire Imp', 'melee', 3, 64, 8, 1.05, 39, 20,
-              'Horned, clawed imps who rush into close combat.'),
+              "Explodes on death, dealing one attack's damage to nearby enemies."),
              ('fire_tank', 'Magma Golems', 'Magma Golem', 'tank', 1, 220, 7, .65, 27, 23,
-              'Heavy basalt golems with molten cores. Absorb attacks and protect allies.'),
+              'Every 5s, raises a 4s flame wall. Enemies crossing it burn for 3 damage/s for 2s.'),
              ('fire_assassin', 'Red Ninjas', 'Red Ninja', 'assassin', 1, 60, 13, 1.55, 62, 19,
-              'Fast flankers who hunt archers, mages and siege behind the frontline.'),
+              'Flanks the backline. Resurrects once per battle with 30% max HP.'),
              ('water_mage', 'Water Wizards', 'Water Wizard', 'mage', 2, 34, 6, .60, 30, 146,
-              'Splash spells slow enemy movement by 25% for 2s. Slow never stacks.'),
+              'Splash projectiles push enemies back 12px and slow movement by 25% for 2s.'),
              ('water_tank', 'Ice Golems', 'Ice Golem', 'tank', 1, 180, 6, .55, 24, 23,
-              'At battle start, shield nearby allies for 8% of their max HP for 8s.'),
+              'Leaves an ice path: 15% movement Slow for 3s. Starts with an 8% nearby shield lasting 8s.'),
              ('water_melee', 'Water Slimes', 'Water Slime', 'melee', 3, 52, 6, .90, 35, 21,
-              'Heal for 15% of HP damage dealt, capped at 2% max HP per second.'),
+              'Splits once into 2 small Slimes at 50% HP and damage each. Retains 15% lifesteal (2% HP/s cap).'),
              ('water_ranged', 'Snowmen', 'Snowman', 'ranged', 3, 34, 7, 1.0, 32, 154,
-              'Snowmen with long-range snowball attacks. Keep them safe behind allies.'),
+              'On death, throws its head at the nearest enemy for a small area blast.'),
              ('earth_tank', 'Trees', 'Tree', 'tank', 1, 250, 6, .55, 22, 25,
-              'Walking trees with tough bark and branch arms. Hold the frontline.'),
+              "Every 2s, heals itself and allies within 48px for 5% of each unit's max HP."),
              ('earth_melee', 'Armadillos', 'Armadillo', 'melee', 2, 80, 10, .75, 32, 23,
-              'Durable, shell-plated armadillos who strike hard in close combat.'),
+              "Bounces every 3s, slowing nearby enemies' attack speed by 20% for 2s."),
              ('earth_ranged', 'Wood Archers', 'Wood Archer', 'ranged', 2, 44, 13, .65, 28, 150,
-              'Steady marksmen with slow, heavy ranged attacks.'),
+              "Every 5s in range, fires 3 arrows sharing one attack's damage across nearby enemies."),
              ('earth_siege', 'Wooden Siege', 'Wooden Siege', 'siege', 1, 75, 20, .20, 17, 220,
-              'Slow, long-range stones hit enemy clusters. Small group size; protect it.')]
+              'Long-range stones blast a huge 64px area. Nearby enemies take 70% damage.')]
     extras = {
-        'water_mage': dict(projectile_speed=220.0, splash_radius=22.0, splash_falloff=.50, slow_fraction=.25, slow_duration=2.0),
-        'water_tank': dict(ally_shield_fraction=.08, ally_shield_radius=58.0, ally_shield_duration=8.0),
-        'water_melee': dict(lifesteal_fraction=.15, lifesteal_cap_per_second=.02),
-        'water_ranged': dict(projectile_speed=280.0),
-        'earth_ranged': dict(projectile_speed=240.0),
-        'earth_siege': dict(projectile_speed=140.0, splash_radius=34.0),
+        'fire_archer': {'splash_radius': 16.0, 'splash_falloff': 0.5},
+        'fire_melee': {'death_blast_radius': 24.0},
+        'fire_tank': {'flame_interval': 5.0},
+        'fire_assassin': {'revive_fraction': 0.3},
+        'water_mage': {'projectile_speed': 220.0, 'splash_radius': 22.0, 'splash_falloff': 0.5, 'slow_fraction': 0.25, 'slow_duration': 2.0, 'knockback_distance': 12.0},
+        'water_tank': {'ally_shield_fraction': 0.08, 'ally_shield_radius': 58.0, 'ally_shield_duration': 8.0, 'ice_interval': 1.0},
+        'water_melee': {'lifesteal_fraction': 0.15, 'lifesteal_cap_per_second': 0.02, 'split_count': 2},
+        'water_ranged': {'projectile_speed': 280.0, 'death_blast_radius': 24.0, 'death_projectile': True},
+        'earth_tank': {'heal_interval': 2.0},
+        'earth_melee': {'bounce_interval': 3.0},
+        'earth_ranged': {'projectile_speed': 240.0, 'split_shot_interval': 5.0},
+        'earth_siege': {'projectile_speed': 140.0, 'splash_radius': 64.0},
     }
     for ident, name, short, role, group, hp, damage, aps, speed, reach, description in names:
         realm = ident.split('_')[0]
@@ -219,7 +225,7 @@ damage = {float(damage)}
 attacks_per_second = {aps}
 move_speed = {float(speed)}
 attack_range = {float(reach)}
-{''.join(f'{key} = {value}\n' for key, value in extras.get(ident, {}).items()).rstrip()}
+{''.join(f'{key} = {str(value).lower() if isinstance(value, bool) else value}\n' for key, value in extras.get(ident, {}).items()).rstrip()}
 [resource]
 script = ExtResource("1")
 id = "{ident}"

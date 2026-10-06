@@ -8,11 +8,14 @@ The creature-army update adds twelve distinct animated designs, permanent solid
 unit collision, side-stepping around blocked approaches and a compact battle HUD.
 The battlefield is now 600×202, about 52% more area than the previous 560×142.
 
-The latest presentation update reduces collision boxes 70% to 7.2×7.2, keeps
-collision active, paints creatures in depth order, adds twelve combat sound
-effects and fits Tiny5 pixel-font text inside the interface boxes.
+The latest update uses smooth DejaVu Sans text and adds all twelve army passives:
+projectile splash and pushback, death explosions and Slime splitting, one-use
+Ninja resurrection, flame walls, ice paths, Tree healing, Armadillo attack Slow,
+split arrows and huge siege blasts. The compendium explains each ability.
+Collision stays active at 7.2×7.2 with depth-sorted sprites, a compact HUD and
+twelve original combat sound effects.
 
-![Pixel fonts, compact collisions and combat audio](docs/screenshots/pixel-audio-battle.png)
+![Readable text and army passives](docs/screenshots/passives-compendium.png)
 
 **Play:** [Launch VTuber Era](https://oaklanavery-hub.github.io/vtuber-era/)
 **Source:** [oaklanavery-hub/vtuber-era](https://github.com/oaklanavery-hub/vtuber-era)
@@ -62,6 +65,7 @@ Run from the project directory with `godot` pointing to Godot 4.5:
 godot --headless --path . --editor --import --quit
 godot --headless --path . --script res://tests/run_tests.gd
 godot --headless --path . --script res://tests/elemental_tests.gd
+godot --headless --path . --script res://tests/passive_tests.gd
 godot --headless --path . --script res://tests/formation_tests.gd
 godot --headless --path . --script res://tests/ui_smoke.gd
 ```
@@ -75,6 +79,9 @@ All runners exit non-zero on failure. See `QA_REPORT.md` for release evidence.
 The formation runner covers 144-unit crowds, duplicate-role mixed spawns, body
 collision throughout movement and interpolation, allied/hostile detours, melee
 contact, range-based pursuit, original stats and deterministic movement replay.
+The passive runner covers all twelve abilities, simultaneous death chains,
+posthumous projectiles, one-use revivals/splits, non-stacking slows, exact damage
+and healing fractions, timed auras, pushback collisions and 240-unit split crowds.
 
 Optional balance sampling runs 72 full AI matches:
 
@@ -112,7 +119,7 @@ account, CDN, remote asset service or JavaScript game framework is needed.
 ## GitHub Pages
 
 `.github/workflows/deploy-pages.yml` installs the exact engine/templates,
-verifies official SHA-512 checksums, imports, runs all four correctness runners,
+verifies official SHA-512 checksums, imports, runs all five correctness runners,
 exports, checks required files, includes notices and `.nojekyll`, then deploys
 through official Pages actions. Main pushes and manual dispatch trigger it.
 The public game uses the existing `/vtuber-era/` project path.
@@ -129,7 +136,7 @@ The public game uses the existing `/vtuber-era/` project path.
 | `scenes/`, `ui/` | World/battlefield rendering, selection, cards and dialogs |
 | `autoloads/` | Versioned local saves and original audio |
 | `assets/` | Original atlases, three portraits, audio and licence notices |
-| `tests/` | Rules, elemental, UI, browser and balance runners |
+| `tests/` | Rules, elemental, passives, formation, UI, browser and balance runners |
 | `tools/` | Rebuild assets and prepare/serve exports |
 
 ## Current limits
