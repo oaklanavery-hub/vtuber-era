@@ -13,7 +13,7 @@ func check(condition: bool, message: String) -> void:
 func layout(ui, parent: Node = null) -> void:
 	for child in (parent if parent else ui.surface).get_children():
 		if child is Label or child is Button:
-			check(child.get_theme_font("font").get_font_name() == "Pixelify Sans", "all interface text uses the readable font: "+child.text)
+			check(child.get_theme_font("font").get_font_name() == "Minecraft", "all interface text uses the Minecraft-style font: "+child.text)
 			if child.has_meta("text_box"):
 				check(child.get_theme_font_size("font_size") >= 10, "text never shrinks below the readable minimum: "+child.text)
 		if child is Control and child.has_meta("text_box"):
@@ -51,6 +51,12 @@ func _run() -> void:
 		ui._compendium_tab(realm)
 		check(ui.screen=="compendium" and ui.compendium_realm==realm, "each realm's compendium opens")
 		layout(ui)
+		for id in GameCatalog.realm_cards(realm):
+			ui._show_card_details(id)
+			check(ui.details_card_id == id and ui.details_overlay != null, "every compendium card opens detailed effects")
+			layout(ui)
+			ui._close_card_details()
+			check(ui.details_overlay == null and ui.screen == "compendium", "closing effects returns to the same compendium")
 	ui.settings_return = "menu"
 	ui.show_settings()
 	check(ui.screen=="settings", "settings open")
@@ -78,8 +84,18 @@ func _run() -> void:
 	check(ui.state.commander_for(1).id=="water_commander" and ui.state.warband_for(1)==GameCatalog.WATER_IDS, "rival selector supplies independent opposing realm")
 	check(ui.screen=="battle" and ui.offer_buttons.size()==3, "three draft offers rendered")
 	layout(ui)
-	check(ui.battlefield.position == Vector2(20,64) and CombatSimulation.ARENA_SIZE == Vector2(600,202), "compact HUD leaves a larger battlefield")
-	check(ui.offer_buttons[0].size.y == 64 and ui.spell_button.size.y <= 36 and ui.battle_button.size.y <= 22, "battle controls retain their compact sizes")
+	check(ui.battlefield.position == Vector2(20,64) and CombatSimulation.ARENA_SIZE == Vector2(600,280), "expanded arena has actual fighting space")
+	check(ui.modal_kind == "command" and ui.battle_button.get_parent() == ui.modal, "round choices and Battle live in the popup")
+	var points_before: int = ui.state.sides[0].points
+	var offers_before: String = JSON.stringify(ui.state.sides[0].offers)
+	ui.offer_buttons[0].get_node("CardInfo").pressed.emit()
+	check(ui.details_overlay != null and ui.details_card_id == ui.state.sides[0].offers[0].card_id, "top-left info icon opens the offered army effects")
+	layout(ui)
+	ui._pick(0)
+	ui.prepare_spell()
+	ui.begin_battle()
+	check(ui.state.sides[0].points == points_before and offers_before == JSON.stringify(ui.state.sides[0].offers) and ui.simulation == null, "reading effects cannot spend points, reroll offers, or start combat")
+	ui._close_card_details()
 	var before: String = JSON.stringify(ui.state.sides[0].offers)
 	ui.prepare_spell()
 	check(ui.state.sides[0].points==2 and ui.state.sides[0].spell, "spell UI spends one point")
@@ -89,6 +105,8 @@ func _run() -> void:
 	check(ui.state.total_units(0)>0, "UI summons real persistent armies")
 	ui.begin_battle()
 	check(ui.simulation!=null and ui.state.phase=="combat", "UI launches real combat")
+	check(ui.modal == null and ui.offer_buttons.is_empty() and ui.battle_button == null and ui.spell_button == null and ui.runes == null, "all bottom draft controls are removed during combat")
+	layout(ui)
 	check(ui.battlefield.preview_units.size() == ui.simulation.units.size(), "all preview creatures are present at combat start")
 	for index in range(ui.simulation.units.size()):
 		check(ui.battlefield.preview_units[index].position == ui.simulation.units[index].position, "preview and real spawn positions match")
@@ -100,6 +118,22 @@ func _run() -> void:
 	layout(ui)
 	ui.next_round()
 	check(ui.state.round_number==2 and ui.state.phase=="command", "next round resumes command phase")
+	check(ui.modal_kind == "command", "each new round automatically opens the picker")
+	# Reinforcement cancellation returns to the picker without spending a point.
+	ui.state.sides[0].roster.water_mage.count = 6
+	ui.state.sides[0].roster.water_mage.summons = 2
+	ui.state.sides[0].offers = [{"kind":"reinforce", "card_id":"water_mage"}, {"kind":"summon", "card_id":"water_melee"}, {"kind":"summon", "card_id":"earth_tank"}]
+	ui.show_battle()
+	points_before = ui.state.sides[0].points
+	ui._pick(0)
+	check(ui.modal_kind == "reinforce", "reinforcement confirmation replaces the picker")
+	layout(ui)
+	ui._close_dialog()
+	check(ui.modal_kind == "command" and ui.state.sides[0].points == points_before and ui.state.sides[0].roster.water_mage.count == 6, "Cancel restores the unchanged command popup")
+	ui._pick(0)
+	ui.modal_action.call()
+	check(ui.modal_kind == "command" and ui.state.sides[0].points == points_before-1 and ui.state.sides[0].roster.water_mage.count == 12, "confirming reinforcement plays the card and returns to the popup")
+	layout(ui)
 	ui.state.sides[1].hearts=1
 	ui.state.phase="combat"
 	ui.simulation = CombatSimulation.new(ui.state)

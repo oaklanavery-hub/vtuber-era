@@ -66,20 +66,20 @@ func _draw() -> void:
 		draw_rect(Rect2(x-3, 175, 9, 12), Color("f2ce79"))
 		draw_rect(Rect2(x-1, 179, 5, 5), Color("fae7b5"))
 	if battle_mode:
-		draw_rect(Rect2(12, 60, 616, 210), BROWN)
-		draw_rect(Rect2(15, 63, 610, 204), Color("b2be84"))
-		draw_rect(Rect2(18, 64, 604, 202), Color("c6cc92"))
-		for index in range(35):
+		draw_rect(Rect2(12, 60, 616, 288), BROWN)
+		draw_rect(Rect2(15, 63, 610, 282), Color("b2be84"))
+		draw_rect(Rect2(18, 64, 604, 280), Color("c6cc92"))
+		for index in range(50):
 			var x: float = float(27+(index*73)%586)
-			var y: float = float(74+(index*37)%178)
+			var y: float = float(74+(index*37)%258)
 			draw_rect(Rect2(x, y, 4, 2), Color("bac58b"))
 			if index%4 == 0:
 				draw_rect(Rect2(x+1,y-2,1,2),Color("afbd81"))
 		# Soft, dashed center seam keeps the battlefield visually open.
-		for y in range(67,264,8):
+		for y in range(67,342,8):
 			draw_rect(Rect2(320,y,1,3),Color("b7c18a"))
 		for x in [18,619]:
-			for y in [64,263]:
+			for y in [64,341]:
 				draw_rect(Rect2(x,y,3,3),Color("e8ba61"))
 	else:
 		# Bunting behind the title, tied between the woodland trees.

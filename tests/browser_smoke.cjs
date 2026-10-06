@@ -36,6 +36,8 @@ let activePage;
 const errors = [];
 const actions = [];
 const rounds = [];
+const cardDetails = [];
+let reinforcementCancelPassed = false;
 const visited = new Set();
 const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
 
@@ -67,7 +69,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   const waitScreen = async screen => {
     await page.waitForFunction(screen => window.vtuberEraQA?.screen === screen, screen, { timeout: 60000 });
     visited.add(screen);
-    assert.equal((await snapshot()).text_font, 'Pixelify Sans');
+    assert.equal((await snapshot()).text_font, 'Minecraft');
     assert.equal((await snapshot()).text_overflows, 0, 'text stays inside its UI boxes');
   };
   const click = async (x, y) => { await page.mouse.click(x * 2, y * 2); await page.waitForTimeout(100); };
@@ -81,9 +83,20 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await click(320, 232);
   await waitScreen('compendium');
   for (let i = 0; i < realms.length; i++) {
-    await click(211 + i * 106, 93);
+    await click(211 + i * 106, 99);
     await page.waitForFunction(realm => window.vtuberEraQA?.compendium_realm === realm, realms[i]);
     await screenshot(`compendium-${realms[i]}`);
+    for (let index = 0; index < 4; index++) {
+      const id = cards[i * 4 + index];
+      await click(44.5 + index * 149, 144.5);
+      await page.waitForFunction(id => window.vtuberEraQA?.card_details === id, id);
+      assert.equal((await snapshot()).text_overflows, 0, 'full effects fit in the detail popup');
+      if (index === 0) await screenshot(`details-${realms[i]}`);
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => window.vtuberEraQA?.card_details === '');
+      assert.equal((await snapshot()).compendium_realm, realms[i], 'details return to the same compendium tab');
+      cardDetails.push(id);
+    }
   }
   await click(320, 333);
   await waitScreen('menu');
@@ -144,8 +157,8 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await click(509, 336);
   await waitScreen('battle');
   const initial = await snapshot();
-  assert.equal(initial.release, 'pixel-polish-ninja-fix');
-  assert.deepEqual(initial.arena, [600, 202]);
+  assert.equal(initial.release, 'round-picker-expanded-arena');
+  assert.deepEqual(initial.arena, [600, 280]);
   assert.equal(initial.body_size, 7.2);
   assert.equal(initial.spawn_spacing, 24);
   assert.equal(initial.commander, `${leaderRealm}_commander`);
@@ -154,7 +167,10 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   assert.equal(initial.bond, scenario === 'mixed' ? '' : ({ fire: 'wildfire', water: 'tidal_recovery', earth: 'earthen_guard' })[scenario]);
   console.log(`PASS: ${scenario} warband and ${leaderRealm} commander enter a real match against ${rival}.`);
   const initialOffers = JSON.stringify(initial.offers);
-  await click(540, 307);
+  assert.equal(initial.modal, 'command', 'round one automatically opens the card popup');
+  assert.equal(initial.command_popup, true);
+  await screenshot('round-picker');
+  await click(187, 322);
   let now = await snapshot();
   assert.equal(now.points, 2);
   assert.equal(now.spell, true);
@@ -179,7 +195,22 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
     now = await snapshot();
     assert(now.round <= 18, 'match must reach its conclusion');
     if (now.phase === 'command') {
+      assert.equal(now.modal, 'command', 'each round opens the picker');
       if (now.points === 4) stats.comeback++;
+      const detailsBefore = now;
+      await click(72.5, 140.5);
+      await page.waitForFunction(id => window.vtuberEraQA?.card_details === id, now.offers[0].card_id);
+      await screenshot('draft-card-details');
+      await page.keyboard.press('Space');
+      assert.equal((await snapshot()).phase, 'command', 'Space cannot start battle while reading card effects');
+      assert.equal((await snapshot()).card_details, detailsBefore.offers[0].card_id, 'Space cannot activate Close and leak the following Escape into settings');
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => window.vtuberEraQA?.card_details === '');
+      now = await snapshot();
+      assert.equal(now.screen, 'battle');
+      assert.equal(now.modal, 'command');
+      assert.equal(now.points, detailsBefore.points);
+      assert.deepEqual(now.offers, detailsBefore.offers, 'reading effects never rerolls cards');
       while (now.points > 0) {
         const choices = now.offers.map((choice, index) => ({ choice, index }))
           .filter(({ choice }) => eligible(choice, now))
@@ -187,10 +218,21 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
         if (!choices.length) break;
         const { choice, index } = choices[0];
         const before = now;
-        await click(87 + index * 145, 322);
+        await click(137 + index * 178, 205);
         if (choice.kind === 'reinforce') {
           await page.waitForFunction(() => window.vtuberEraQA?.modal === 'reinforce');
           await screenshot('reinforcement-confirmation');
+          if (!reinforcementCancelPassed) {
+            await page.keyboard.press('Escape');
+            await page.waitForFunction(() => window.vtuberEraQA?.modal === 'command');
+            const cancelled = await snapshot();
+            assert.equal(cancelled.points, before.points);
+            assert.deepEqual(cancelled.offers, before.offers);
+            assert.deepEqual(cancelled.roster, before.roster, 'Cancel keeps armies and points unchanged');
+            reinforcementCancelPassed = true;
+            await click(137 + index * 178, 205);
+            await page.waitForFunction(() => window.vtuberEraQA?.modal === 'reinforce');
+          }
           await page.keyboard.press('Enter');
           await page.waitForFunction(points => window.vtuberEraQA?.points === points, before.points - 1);
           stats.reinforcements++;
@@ -207,6 +249,14 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
           stats.promotions++;
         }
         actions.push({ round: now.round, choice });
+      }
+      // Even exhausted/disabled offers keep their info icons usable.
+      if (now.points === 0) {
+        await click(72.5, 140.5);
+        await page.waitForFunction(id => window.vtuberEraQA?.card_details === id, now.offers[0].card_id);
+        assert.equal((await snapshot()).points, 0);
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => window.vtuberEraQA?.card_details === '');
       }
       await screenshot(`command-round-${now.round}`);
       assert.equal(now.preview.length, now.total + now.preview.filter(unit => unit[0] === 1).length);
@@ -226,9 +276,14 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
         await page.waitForFunction(() => window.vtuberEraQA?.pixel_scale_mode === 'integer');
       }
       const hearts = now.hearts;
-      // Test Space while a draft button has focus: it must start combat.
-      await page.keyboard.press('Space');
+      // Both the actual Battle button and its shortcut start combat from the popup.
+      if (now.round === 2) await page.keyboard.press('Space');
+      else await click(493, 322);
       await page.waitForFunction(() => window.vtuberEraQA?.phase === 'combat');
+      const combat = await snapshot();
+      assert.equal(combat.command_popup, false);
+      assert.equal(combat.battle_controls_visible, false, 'draft controls disappear so combat fills the arena');
+      assert.equal(combat.modal, '');
       await page.waitForTimeout(700);
       await screenshot(`combat-round-${now.round}`);
       await page.waitForFunction(() => {
@@ -288,6 +343,10 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
     testedViewport: ['1280x720', '1000x720'], arena: initial.arena, bodySize: initial.body_size,
     spawnCollisionPassed: true, combatCollisionPassed: true, settingsPersisted: true, rematchPassed: true };
   report.textFont = final.text_font;
+  report.cardDetails = cardDetails;
+  report.roundPopupPassed = true;
+  report.combatControlsHidden = true;
+  report.reinforcementCancelPassed = reinforcementCancelPassed;
   report.passives = final.passives;
   report.textOverflows = final.text_overflows;
   report.combatSoundsPlayed = final.combat_sounds;

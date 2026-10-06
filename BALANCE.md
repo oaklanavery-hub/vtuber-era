@@ -78,6 +78,7 @@ resurrection/splitting and thrown heads settle before elimination resolves.
 
 | Match parameter | Value |
 |---|---:|
+| Arena | 600×280; nine 24px-spaced spawn rows; movement bounds (16,28)–(584,258) |
 | Hearts | 4 per side |
 | Command Points | 3 per round; previous loser +1 |
 | Action / spell cost | 1 point |

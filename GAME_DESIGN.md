@@ -151,23 +151,33 @@ Parchment and a sunny woodland frame original eight-frame 32×32 creature sprite
 drawn at their native size in battle. Shared 32-color ramps, one-pixel outlines,
 shaded material details and dedicated attack frames preserve each silhouette.
 Ninja revival uses a distinct frame, a one-second pixel ring and a persistent
-gold mark after the resurrection is spent. Compact cards and header open a 600×202 arena within
-the same 640×360 logical resolution, up from 560×142. Fire uses
+gold mark after the resurrection is spent. A compact score header opens a 600×280 arena within
+the same 640×360 logical resolution. Nine spawn rows retain 24px spacing;
+movement can use the full expanded arena and Ninja flanks follow its outer rows. Fire uses
 honey/coral/orange, Water turquoise/seafoam/pearl/lavender, Earth moss/ochre/stone.
 Health bars, shield lines, Slow marks and healing crosses expose combat effects.
 Reduced effects removes bounces, flashes and particles. All values live in custom
 Resources; portraits and sprites remain replaceable placeholders.
 
-All interface lettering uses lightly pixelated Pixelify Sans with grayscale
-antialiasing, disabled subpixel positioning and a 10px logical minimum
+All interface lettering uses Idrees Hassan's proportional Minecraft-inspired
+font with antialiasing and subpixel positioning disabled, and a 10px logical minimum
 (20px in a 1280×720 window). DejaVu is an explicit fallback for symbols.
 The 640×360 viewport uses nearest filtering and integer scaling at 2× or larger.
 Smaller windows use fit scaling to avoid a tiny 1× interface. Stepped panel
 corners, pixel rings and original environment details share its logical grid. Labels measure their text, wrap descriptions where room
 permits, and reduce the font size to fit their assigned rectangles. Buttons
-account for their inner margins; compact rosters use ellipsis and full tooltips
-when needed. Hearts are original pixel icons rather than fallback font glyphs.
-Compendium cards show each passive directly, with full stats in their tooltip.
+account for their inner margins. The score header keeps persistent rosters in
+its tooltips. Hearts are original pixel icons rather than fallback font glyphs.
+Every Command Phase opens a centered round picker containing the three offers,
+Command Points, spell preparation and Battle. Playing a card spends a point and
+refreshes the offers there; reinforcement still requires confirmation. Battle
+closes the picker and removes all draft controls. The clean card faces show an
+army portrait, name, action and short benefit. A separate top-left info button
+opens full base stats and army effects without spending points or rerolling.
+The same card component is used by the compendium. Its details popup closes back
+to the same realm tab; during drafting it returns to the same offers and points.
+Info remains available on disabled/capped offers. Escape/Enter closes effects,
+and keyboard focus returns to the original icon.
 Flame walls and ice paths stay visible in Reduced Effects mode because they
 affect gameplay. Cosmetic bounce motion never moves a unit's collision body.
 

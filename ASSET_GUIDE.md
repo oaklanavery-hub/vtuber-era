@@ -12,7 +12,7 @@ sample recordings, models, fonts or other source media.
 | Three Commander portraits | `assets/portraits/*_commander.svg`, 96×96 | Original pixel designs |
 | Fire crest / app icon | `assets/icon.svg`, 32×32 | Original pixel design |
 | Woodland, cottages, stream, lanterns, moss ruins, flowers, bunting | `scenes/world.gd` | Original Node2D drawing |
-| Pixel dropdown caret, switches and volume-slider gem | `assets/icons/*.svg` | Original code-native UI sprites |
+| Pixel info icon, dropdown caret, switches and volume-slider gem | `assets/icons/*.svg` | Original code-native UI sprites |
 | Parchment, stepped pixel borders, wax seals and runes | `ui/style.gd`, `ui/wax_seal.gd`, `ui/command_runes.gd` | Original Godot drawing and styling |
 | Festival loop, six interface cues and twelve combat cues | `assets/audio/*.wav`, mono 22,050 Hz 16-bit PCM | Original synthesized score, plucked harmonics and short chirp/noise effects |
 | Hit, projectile, healing, shield, Slow, flame wall, ice path, revival, bounce, snow-head and defeat-spark visuals | `scenes/battlefield.gd` | Original Godot drawing |
@@ -53,8 +53,9 @@ particles, ability rings, sun, bunting and roofs all resolve to the pixel grid.
 
 | Component | Upstream | Licence / included notices |
 |---|---|---|
+| Proportional Minecraft-style font by Idrees Hassan | [Fan-created upstream](https://github.com/IdreesInc/Minecraft-Font) | SIL Open Font License 1.1; unchanged `Minecraft-Regular.otf`, full notice in `assets/fonts/Minecraft-OFL.txt` |
 | Godot Engine 4.5 and Web templates | [Official 4.5 release](https://github.com/godotengine/godot-builds/releases/tag/4.5-stable) | MIT engine licence, plus its dependency notices in `assets/licenses/Godot-LICENSE.txt` and `Godot-COPYRIGHT.txt` |
-| Pixelify Sans Regular | [Upstream by Stefie Justprince](https://github.com/eifetx/Pixelify-Sans) | SIL Open Font License 1.1; unchanged TTF and complete notice in `assets/fonts/PixelifySans-OFL.txt` |
+| Pixelify Sans Regular, retained as an unused resource | [Upstream by Stefie Justprince](https://github.com/eifetx/Pixelify-Sans) | SIL Open Font License 1.1; unchanged TTF and complete notice in `assets/fonts/PixelifySans-OFL.txt` |
 | DejaVu Sans (`body.ttf`), used only as a symbol fallback | [DejaVu fonts](https://dejavu-fonts.github.io/) | Bitstream Vera font licence with DejaVu changes in the public domain; complete packaged notices in `assets/fonts/LICENSE-DejaVu.txt` |
 | DejaVu Serif Bold (`storybook.ttf`) | [DejaVu fonts](https://dejavu-fonts.github.io/) | Same font licence and notice file |
 | Tiny5 (`Tiny5-Regular.ttf`), retained as an unused resource | [Google Fonts Tiny5 distribution](https://github.com/google/fonts/tree/main/ofl/tiny5), [upstream](https://github.com/Gissio/font_tiny5) | SIL Open Font License 1.1; complete notice in `assets/fonts/Tiny5-OFL.txt` |
@@ -62,8 +63,12 @@ particles, ability rings, sun, bunting and roofs all resolve to the pixel grid.
 Fonts were copied from the environment's `fonts-dejavu-core` package. The included
 notice also describes packaging files; those files are not game code. The
 original typeface names remain documented; only local file names were changed.
-Pixelify Sans provides all interface lettering with a light pixel shape, grayscale
-antialiasing, disabled subpixel positioning and a 10px logical minimum.
+Idrees Hassan's fan-created proportional font supplies all interface lettering,
+without Minecraft game assets. The unchanged font and licence were downloaded
+from upstream commit `261ac77fbf28796ca09c22eb83ecdfe386c4b838`.
+Font SHA-256: `ebc7a7be9f69479f02875af1fe79a2b93cc868b83be4f6369ecceb45fabe5ee6`.
+It is imported without antialiasing, system fallback or subpixel positioning,
+with oversampling 1 and a 10px logical minimum. Pixelify Sans remains unused.
 `pixel_ui.tres` explicitly falls back to DejaVu for arrows and other missing
 symbols, including in the Web export. The Serif Bold file remains unused. Tiny5 was
 downloaded unchanged from Google Fonts with its licence; it is imported without

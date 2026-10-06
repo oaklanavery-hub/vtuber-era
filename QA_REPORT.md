@@ -1,3 +1,62 @@
+# Round picker, card details and expanded combat — 6 October 2026
+
+Each Command Phase opens a centered card picker. Cards show the army, action,
+short benefit and cost. A separate top-left info icon opens full base stats and
+army effects. Reading effects neither spends points nor refreshes offers, and
+Escape/Enter/Close returns to the same picker. The same component supplies the
+compendium's clean card faces and effects popups. Info remains usable after all
+points are spent. Keyboard shortcuts cannot activate controls behind an open
+effects popup; focus returns to its info icon when closed.
+
+Playing a card spends one point and refreshes the offers inside the picker;
+spell preparation remains independent. Reinforcement Confirm and Cancel both
+return to the picker. Battle and Space start actual combat and remove all draft
+controls. The battlefield expands from 600×202 to **600×280** (38.6% more area),
+with nine 24px-spaced spawn rows, wider movement bounds and aligned Ninja flanks.
+The score/Hearts/clock remain in the compact top header.
+
+Proportional Minecraft-style lettering uses Idrees Hassan's unchanged fan font,
+SIL OFL notice, explicit symbol fallback, disabled antialiasing/subpixel
+positioning, and a 10px logical minimum. The existing 640×360 viewport scaling
+policy still provides crisp 2× pixels or fit scaling in smaller windows.
+
+Native validation, exact Godot **4.5.stable.official.876b29033**:
+
+| Runner | Checks | Failures |
+|---|---:|---:|
+| Rules and draft mechanics | 1,002 | 0 |
+| Elemental mechanics and full-match replays | 17,440 | 0 |
+| All twelve army passives | 24,522 | 0 |
+| Ninja pursuit and resurrection | 976 | 0 |
+| Permanent collision and formations | 75,098 | 0 |
+| **Gameplay total** | **119,038** | **0** |
+| Native UI, all card details, modal guards, reinforcement and results | — | 0 |
+
+Four complete WebAssembly/WebGL browser matches passed:
+
+| Warband | Rival | Rounds | Combat sound cues | Errors / overflows |
+|---|---|---:|---:|---:|
+| fire | fire | 4 | 155 | 0 |
+| water | earth | 7 | 950 | 0 |
+| earth | water | 5 | 450 | 0 |
+| mixed | fire | 5 | 351 | 0 |
+
+Each run covers all 12 compendium info icons, draft effects without point/offer
+changes, the keyboard-focus regression, info on exhausted cards, per-round
+popups, Battle/Space, hidden combat controls, collisions, spell preparation,
+settings/loadout persistence, Hearts, results and Rematch. Reinforcement Cancel
+and Confirm are covered in the native UI fixture and applicable browser runs.
+1280×720 and 1000×720 layouts were visually inspected. A final singular/plural
+wording correction passed the native UI checks after these browser matches.
+
+Evidence: `docs/qa/round-picker-native.txt`,
+`docs/qa/round-picker-browser-{fire,water,earth,mixed}.json`.
+Screenshots: `docs/screenshots/{round-picker,clean-compendium,card-effects,expanded-battle,small-round-picker}.png`.
+The Web export was verified with the new font's OFL notice and existing notices.
+Prior sections are historical evidence for earlier builds.
+
+---
+
 # Ninja pursuit and pixel graphics — 6 October 2026
 
 Ninjas now end their opening flank at contact, derive their lane from their

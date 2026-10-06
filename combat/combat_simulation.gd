@@ -27,7 +27,7 @@ var pending_children: Array = []
 var next_field_id: int = 0
 var passive_counts: Dictionary = {}
 const BACKLINE := ["ranged", "mage", "siege"]
-const ARENA_SIZE := Vector2(600, 202)
+const ARENA_SIZE := Vector2(600, 280)
 # Collision stays on, but occupies only 30% of the old 24px footprint.
 # Sprite/spawn spacing is independent so armies remain readable before combat.
 const BODY_SIZE: float = 7.2
@@ -36,8 +36,10 @@ const GRID_SIZE: float = 24.0
 const DETOUR_COMMITMENT: float = 1.4
 const BOUNCE_TICKS: int = 12
 const MIN_POSITION := Vector2(16, 28)
-const MAX_POSITION := Vector2(584, 180)
-const SPAWN_ROWS := [100.0, 76.0, 124.0, 52.0, 148.0, 28.0, 172.0]
+const MAX_POSITION := Vector2(584, 258)
+const SPAWN_ROWS := [140.0, 116.0, 164.0, 92.0, 188.0, 68.0, 212.0, 44.0, 236.0]
+const FLANK_TOP: float = 44.0
+const FLANK_BOTTOM: float = 236.0
 
 func _init(state) -> void:
 	config = state.config
@@ -65,8 +67,8 @@ func _init(state) -> void:
 				"slow_until":0, "slow_fraction":0.0, "shield":0.0, "shield_until":0,
 				"recovery_used":false, "recovery_next":0, "recovery_remaining":0,
 				"lifesteal_window":0, "lifesteal_healed":0.0,
-				"navigation_bias":(-1.0 if location.y <= 100.0 else 1.0) * (1.0 if side == 0 else -1.0),
-				"flank_y":28.0 if location.y <= 100.0 else 172.0,
+				"navigation_bias":(-1.0 if location.y <= ARENA_SIZE.y/2.0 else 1.0) * (1.0 if side == 0 else -1.0),
+				"flank_y":FLANK_TOP if location.y <= ARENA_SIZE.y/2.0 else FLANK_BOTTOM,
 				"hit_at":-100, "heal_at":-100, "attack_at":-100, "flanking":card.role=="assassin"})
 			initial_hp[side] += hp
 			_prepare_passive_state(units.back())
@@ -103,16 +105,16 @@ func _passive(ability: String, unit: Dictionary, radius: float = 0.0, location: 
 
 static func formation(side: int, role: String, index: int) -> Vector2:
 	var x: float = {"tank":244.0, "melee":220.0, "ranged":100.0, "mage":76.0, "siege":52.0, "assassin":196.0}[role]
-	var y: float = SPAWN_ROWS[index%7]
-	x -= float(index/7)*SPAWN_SPACING
+	var y: float = SPAWN_ROWS[index%SPAWN_ROWS.size()]
+	x -= float(index/SPAWN_ROWS.size())*SPAWN_SPACING
 	if role == "assassin":
-		y = 28.0 if index%2 == 0 else 172.0
+		y = FLANK_TOP if index%2 == 0 else FLANK_BOTTOM
 		x -= float(index/2)*SPAWN_SPACING
 	return Vector2(x if side == 0 else ARENA_SIZE.x-x, y)
 
 static func spawn_layout(state, side: int) -> Array:
 	# One shared allocator for preview and combat. Mixed armies never reuse a
-	# role's positions. The 77 slots accommodate the 72-unit per-side cap.
+	# role's positions. The 99 slots accommodate the 72-unit per-side cap.
 	var entries: Array = []
 	var role_counts: Dictionary = {}
 	var priority := {"tank":0, "melee":1, "assassin":2, "ranged":3, "mage":4, "siege":5}

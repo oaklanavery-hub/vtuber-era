@@ -4,14 +4,16 @@ A cozy storybook drafting auto-battler at the Convergence Festival. Choose a
 Fire, Water or Earth Commander and four unique armies from twelve cards. Phase 2
 adds mixed warbands, healing, shields, Slow, lifesteal and siege splash.
 
-The creature-army update adds twelve distinct animated designs, permanent solid
-unit collision, side-stepping around blocked approaches and a compact battle HUD.
-The battlefield is now 600×202, about 52% more area than the previous 560×142.
+Each round opens a card-selection popup. Spend Command Points on the clean card
+faces, tap the top-left info icon for full army effects, then hit **Battle**.
+The same card design appears in the compendium. Draft controls disappear during
+combat, opening a 600×280 arena—39% more fighting space than the 600×202 layout.
 
-The latest update fixes Ninja contact attacks and opening flank lanes, adds
-lightly pixelated Pixelify Sans and redraws all twelve armies with a shared
-32-color palette, material details and eight animation frames. Native-size
-sprites, stepped panels and crisp viewport scaling unify the pixel theme.
+The interface uses proportional Minecraft-style lettering by Idrees Hassan.
+All twelve armies share a 32-color palette, material details and eight animation
+frames. Native-size battle sprites, stepped panels and crisp viewport scaling
+unify the pixel theme. Ninja contact attacks, stable flanks and one-use revival
+remain covered by gameplay tests.
 
 All twelve army passives remain active:
 projectile splash and pushback, death explosions and Slime splitting, one-use
@@ -20,7 +22,7 @@ split arrows and huge siege blasts. The compendium explains each ability.
 Collision stays active at 7.2×7.2 with depth-sorted sprites, a compact HUD and
 twelve original combat sound effects.
 
-![Pixel armies and readable typography](docs/screenshots/pixel-polish-compendium.png)
+![Round picker with clean cards](docs/screenshots/round-picker.png)
 
 **Play:** [Launch VTuber Era](https://oaklanavery-hub.github.io/vtuber-era/)
 **Source:** [oaklanavery-hub/vtuber-era](https://github.com/oaklanavery-hub/vtuber-era)
@@ -33,7 +35,9 @@ that realm's bond, independently of your Commander. Both sides start with four
 Hearts and three Command Points; the previous loser gets one comeback point.
 
 Each point summons an offered army, reinforces an eligible army, promotes its
-Rank, or prepares your Commander's spell. Specials require two normal summons.
+Rank, or prepares your Commander's spell. Playing a card spends its point and
+refreshes the offers inside the popup. Battle starts once you own an army; unused
+points are discarded. Specials require two normal summons.
 Counts and Ranks persist; units return at full HP after each automatic battle.
 The first side to lose all four Hearts loses. No commands are allowed in combat.
 
@@ -44,7 +48,7 @@ The first side to lose all four Hearts loses. No commands are allowed in combat.
 | B | Prepare your Commander's spell before combat |
 | Space | Begin battle; unused points are discarded |
 | Enter | Confirm Reinforcements or advance a round dialog |
-| Escape | Open settings during a battle; go back elsewhere |
+| Escape | Close card effects / cancel Reinforcements; otherwise open settings or go back |
 | F3 | Show AI draft explanations |
 
 Settings pause the visual match while open. Combat speed changes how quickly

@@ -3,9 +3,9 @@ extends Control
 const World = preload("res://scenes/world.gd")
 const Battlefield = preload("res://scenes/battlefield.gd")
 const Runes = preload("res://ui/command_runes.gd")
-const Seal = preload("res://ui/wax_seal.gd")
 const Hearts = preload("res://ui/hearts.gd")
 const HEADING = StoryStyle.TEXT_FONT
+const INFO_ICON = preload("res://assets/icons/info.svg")
 
 var world: Node2D
 var battlefield: Node2D
@@ -33,6 +33,10 @@ var selected_commander_id: String = "fire_commander"
 var selected_warband: Array = GameCatalog.FIRE_IDS.duplicate()
 var rival_realm: String = "mirror"
 var compendium_realm: String = "fire"
+var details_overlay: Control
+var details_card_id: String = ""
+var last_played: String = ""
+var details_return_focus: Control
 
 func _ready() -> void:
 	theme = StoryStyle.theme()
@@ -72,6 +76,14 @@ func _reset(next_screen: String) -> void:
 	modal = null
 	modal_kind = ""
 	modal_action = Callable()
+	details_overlay = null
+	details_card_id = ""
+	details_return_focus = null
+	runes = null
+	spell_button = null
+	battle_button = null
+	clock_label = null
+	spell_label = null
 	for child in surface.get_children():
 		surface.remove_child(child)
 		child.queue_free()
@@ -151,6 +163,91 @@ func _sprite(card: ArmyCardData, rectangle: Rect2, parent: Control) -> void:
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(image)
+
+# The same clean card face is used in the round picker and the compendium.
+# Passive rules and statistics live behind the dedicated, keyboard-focusable icon.
+func _card_face(card: ArmyCardData, rectangle: Rect2, parent: Control, action: Callable = Callable(), choice: Dictionary = {}) -> Control:
+	var tile: Control = _button("", rectangle, action, false, parent) if action.is_valid() else _panel(rectangle, parent)
+	tile.set_meta("card_face", card.id)
+	var width: float = rectangle.size.x
+	var height: float = rectangle.size.y
+	var accent := ColorRect.new()
+	accent.position = Vector2(4, 4)
+	accent.size = Vector2(width-8, 3)
+	accent.color = GameCatalog.realm_color(card.set_id)
+	accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tile.add_child(accent)
+	var info := _button("", Rect2(7, 10, 23, 23), _show_card_details.bind(card.id, choice), false, tile)
+	info.name = "CardInfo"
+	info.icon = INFO_ICON
+	info.add_theme_constant_override("icon_max_width", 16)
+	for key in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var box: StyleBoxFlat = StoryStyle.panel(StoryStyle.HONEY if key == "hover" else StoryStyle.PARCHMENT, StoryStyle.INK, 1)
+		box.content_margin_left = 2
+		box.content_margin_right = 2
+		info.add_theme_stylebox_override(key, box)
+	info.tooltip_text = "View %s effects" % card.display_name
+	info.set_meta("card_info_id", card.id)
+	var title: String = card.set_id.capitalize() if choice.is_empty() else {"summon":"Summon", "reinforce":"Reinforce", "promote":"Promote"}[choice.kind]
+	_label(title, Rect2(34, 11, width-42, 20), 11, true, false, tile)
+	_sprite(card, Rect2((width-64)/2.0, 38, 64, 64), tile)
+	_label(card.display_name, Rect2(7, height-65, width-14, 23), 14, true, true, tile)
+	var short_effect: String = card.role.capitalize()
+	var footer: String = "%d per summon" % card.group_size
+	if not choice.is_empty():
+		var army: Dictionary = state.sides[0].roster[card.id]
+		short_effect = "+%d %s" % [card.group_size, "units" if card.group_size>1 else "unit"]
+		if choice.kind == "reinforce": short_effect = "%d → %d units" % [army.count, army.count*2]
+		elif choice.kind == "promote": short_effect = "Rank %d → %d" % [army.rank, army.rank+1]
+		footer = "1 Command Point" if state.eligible(0, choice) else "Unit cap reached"
+	_label(short_effect, Rect2(7, height-39, width-14, 18), 11, true, false, tile)
+	_label(footer, Rect2(7, height-20, width-14, 16), 10, true, false, tile)
+	return tile
+
+func _show_card_details(card_id: String, choice: Dictionary = {}) -> void:
+	if details_overlay or (modal and modal_kind != "command"):
+		return
+	var card: ArmyCardData = GameCatalog.cards()[card_id]
+	details_return_focus = get_viewport().gui_get_focus_owner()
+	details_card_id = card_id
+	details_overlay = Control.new()
+	details_overlay.name = "CardDetails"
+	details_overlay.size = Vector2(640, 360)
+	surface.add_child(details_overlay)
+	var dim := ColorRect.new()
+	dim.color = Color(0.19, 0.16, 0.12, 0.64)
+	dim.size = Vector2(640, 360)
+	details_overlay.add_child(dim)
+	_panel(Rect2(108, 41, 424, 282), details_overlay)
+	_sprite(card, Rect2(125, 61, 64, 64), details_overlay)
+	_label(card.display_name, Rect2(200, 54, 305, 28), 22, false, true, details_overlay)
+	_label("%s · %s · %d per summon" % [card.set_id.capitalize(), card.role.capitalize(), card.group_size], Rect2(200, 87, 305, 23), 12, false, false, details_overlay)
+	_label("Base stats", Rect2(127, 126, 385, 21), 14, false, true, details_overlay)
+	_label("HP %d   Damage %d   %.2f attacks/s\nRange %d   Move speed %d" % [card.stats.max_hp, card.stats.damage, card.stats.attacks_per_second, card.stats.attack_range, card.stats.move_speed], Rect2(127, 149, 385, 37), 11, false, false, details_overlay)
+	_label("Army effects", Rect2(127, 191, 385, 22), 14, false, true, details_overlay)
+	_label(card.description, Rect2(127, 216, 385, 42), 12, false, false, details_overlay)
+	var note: String = ""
+	if not choice.is_empty() and state:
+		var army: Dictionary = state.sides[0].roster[card_id]
+		match choice.kind:
+			"summon": note = "Summon adds %d %s. Costs 1 Command Point." % [card.group_size, "unit" if card.group_size == 1 else "units"]
+			"reinforce": note = "Reinforce doubles %d → %d units; rank stays %d." % [army.count, army.count*2, army.rank]
+			"promote": note = "Promote raises rank %d → %d; unit count stays %d." % [army.rank, army.rank+1,army.count]
+	_label(note, Rect2(127, 262, 385, 20), 10, true, false, details_overlay)
+	var close := _button("Close", Rect2(248, 289, 144, 25), _close_card_details, true, details_overlay)
+	close.grab_focus()
+	_publish()
+
+func _close_card_details() -> void:
+	if details_overlay:
+		surface.remove_child(details_overlay)
+		details_overlay.queue_free()
+	details_overlay = null
+	details_card_id = ""
+	if is_instance_valid(details_return_focus):
+		details_return_focus.grab_focus()
+	details_return_focus = null
+	_publish()
 
 func _title(title: String, subtitle: String) -> void:
 	_label(title, Rect2(76, 48, 488, 40), 28, true, true)
@@ -270,6 +367,7 @@ func new_match() -> void:
 	NormalAI.play(state)
 	simulation = null
 	accumulator = 0.0
+	last_played = ""
 	SaveStore.settings.commander = selected_commander_id
 	SaveStore.settings.warband = selected_warband.duplicate()
 	SaveStore.settings.rival = rival_realm
@@ -293,84 +391,72 @@ func show_battle() -> void:
 	_panel(Rect2(12, 4, 616, 54))
 	_portrait(Rect2(18, 10, 30, 30), null, state.commander_for(0))
 	_portrait(Rect2(590, 10, 30, 30), null, state.commander_for(1))
-	_label("YOU · %d units" % state.total_units(0), Rect2(62, 8, 140, 15), 9)
-	_label("%s AI · %d units" % [state.commander_for(1).set_id.to_upper(), state.total_units(1)], Rect2(428, 8, 148, 15), 9)
-	_hearts(Rect2(62, 23, 160, 18), state.sides[0].hearts)
-	_hearts(Rect2(428, 23, 148, 18), state.sides[1].hearts)
-	_label("Round %d" % state.round_number, Rect2(234, 7, 172, 20), 14, true, true)
-	phase_label = _label("Command Phase" if state.phase=="command" else "Automatic combat", Rect2(231, 27, 178, 14), 9, true)
-	var bond_label := _label("Bond: %s" % state.bond.display_name if state.bond else "Mixed Warband", Rect2(237, 39, 166, 14), 8, true)
-	bond_label.tooltip_text = "You: %s\nRival: %s" % [state.bond.description if state.bond else "No Realm Bond", state.bond_for(1).description if state.bond_for(1) else "No Realm Bond"]
-	bond_label.mouse_filter = Control.MOUSE_FILTER_STOP
-	var player_armies := _label(_roster_text(0, true), Rect2(18, 39, 217, 14), 7)
-	player_armies.tooltip_text = _roster_tooltip(0)
-	player_armies.mouse_filter = Control.MOUSE_FILTER_STOP
-	var ai_armies := _label(_roster_text(1, true), Rect2(414, 39, 208, 14), 7)
-	ai_armies.tooltip_text = _roster_tooltip(1)
-	ai_armies.mouse_filter = Control.MOUSE_FILTER_STOP
+	var player := _label("YOU · %d units" % state.total_units(0), Rect2(62, 8, 140, 17), 11)
+	player.tooltip_text = _roster_tooltip(0)
+	player.mouse_filter = Control.MOUSE_FILTER_STOP
+	var rival := _label("%s AI · %d units" % [state.commander_for(1).set_id.to_upper(), state.total_units(1)], Rect2(428, 8, 148, 17), 11)
+	rival.tooltip_text = _roster_tooltip(1)
+	rival.mouse_filter = Control.MOUSE_FILTER_STOP
+	_hearts(Rect2(62, 28, 160, 18), state.sides[0].hearts)
+	_hearts(Rect2(428, 28, 148, 18), state.sides[1].hearts)
+	_label("Round %d" % state.round_number, Rect2(228, 6, 150, 20), 16, true, true)
+	phase_label = _label("Choose your cards" if state.phase=="command" else "Automatic combat", Rect2(228, 27, 178, 15), 10, true)
+	clock_label = _label("", Rect2(232, 42, 172, 15), 10, true)
+	var options := _button("...", Rect2(380, 7, 31, 22), func(): settings_return="battle"; show_settings())
+	options.name = "BattleOptions"
+	options.tooltip_text = "Options · Escape"
+	if state.phase == "command":
+		_show_command_picker()
+	elif state.sides[0].spell:
+		spell_label = _label(state.commander.spell_name, Rect2(26, 70, 246, 17), 10)
+	if debug_ai:
+		var debug_panel := _panel(Rect2(354, 90, 250, 89))
+		_label("AI decisions", Rect2(8, 4, 236, 18), 12, false, false, debug_panel)
+		_label("\n".join(state.ai_explanations), Rect2(8, 25, 233, 60), 10, false, false, debug_panel)
+	_publish()
+
+func _show_command_picker() -> void:
+	modal_kind = "command"
+	modal = Control.new()
+	modal.name = "CommandPicker"
+	modal.size = Vector2(640, 360)
+	surface.add_child(modal)
+	var dim := ColorRect.new()
+	dim.color = Color(0.19, 0.16, 0.12, 0.44)
+	dim.size = Vector2(640, 360)
+	modal.add_child(dim)
+	_panel(Rect2(40, 68, 560, 276), modal)
+	_label("Round %d · Choose cards" % state.round_number, Rect2(56, 77, 335, 24), 19, false, true, modal)
+	_label("%d Command Points" % state.sides[0].points, Rect2(438, 79, 145, 22), 11, true, false, modal)
 	runes = Runes.new()
-	runes.position = Vector2(19, 271)
+	runes.position = Vector2(389, 82)
 	runes.size = Vector2(105, 23)
-	runes.scale = Vector2(0.75, 0.75)
+	runes.scale = Vector2(0.5, 0.5)
 	runes.available = state.sides[0].points
 	runes.capacity = state.config.command_points + (state.config.comeback_points if state.previous_loser==0 else 0)
-	runes.tooltip_text = "One rune per Command Point. The teal rune is your comeback point."
-	surface.add_child(runes)
-	_label("%d Command Points" % state.sides[0].points if state.phase=="command" else "Watch your warband", Rect2(108, 272, 225, 16), 9)
-	var options := _button("Options", Rect2(551, 273, 70, 18), func(): settings_return="battle"; show_settings())
-	options.add_theme_font_size_override("font_size", 10)
-	options.size = Vector2(70, 18)
-	clock_label = _label("", Rect2(256, 249, 128, 15), 8, true)
+	runes.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	modal.add_child(runes)
+	_label("Play cards with your points, then start the battle." if state.sides[0].points>0 else "Your warband is ready. Start the battle!", Rect2(56, 102, 526, 16), 11, false, false, modal)
 	for index in range(3):
 		var choice: Dictionary = state.sides[0].offers[index]
 		var card: ArmyCardData = state.cards[choice.card_id]
-		var army: Dictionary = state.sides[0].roster[choice.card_id]
-		var tile := _button("", Rect2(18+index*145, 291, 138, 64), _pick.bind(index))
+		var tile: Button = _card_face(card, Rect2(54+index*178, 119, 166, 172), modal, _pick.bind(index), choice)
 		tile.name = "Offer%d" % index
 		tile.disabled = not state.can_choose(0, choice)
+		tile.tooltip_text = "Play this card · %d" % (index+1)
 		offer_buttons.append(tile)
-		var action_title: String = {"summon": "SUMMON ARMY", "reinforce": "REINFORCE", "promote": "PROMOTE"}[choice.kind]
-		_label(action_title, Rect2(8, 3, 112, 14), 9, false, false, tile)
-		_label(str(index+1), Rect2(120, 3, 12, 14), 9, true, false, tile)
-		_sprite(card, Rect2(2, 17, 32, 32), tile)
-		_label(card.short_name, Rect2(35, 17, 99, 17), 9, false, true, tile)
-		var detail: String = "+%d %s" % [card.group_size, "units" if card.group_size>1 else "unit"]
-		if choice.kind == "reinforce":
-			detail = "%d → %d units" % [army.count, army.count*2]
-		elif choice.kind == "promote":
-			detail = "Rank %d → %d" % [army.rank, army.rank+1]
-		_label(detail, Rect2(35, 33, 99, 16), 10, false, false, tile)
-		_label("1 Command Point" if state.eligible(0, choice) else "Unit cap reached", Rect2(8, 49, 121, 14), 9, false, false, tile)
-		var seal := Seal.new()
-		seal.position = Vector2(124, 54)
-		seal.scale = Vector2(0.7, 0.7)
-		tile.add_child(seal)
-		tile.tooltip_text = "%s\n%s\nHP %d · damage %d · %.2f attacks/s\nOwned: %d · Rank %d · normal summons: %d\nReinforcements used: %d / 2" % [card.display_name, card.description, card.stats.max_hp, card.stats.damage, card.stats.attacks_per_second, army.count, army.rank, army.summons, army.reinforcements]
-	var spell_text := "%s\nPrepare · 1 Command Point" % state.commander.spell_name
+	_label(last_played, Rect2(56, 291, 526, 16), 10, true, false, modal)
+	var spell_text: String = "%s · Prepare\n1 Command Point" % state.commander.spell_name
 	if state.sides[0].spell:
-		spell_text = "%s\nQueued for next battle" % state.commander.spell_name
-	if state.phase == "combat":
-		spell_text = "%s\nPrepared before battle" % state.commander.spell_name
-	spell_button = _button(spell_text, Rect2(459, 291, 162, 36), prepare_spell)
+		spell_text = "%s · Prepared\nReady for this battle" % state.commander.spell_name
+	spell_button = _button(spell_text, Rect2(54, 308, 266, 29), prepare_spell, false, modal)
 	spell_button.name = "CommandSpell"
 	spell_button.disabled = not state.can_prepare_spell(0)
-	spell_button.add_theme_font_size_override("font_size", 10)
-	spell_button.size = Vector2(162, 36)
 	spell_button.tooltip_text = state.commander.spell_description
-	battle_button = _button("Begin battle  →" if state.phase=="command" else "Battle in progress", Rect2(459, 333, 162, 22), begin_battle, true)
-	battle_button.add_theme_font_size_override("font_size", 10)
-	battle_button.size = Vector2(162, 22)
+	battle_button = _button("Battle →", Rect2(410, 308, 166, 29), begin_battle, true, modal)
 	battle_button.name = "BeginBattle"
-	battle_button.disabled = state.phase!="command" or state.total_units(0)==0
-	battle_button.tooltip_text = "Enter automatic combat. Unused Command Points are discarded.\nSpace: begin battle · Escape: settings · F3: AI explanation"
-	spell_label = _label(state.commander.spell_name+" queued" if state.sides[0].spell else "", Rect2(20, 62, 240, 15), 8)
-	if state.sides[1].spell:
-		_label("AI · %s %s" % [state.commander_for(1).spell_name, "queued" if state.phase=="command" else "prepared"], Rect2(362, 62, 251, 15), 8)
-	if debug_ai:
-		var debug_panel := _panel(Rect2(354, 90, 250, 89))
-		_label("AI decisions · previous-round information", Rect2(8, 4, 236, 15), 8, false, false, debug_panel)
-		_label("\n".join(state.ai_explanations), Rect2(8, 24, 233, 62), 8, false, false, debug_panel)
-	_publish()
+	battle_button.disabled = state.total_units(0)==0
+	battle_button.tooltip_text = "Start automatic combat · Space. Unused Command Points are discarded."
 
 func _roster_tooltip(side: int) -> String:
 	var lines: Array[String] = ["%d persistent units" % state.total_units(side)]
@@ -380,7 +466,7 @@ func _roster_tooltip(side: int) -> String:
 	return "\n".join(lines)
 
 func _pick(index: int) -> void:
-	if modal or state.phase != "command":
+	if details_overlay or (modal and modal_kind != "command") or state.phase != "command":
 		return
 	var choice: Dictionary = state.sides[0].offers[index]
 	if not state.can_choose(0, choice):
@@ -394,17 +480,19 @@ func _pick(index: int) -> void:
 func _apply_choice(choice: Dictionary) -> void:
 	if state.choose(0, choice):
 		Sound.play("summon")
+		last_played = "%s · %s played" % [state.cards[choice.card_id].display_name, choice.kind.capitalize()]
 		show_battle()
 
 func prepare_spell() -> void:
-	if modal:
+	if details_overlay or (modal and modal_kind != "command"):
 		return
 	if state.prepare_spell(0):
 		Sound.play("spell")
+		last_played = "%s prepared" % state.commander.spell_name
 		show_battle()
 
 func begin_battle() -> void:
-	if modal or not state.start_combat():
+	if details_overlay or (modal and modal_kind != "command") or not state.start_combat():
 		return
 	Sound.play("battle")
 	simulation = CombatSimulation.new(state)
@@ -434,7 +522,7 @@ func _process(delta: float) -> void:
 		phase_label.text = "Sudden death" if simulation.sudden_death else "Automatic combat"
 		StoryStyle.refit_label(clock_label)
 		StoryStyle.refit_label(phase_label)
-		if state.sides[0].spell:
+		if state.sides[0].spell and spell_label:
 			spell_label.text = "%s · %.1fs" % [state.commander.spell_name, maxf(0.0, state.commander.spell_duration-seconds)] if seconds < state.commander.spell_duration else state.commander.spell_name+" complete"
 			StoryStyle.refit_label(spell_label)
 		if simulation.finished:
@@ -463,10 +551,14 @@ func next_round() -> void:
 		return
 	NormalAI.play(state)
 	simulation = null
+	last_played = ""
 	battlefield.sparks.clear()
 	show_battle()
 
 func _dialog(title: String, body: String, button_text: String, action: Callable, kind: String, cancel: bool = false) -> void:
+	if modal:
+		surface.remove_child(modal)
+		modal.queue_free()
 	modal_kind = kind
 	modal_action = action
 	modal = Control.new()
@@ -485,11 +577,15 @@ func _dialog(title: String, body: String, button_text: String, action: Callable,
 	_publish()
 
 func _close_dialog() -> void:
+	var reopen_picker: bool = modal_kind == "reinforce"
 	if modal:
+		surface.remove_child(modal)
 		modal.queue_free()
 	modal = null
 	modal_kind = ""
 	modal_action = Callable()
+	if reopen_picker:
+		show_battle()
 	_publish()
 
 func show_results() -> void:
@@ -523,20 +619,16 @@ func show_results() -> void:
 
 func show_compendium() -> void:
 	_reset("compendium")
-	_label("Army Compendium", Rect2(76, 27, 488, 40), 28, true, true)
+	_label("Army Compendium", Rect2(76, 22, 488, 40), 28, true, true)
+	_label("Tap a card's info icon to see its full effects.", Rect2(76, 61, 488, 18), 11, true)
 	for index in range(3):
 		var realm: String = GameCatalog.REALMS[index]
-		_button(realm.capitalize(), Rect2(161+index*106, 79, 100, 28), _compendium_tab.bind(realm), compendium_realm == realm)
+		_button(realm.capitalize(), Rect2(161+index*106, 86, 100, 27), _compendium_tab.bind(realm), compendium_realm == realm)
 	var cards: Dictionary = GameCatalog.cards()
 	for index in range(4):
 		var card: ArmyCardData = cards[GameCatalog.realm_cards(compendium_realm)[index]]
-		var tile := _panel(Rect2(30+(index%2)*296, 115+int(index/2)*99, 284, 94))
-		_sprite(card, Rect2(10, 9, 32, 32), tile)
-		_label(card.display_name, Rect2(50, 5, 228, 18), 12, false, true, tile)
-		_label("HP %d · damage %d · %.2f attacks/s" % [card.stats.max_hp, card.stats.damage, card.stats.attacks_per_second], Rect2(50, 25, 228, 15), 10, false, false, tile)
-		_label(card.description, Rect2(10, 45, 264, 42), 10, false, false, tile)
-		tile.tooltip_text = "%s\n%s · %d per summon · range %d\n%s" % [card.display_name, card.role.capitalize(), card.group_size, card.stats.attack_range, card.description]
-	_button("← Main menu", Rect2(223, 318, 194, 31), show_menu)
+		_card_face(card, Rect2(26+index*149, 123, 141, 184), surface)
+	_button("← Main menu", Rect2(223, 322, 194, 29), show_menu)
 	_publish()
 
 func _compendium_tab(realm: String) -> void:
@@ -580,7 +672,14 @@ func show_settings() -> void:
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
-	if modal:
+	if details_overlay:
+		# Keep gameplay shortcuts and GUI Space activation inside this overlay.
+		# Its focused Close button responds to Enter/Escape or a pointer click.
+		get_viewport().set_input_as_handled()
+		if event.keycode in [KEY_ENTER, KEY_ESCAPE]:
+			_close_card_details()
+		return
+	if modal and modal_kind != "command":
 		if event.keycode==KEY_ENTER and modal_action.is_valid():
 			get_viewport().set_input_as_handled()
 			modal_action.call()
@@ -613,7 +712,9 @@ func _publish() -> void:
 	if not qa_enabled:
 		return
 	var snapshot := {"screen": screen, "modal": modal_kind, "settings": SaveStore.settings,
-		"release": "pixel-polish-ninja-fix", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
+		"release": "round-picker-expanded-arena", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
+		"card_details": details_card_id, "command_popup": modal_kind == "command",
+		"battle_controls_visible": is_instance_valid(battle_button) and battle_button.is_visible_in_tree(),
 		"pixel_scale_mode":"integer" if get_window().content_scale_stretch == Window.CONTENT_SCALE_STRETCH_INTEGER else "fit",
 		"combat_sounds": Sound.combat_sounds_played, "text_overflows": _text_overflows(surface),
 		"selected_commander": selected_commander_id, "selected_warband": selected_warband,
