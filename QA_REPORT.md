@@ -1,3 +1,57 @@
+# Ninja pursuit and pixel graphics — 6 October 2026
+
+Ninjas now end their opening flank at contact, derive their lane from their
+actual spawn position, fight a reachable defender before chasing the backline,
+and approach directly when no backline remains. A six-second deadline prevents
+an indefinitely blocked opening flank. Resurrection remains once per battle at
+exactly 30% actual max HP, with a commander-adjusted cooldown, a distinct sprite
+frame, a one-second pixel ring and a persistent gold mark.
+
+All twelve original armies were redrawn on a 32×32 grid with a shared 32-color
+palette, shaded material details and eight-frame atlases. They render at native
+size in battle and cards. Pixelify Sans supplies light pixel lettering at a
+10px minimum; an explicit DejaVu fallback supplies arrows and missing symbols.
+Panels, Settings switches/slider, environment details and ability rings use
+pixel graphics. Nearest-filtered viewport scaling uses integer factors at 2× or
+larger, and fit scaling below 2× to avoid an unreadable 1× UI in smaller windows.
+
+- Rules/economy/combat: **1,072 checks; 0 failures**.
+- Elemental mechanics and 33 complete matches/replays: **18,930 checks; 0 failures**.
+- Twelve army passives: **24,522 checks; 0 failures**.
+- Permanent collision and formations: **75,098 checks; 0 failures**.
+- Ninja pursuit and resurrection: **976 checks; 0 failures**.
+- Total gameplay assertions: **120,598; 0 failures**.
+- Native UI, typography, arrow fallbacks and audio: **0 failures**.
+
+Before the fix, focused reproductions failed opening contact, reachable-defender
+attacks, two roster-parity lane cases and direct pursuit without a backline.
+The Ninja runner now leaves real movement and flanking enabled on both sides,
+checks contact attacks, exact revival HP and cooldowns, replay signatures, and
+collision during interpolation. The hostile-defender formation test enables
+Ninja attacks so it can clear a blocking tank before reaching the backline.
+
+Four full WebAssembly/WebGL match types passed with zero engine, JavaScript or
+HTTP errors and zero text-box overflows. Tests cover all Compendium tabs,
+settings/loadout persistence, actual drafting/spells, collision, Hearts,
+results and Rematch. Resize assertions confirm fit scaling at 1000×720 and
+integer scaling after restoring 1280×720. Fire was rerun after the final cosmetic
+Settings icons and contrast pass; the other reports use the same final combat,
+font and resize logic. The final native UI test covers those Settings assets.
+
+| Player | Rival | Rounds | Combat sounds played | New samples observed in WebAudio |
+|---|---|---:|---:|---:|
+| Fire | Fire | 4 | 300 | 300 |
+| Water | Earth | 5 | 591 | 591 |
+| Earth | Water | 5 | 587 | 587 |
+| Mixed | Fire | 5 | 215 | 215 |
+
+Reports: `docs/qa/pixel-polish-browser-*.json` and `pixel-polish-native.txt`.
+Visually inspected examples: `docs/screenshots/pixel-polish-{compendium,battle,settings,small-window}.png`.
+Official Godot 4.5 engine and matching Web templates passed SHA-512 verification;
+the single-threaded export includes the new font licence and existing notices.
+
+The evidence below is historical and describes earlier releases.
+
 # Army passives and readable text — 6 October 2026
 
 All interface text now uses smooth DejaVu Sans, with a 9px logical minimum and

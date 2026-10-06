@@ -73,7 +73,7 @@ func _content() -> void:
 	for id in names:
 		var card: ArmyCardData = cards[id]
 		expect(card.short_name == names[id], "requested creature name: "+id)
-		expect(card.sprite.get_size() == Vector2(192,32), "six animation frames: "+id)
+		expect(card.sprite.get_size() == Vector2(256,32), "eight animation frames: "+id)
 		var actual: Array = [card.group_size, card.stats.max_hp, card.stats.damage, card.stats.attacks_per_second,
 			card.stats.move_speed, card.stats.attack_range]
 		var unchanged: bool = true
@@ -149,7 +149,9 @@ func _blocked_routes() -> void:
 		sim.step()
 		expect(clear_bodies(sim), "boundary detour keeps all bodies inside and separate")
 	expect(sim.in_attack_range(walker,target), "fighter changes escape side when a wall reaches the arena edge")
-	# An assassin must route around a hostile tank to its preferred backline.
+	# An assassin fights a hostile defender in reach, then pursues the backline.
+	# Keep its real attack cycle enabled; freezing attacks would pin it at the
+	# defender forever, which is correct contact behavior rather than a detour.
 	state = populated(GameCatalog.FIRE_IDS, [0,0,0,1])
 	state.sides[1].roster.fire_assassin.count = 0
 	state.sides[1].roster.fire_tank.count = 1
@@ -160,16 +162,19 @@ func _blocked_routes() -> void:
 	sim = CombatSimulation.new(state)
 	freeze_attacks(sim)
 	walker = sim.units[0]
+	walker.cooldown = 0.0
 	walker.position = Vector2(180,100)
 	target = sim.units[1]
 	target.position = Vector2(380,100)
 	sim.units[2].position = Vector2(250,100)
 	for value in sim.units:
 		value.previous_position = value.position
-	for tick in range(240):
+	var reached_backline: bool = false
+	for tick in range(480):
 		sim.step()
 		expect(clear_bodies(sim), "hostile bodies also block the assassin's path")
-	expect(sim.in_attack_range(walker,target), "assassin reaches the backline by moving around its tank")
+		reached_backline = reached_backline or sim.in_attack_range(walker,target)
+	expect(reached_backline, "assassin fights through a blocking tank and reaches its preferred backline")
 
 func _contact_and_determinism() -> void:
 	var state := populated(GameCatalog.FIRE_IDS, [0,1,0,0])

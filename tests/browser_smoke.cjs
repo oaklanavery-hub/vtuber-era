@@ -67,7 +67,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   const waitScreen = async screen => {
     await page.waitForFunction(screen => window.vtuberEraQA?.screen === screen, screen, { timeout: 60000 });
     visited.add(screen);
-    assert.equal((await snapshot()).text_font, 'DejaVu Sans');
+    assert.equal((await snapshot()).text_font, 'Pixelify Sans');
     assert.equal((await snapshot()).text_overflows, 0, 'text stays inside its UI boxes');
   };
   const click = async (x, y) => { await page.mouse.click(x * 2, y * 2); await page.waitForTimeout(100); };
@@ -144,7 +144,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await click(509, 336);
   await waitScreen('battle');
   const initial = await snapshot();
-  assert.equal(initial.release, 'army-passives-readable-font');
+  assert.equal(initial.release, 'pixel-polish-ninja-fix');
   assert.deepEqual(initial.arena, [600, 202]);
   assert.equal(initial.body_size, 7.2);
   assert.equal(initial.spawn_spacing, 24);
@@ -218,10 +218,12 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
         }
       }
       if (now.round === 1) {
+        assert.equal(now.pixel_scale_mode, 'integer', 'comfortable windows use crisp integer pixels');
         await page.setViewportSize({ width: 1000, height: 720 });
-        await page.waitForTimeout(100);
+        await page.waitForFunction(() => window.vtuberEraQA?.pixel_scale_mode === 'fit');
         await screenshot('aspect-ratio');
         await page.setViewportSize({ width: 1280, height: 720 });
+        await page.waitForFunction(() => window.vtuberEraQA?.pixel_scale_mode === 'integer');
       }
       const hearts = now.hearts;
       // Test Space while a draft button has focus: it must start combat.

@@ -41,10 +41,10 @@ func _draw_unit(texture: Texture2D, location: Vector2, frame: int, side: int, ra
 	# Mirror around the unit's actual center, so its portrait, HP and position
 	# remain aligned. Negative destination widths alone offset Godot regions.
 	draw_set_transform(location, 0.0, Vector2(-1 if side==1 else 1, 1)*visual_scale)
-	draw_texture_rect_region(texture, Rect2(-12, -18, 24, 24), Rect2(frame*32, 0, 32, 32), tint)
+	draw_texture_rect_region(texture, Rect2(-16, -24, 32, 32), Rect2(frame*32, 0, 32, 32), tint)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for star in range(rank_value-1):
-		draw_rect(Rect2(location.x-4+star*6, location.y-25, 4, 2), Color("e8ba61"))
+		draw_rect(Rect2(location.x-4+star*6, location.y-32, 4, 2), Color("e8ba61"))
 
 func _draw() -> void:
 	if simulation:
@@ -77,26 +77,31 @@ func _draw() -> void:
 			if reduced_effects:
 				frame = 0
 			if simulation.tick-int(unit.attack_at) < 4 and not reduced_effects:
-				frame = 3
+				frame = 6
+			if simulation.tick-int(unit.revive_at) < 15 and not reduced_effects:
+				frame = 7
 			draw_rect(Rect2(location.x-8, location.y+5, 16, 2), Color("91a471"))
 			var sprite_location: Vector2 = location
 			if simulation.tick-int(unit.bounce_at) < CombatSimulation.BOUNCE_TICKS and not reduced_effects:
 				sprite_location.y -= sin(float(simulation.tick-int(unit.bounce_at))/float(CombatSimulation.BOUNCE_TICKS)*PI)*7.0
 			_draw_unit(state.cards[unit.card_id].sprite, sprite_location, frame, unit.side, unit.rank, simulation.tick-int(unit.hit_at)<3, unit.visual_scale)
 			var color := Color("659789") if unit.side == 0 else Color("c57857")
-			draw_rect(Rect2(location.x-10, location.y-20, 20, 3), Color("51372f"))
-			draw_rect(Rect2(location.x-9, location.y-19, 18*unit.hp/unit.max_hp, 1), color)
+			draw_rect(Rect2(location.x-10, location.y-26, 20, 3), Color("51372f"))
+			draw_rect(Rect2(location.x-9, location.y-25, roundf(18*unit.hp/unit.max_hp), 1), color)
 			if (int(unit.burn_until) >= simulation.tick and unit.burn_until > 0) or (int(unit.flame_until) >= simulation.tick and unit.flame_until > 0):
 				draw_rect(Rect2(location.x+9, location.y-16, 2, 4), Color("d57346"))
 				draw_rect(Rect2(location.x+10, location.y-15, 1, 2), Color("f9e4b5"))
 			if unit.shield > 0.0:
-				draw_rect(Rect2(location.x-10, location.y-23, 20, 2), Color("8fc6cb"))
+				draw_rect(Rect2(location.x-10, location.y-29, 20, 2), Color("8fc6cb"))
 			if unit.slow_until > simulation.tick or unit.ice_until > simulation.tick:
 				draw_rect(Rect2(location.x+9, location.y-9, 2, 2), Color("659fbb"))
 			if unit.attack_slow_until > simulation.tick:
 				draw_rect(Rect2(location.x+9, location.y-5, 2, 2), Color("e8ba61"))
-			if simulation.tick-int(unit.revive_at) < 15:
-				draw_arc(location-Vector2(0,7), 12.0, 0, TAU, 20, Color("e8ba61"), 1.0)
+			if simulation.tick-int(unit.revive_at) < 30:
+				_pixel_ring(location-Vector2(0,9), 18, Color("e8ba61"))
+				# A spent resurrection remains visible after its one-second cue.
+			if unit.revive_used:
+				draw_rect(Rect2(location.x+12,location.y-26,3,3), Color("e8ba61"))
 			if simulation.tick-int(unit.heal_at) < 5 and not reduced_effects:
 				draw_rect(Rect2(location.x-12, location.y-12, 5, 1), Color("7dba9d"))
 				draw_rect(Rect2(location.x-10, location.y-14, 1, 5), Color("7dba9d"))
@@ -104,7 +109,8 @@ func _draw() -> void:
 			var card: ArmyCardData = state.cards[projectile.card_id]
 			if projectile.posthumous:
 				# Snowman's head is distinct from its ordinary small snowballs.
-				draw_circle(projectile.position, 5.0, Color("edf1de"))
+				draw_rect(Rect2(projectile.position+Vector2(-4,-3),Vector2(8,6)),Color("edf1de"))
+				draw_rect(Rect2(projectile.position+Vector2(-3,-4),Vector2(6,8)),Color("edf1de"))
 				draw_rect(Rect2(projectile.position+Vector2(-3,-5), Vector2(6,2)), Color("51372f"))
 				draw_rect(Rect2(projectile.position+Vector2(2,0), Vector2(3,2)), Color("e8ba61"))
 				continue
@@ -118,9 +124,24 @@ func _draw() -> void:
 		if float(spark.get("radius",0.0)) > 0.0:
 			var ring_color: Color = spark.color
 			ring_color.a = (1.0-spark.age/0.7)*0.7
-			draw_arc(spark.position, spark.radius*(0.5+spark.age/1.4), 0, TAU, 28, ring_color, 1.0)
+			_pixel_ring(spark.position, int(round(spark.radius*(0.5+spark.age/1.4))), ring_color)
 		for index in range(5):
 			var offset := Vector2(sin(float(index)*2.4)*spark.age*21, -spark.age*25+cos(float(index))*7)
 			var color: Color = spark.color if index%2==0 else Color("f9e4b5")
 			color.a = 1.0-spark.age/0.7
 			draw_rect(Rect2(spark.position+offset, Vector2(3, 3)), color)
+
+func _pixel_ring(center: Vector2, radius: int, color: Color) -> void:
+	# Midpoint circle: one-pixel steps, the same grid as sprites and particles.
+	var x: int = radius
+	var y: int = 0
+	var error: int = 1-radius
+	while x >= y:
+		for offset in [Vector2(x,y),Vector2(y,x),Vector2(-y,x),Vector2(-x,y),Vector2(-x,-y),Vector2(-y,-x),Vector2(y,-x),Vector2(x,-y)]:
+			draw_rect(Rect2(center.round()+offset,Vector2.ONE),color)
+		y += 1
+		if error < 0:
+			error += 2*y+1
+		else:
+			x -= 1
+			error += 2*(y-x)+1

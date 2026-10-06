@@ -36,6 +36,8 @@ var compendium_realm: String = "fire"
 
 func _ready() -> void:
 	theme = StoryStyle.theme()
+	get_window().size_changed.connect(_update_pixel_scale)
+	_update_pixel_scale()
 	selected_commander_id = SaveStore.settings.commander
 	selected_warband = SaveStore.settings.warband.duplicate()
 	rival_realm = SaveStore.settings.rival
@@ -55,6 +57,15 @@ func _ready() -> void:
 	_label("Preparing the Convergence Festival", Rect2(190, 188, 260, 20), 10, true)
 	await get_tree().create_timer(0.25).timeout
 	show_menu()
+
+func _update_pixel_scale() -> void:
+	var window: Window = get_window()
+	var available_scale: float = minf(float(window.size.x)/640.0,float(window.size.y)/360.0)
+	# Integer pixels at a comfortable 2x or larger. Below that, fill the
+	# smaller window so the 10px logical lettering does not become a tiny 1x UI.
+	var policy: Window.ContentScaleStretch = Window.CONTENT_SCALE_STRETCH_INTEGER if available_scale >= 2.0 else Window.CONTENT_SCALE_STRETCH_FRACTIONAL
+	if window.content_scale_stretch != policy:
+		window.content_scale_stretch = policy
 
 func _reset(next_screen: String) -> void:
 	screen = next_screen
@@ -84,8 +95,10 @@ func _panel(rectangle: Rect2, parent: Control = null, color: Color = StoryStyle.
 func _label(text_value: String, rectangle: Rect2, font_size: int = 11, centered: bool = false, serif: bool = false, parent: Control = null) -> Label:
 	var node := Label.new()
 	node.text = text_value
-	if serif:
-		node.add_theme_font_override("font", HEADING)
+	# Assign typography before entering the tree: Godot caches the initial
+	# line height when attaching a Label, before later font overrides settle.
+	node.add_theme_font_override("font", HEADING if serif else StoryStyle.TEXT_FONT)
+	node.add_theme_font_size_override("font_size", maxi(StoryStyle.MIN_FONT_SIZE,font_size))
 	node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if centered else HORIZONTAL_ALIGNMENT_LEFT
 	node.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -101,7 +114,7 @@ func _button(text_value: String, rectangle: Rect2, action: Callable, primary: bo
 		node.add_theme_stylebox_override("normal", StoryStyle.panel(StoryStyle.MOSS))
 		node.add_theme_stylebox_override("hover", StoryStyle.panel(Color("5c8062")))
 		node.add_theme_stylebox_override("pressed", StoryStyle.panel(Color("385b48")))
-		for key in ["font_color", "font_hover_color", "font_pressed_color"]:
+		for key in ["font_color", "font_hover_color", "font_hover_pressed_color", "font_pressed_color", "font_focus_color"]:
 			node.add_theme_color_override(key, Color("fff1ce"))
 	node.pressed.connect(func(): Sound.begin(); Sound.play("click"); action.call())
 	(parent if parent else surface).add_child(node)
@@ -215,7 +228,7 @@ func show_warband() -> void:
 		if index < selected_warband.size():
 			var card: ArmyCardData = cards[selected_warband[index]]
 			var slot := _button("", Rect2(17+index*152, 74, 143, 43), _toggle_card.bind(card.id))
-			_sprite(card, Rect2(3, 6, 30, 30), slot)
+			_sprite(card, Rect2(2, 5, 32, 32), slot)
 			_label(card.short_name, Rect2(35, 3, 105, 19), 10, false, true, slot)
 			_label("%s · remove" % card.set_id.capitalize(), Rect2(35, 23, 104, 15), 8, false, false, slot)
 		else:
@@ -224,7 +237,7 @@ func show_warband() -> void:
 	for index in range(3):
 		var realm: String = GameCatalog.REALMS[index]
 		var preset := _button("%s preset" % realm.capitalize(), Rect2(20+index*99, 124, 94, 23), _preset.bind(realm))
-		preset.add_theme_font_size_override("font_size",9)
+		preset.add_theme_font_size_override("font_size",10)
 		preset.size = Vector2(94,23)
 	_button("Clear", Rect2(322, 124, 72, 23), _preset.bind("clear"))
 	_label("Pick cards below · each army may appear once", Rect2(402, 126, 216, 19), 8)
@@ -235,7 +248,7 @@ func show_warband() -> void:
 		tile.disabled = not chosen and selected_warband.size() == 4
 		if chosen:
 			tile.add_theme_stylebox_override("normal", StoryStyle.panel(Color("e5d7ad")))
-		_sprite(card, Rect2(3, 4, 30, 30), tile)
+		_sprite(card, Rect2(2, 3, 32, 32), tile)
 		_label(card.short_name, Rect2(35, 3, 105, 18), 10, false, true, tile)
 		_label("%s · %d units%s" % [card.role.capitalize(), card.group_size, " +" if chosen else ""], Rect2(35, 22, 105, 14), 8, false, false, tile)
 		tile.tooltip_text = "%s\n%s" % [card.display_name, card.description]
@@ -305,7 +318,7 @@ func show_battle() -> void:
 	surface.add_child(runes)
 	_label("%d Command Points" % state.sides[0].points if state.phase=="command" else "Watch your warband", Rect2(108, 272, 225, 16), 9)
 	var options := _button("Options", Rect2(551, 273, 70, 18), func(): settings_return="battle"; show_settings())
-	options.add_theme_font_size_override("font_size", 9)
+	options.add_theme_font_size_override("font_size", 10)
 	options.size = Vector2(70, 18)
 	clock_label = _label("", Rect2(256, 249, 128, 15), 8, true)
 	for index in range(3):
@@ -319,14 +332,14 @@ func show_battle() -> void:
 		var action_title: String = {"summon": "SUMMON ARMY", "reinforce": "REINFORCE", "promote": "PROMOTE"}[choice.kind]
 		_label(action_title, Rect2(8, 3, 112, 14), 9, false, false, tile)
 		_label(str(index+1), Rect2(120, 3, 12, 14), 9, true, false, tile)
-		_sprite(card, Rect2(6, 19, 24, 24), tile)
+		_sprite(card, Rect2(2, 17, 32, 32), tile)
 		_label(card.short_name, Rect2(35, 17, 99, 17), 9, false, true, tile)
 		var detail: String = "+%d %s" % [card.group_size, "units" if card.group_size>1 else "unit"]
 		if choice.kind == "reinforce":
 			detail = "%d → %d units" % [army.count, army.count*2]
 		elif choice.kind == "promote":
 			detail = "Rank %d → %d" % [army.rank, army.rank+1]
-		_label(detail, Rect2(35, 33, 99, 14), 8, false, false, tile)
+		_label(detail, Rect2(35, 33, 99, 16), 10, false, false, tile)
 		_label("1 Command Point" if state.eligible(0, choice) else "Unit cap reached", Rect2(8, 49, 121, 14), 9, false, false, tile)
 		var seal := Seal.new()
 		seal.position = Vector2(124, 54)
@@ -341,11 +354,11 @@ func show_battle() -> void:
 	spell_button = _button(spell_text, Rect2(459, 291, 162, 36), prepare_spell)
 	spell_button.name = "CommandSpell"
 	spell_button.disabled = not state.can_prepare_spell(0)
-	spell_button.add_theme_font_size_override("font_size", 9)
+	spell_button.add_theme_font_size_override("font_size", 10)
 	spell_button.size = Vector2(162, 36)
 	spell_button.tooltip_text = state.commander.spell_description
 	battle_button = _button("Begin battle  →" if state.phase=="command" else "Battle in progress", Rect2(459, 333, 162, 22), begin_battle, true)
-	battle_button.add_theme_font_size_override("font_size", 9)
+	battle_button.add_theme_font_size_override("font_size", 10)
 	battle_button.size = Vector2(162, 22)
 	battle_button.name = "BeginBattle"
 	battle_button.disabled = state.phase!="command" or state.total_units(0)==0
@@ -399,6 +412,9 @@ func begin_battle() -> void:
 	show_battle()
 
 func _process(delta: float) -> void:
+	# Viewport stretch keeps the logical viewport at 640x360, so its
+	# size_changed signal may not fire for a Web canvas resize.
+	_update_pixel_scale()
 	telemetry_time += delta
 	if screen=="battle" and state and state.phase=="combat" and simulation:
 		accumulator += delta * SaveStore.settings.combat_speed
@@ -515,7 +531,7 @@ func show_compendium() -> void:
 	for index in range(4):
 		var card: ArmyCardData = cards[GameCatalog.realm_cards(compendium_realm)[index]]
 		var tile := _panel(Rect2(30+(index%2)*296, 115+int(index/2)*99, 284, 94))
-		_sprite(card, Rect2(6, 5, 40, 40), tile)
+		_sprite(card, Rect2(10, 9, 32, 32), tile)
 		_label(card.display_name, Rect2(50, 5, 228, 18), 12, false, true, tile)
 		_label("HP %d · damage %d · %.2f attacks/s" % [card.stats.max_hp, card.stats.damage, card.stats.attacks_per_second], Rect2(50, 25, 228, 15), 10, false, false, tile)
 		_label(card.description, Rect2(10, 45, 264, 42), 10, false, false, tile)
@@ -597,7 +613,8 @@ func _publish() -> void:
 	if not qa_enabled:
 		return
 	var snapshot := {"screen": screen, "modal": modal_kind, "settings": SaveStore.settings,
-		"release": "army-passives-readable-font", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
+		"release": "pixel-polish-ninja-fix", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
+		"pixel_scale_mode":"integer" if get_window().content_scale_stretch == Window.CONTENT_SCALE_STRETCH_INTEGER else "fit",
 		"combat_sounds": Sound.combat_sounds_played, "text_overflows": _text_overflows(surface),
 		"selected_commander": selected_commander_id, "selected_warband": selected_warband,
 		"rival": rival_realm, "compendium_realm": compendium_realm}

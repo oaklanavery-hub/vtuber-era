@@ -8,11 +8,12 @@ sample recordings, models, fonts or other source media.
 
 | Asset | Format / location | Source |
 |---|---|---|
-| Twelve animated creature-army atlases | `assets/units/*.svg`, 192×32; six 32×32 frames | Original code-native designs in `tools/army_sprites.py` |
+| Twelve animated creature-army atlases | `assets/units/*.svg`, 256×32; eight 32×32 frames | Original code-native designs in `tools/army_sprites.py` |
 | Three Commander portraits | `assets/portraits/*_commander.svg`, 96×96 | Original pixel designs |
 | Fire crest / app icon | `assets/icon.svg`, 32×32 | Original pixel design |
 | Woodland, cottages, stream, lanterns, moss ruins, flowers, bunting | `scenes/world.gd` | Original Node2D drawing |
-| Parchment, rounded borders, wax seals and runes | `ui/style.gd`, `ui/wax_seal.gd`, `ui/command_runes.gd` | Original Godot drawing and styling |
+| Pixel dropdown caret, switches and volume-slider gem | `assets/icons/*.svg` | Original code-native UI sprites |
+| Parchment, stepped pixel borders, wax seals and runes | `ui/style.gd`, `ui/wax_seal.gd`, `ui/command_runes.gd` | Original Godot drawing and styling |
 | Festival loop, six interface cues and twelve combat cues | `assets/audio/*.wav`, mono 22,050 Hz 16-bit PCM | Original synthesized score, plucked harmonics and short chirp/noise effects |
 | Hit, projectile, healing, shield, Slow, flame wall, ice path, revival, bounce, snow-head and defeat-spark visuals | `scenes/battlefield.gd` | Original Godot drawing |
 
@@ -26,28 +27,45 @@ Fire Lizards, Fire Imps, Magma Golems, Red Ninjas, Water Wizards, Ice Golems,
 Water Slimes, Snowmen, Trees, Armadillos, Wood Archers and Wooden Siege.
 Tails, horns, molten cracks, masks, ice facets, squashing slime, snowballs,
 branches, segmented shells, bows and catapult wheels distinguish their silhouettes.
-Commander portraits are unchanged. Battle sprites render at 24×24 above solid
-7.2×7.2 collision footprints; the source atlases remain six 32×32 frames. Rear
+Commander portraits are unchanged. Battle sprites render at their native 32×32 size above solid
+7.2×7.2 collision footprints. Each atlas contains six movement frames, an attack
+frame and a resurrection frame (used by Ninjas). All army sheets share a 32-color
+master palette with top-left lighting and one-pixel outlines. Rear
 sprites draw first so units remain distinguishable when their art overlaps.
 
 Rebuild the supplied originals with `python3 tools/generate_assets.py`.
 This deliberately overwrites generated sprite/audio files and their initial
 army Resources; do not run it over tuned Resources without preserving changes.
 
+## Pixel-art conventions
+
+The project uses a 640×360 viewport, nearest-neighbor filtering and integer
+window scaling where the window accommodates at least 2×. Smaller windows use
+nearest-filtered fit scaling to keep the interface readable. These choices use [Godot 4.5 pixel-art rendering guidance](https://docs.godotengine.org/en/4.5/tutorials/rendering/multiple_resolutions.html#desktop-game).
+32×32 sprites and a limited master palette are project choices, rather than a
+universal standard. Clean outlines, shade clusters and form-preserving detail
+follow [Derek Yu's pixel-art tutorial](https://www.derekyu.com/makegames/pixelart.html).
+Fractional fit can produce uneven pixel widths; comfortable windows retain
+integer pixels. The artwork itself is original; no reference sprites were copied. UI cut corners,
+particles, ability rings, sun, bunting and roofs all resolve to the pixel grid.
+
 ## Third-party components
 
 | Component | Upstream | Licence / included notices |
 |---|---|---|
 | Godot Engine 4.5 and Web templates | [Official 4.5 release](https://github.com/godotengine/godot-builds/releases/tag/4.5-stable) | MIT engine licence, plus its dependency notices in `assets/licenses/Godot-LICENSE.txt` and `Godot-COPYRIGHT.txt` |
-| DejaVu Sans (`body.ttf`), used for all interface text | [DejaVu fonts](https://dejavu-fonts.github.io/) | Bitstream Vera font licence with DejaVu changes in the public domain; complete packaged notices in `assets/fonts/LICENSE-DejaVu.txt` |
+| Pixelify Sans Regular | [Upstream by Stefie Justprince](https://github.com/eifetx/Pixelify-Sans) | SIL Open Font License 1.1; unchanged TTF and complete notice in `assets/fonts/PixelifySans-OFL.txt` |
+| DejaVu Sans (`body.ttf`), used only as a symbol fallback | [DejaVu fonts](https://dejavu-fonts.github.io/) | Bitstream Vera font licence with DejaVu changes in the public domain; complete packaged notices in `assets/fonts/LICENSE-DejaVu.txt` |
 | DejaVu Serif Bold (`storybook.ttf`) | [DejaVu fonts](https://dejavu-fonts.github.io/) | Same font licence and notice file |
 | Tiny5 (`Tiny5-Regular.ttf`), retained as an unused resource | [Google Fonts Tiny5 distribution](https://github.com/google/fonts/tree/main/ofl/tiny5), [upstream](https://github.com/Gissio/font_tiny5) | SIL Open Font License 1.1; complete notice in `assets/fonts/Tiny5-OFL.txt` |
 
 Fonts were copied from the environment's `fonts-dejavu-core` package. The included
 notice also describes packaging files; those files are not game code. The
 original typeface names remain documented; only local file names were changed.
-DejaVu Sans uses smooth antialiasing for readable compact text. The Serif Bold
-file remains an unused resource. Tiny5 was
+Pixelify Sans provides all interface lettering with a light pixel shape, grayscale
+antialiasing, disabled subpixel positioning and a 10px logical minimum.
+`pixel_ui.tres` explicitly falls back to DejaVu for arrows and other missing
+symbols, including in the Web export. The Serif Bold file remains unused. Tiny5 was
 downloaded unchanged from Google Fonts with its licence; it is imported without
 antialiasing, system fallback or subpixel positioning for a crisp pixel style.
 Godot engine and templates were verified against the official SHA-512 release
@@ -58,7 +76,7 @@ entry point. Licence texts are also included in the exported resource pack.
 
 ## Replacing placeholders
 
-Keep six 32×32 frames per horizontal unit atlas or update the battlefield frame
+Keep eight 32×32 frames per horizontal unit atlas or update the battlefield frame
 region code. Assign a replacement texture through `ArmyCardData.sprite`; assign
 portrait artwork through `CommanderData.portrait`. Keep texture filtering set
 to nearest. Audio replacements use the same cue IDs through the Sound autoload.

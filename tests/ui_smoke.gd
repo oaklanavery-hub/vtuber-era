@@ -13,9 +13,9 @@ func check(condition: bool, message: String) -> void:
 func layout(ui, parent: Node = null) -> void:
 	for child in (parent if parent else ui.surface).get_children():
 		if child is Label or child is Button:
-			check(child.get_theme_font("font").get_font_name() == "DejaVu Sans", "all interface text uses the readable font: "+child.text)
+			check(child.get_theme_font("font").get_font_name() == "Pixelify Sans", "all interface text uses the readable font: "+child.text)
 			if child.has_meta("text_box"):
-				check(child.get_theme_font_size("font_size") >= 9, "text never shrinks below the readable minimum: "+child.text)
+				check(child.get_theme_font_size("font_size") >= 10, "text never shrinks below the readable minimum: "+child.text)
 		if child is Control and child.has_meta("text_box"):
 			check(StoryStyle.text_within_box(child), "text remains inside its assigned box: "+child.text)
 		layout(ui, child)
@@ -40,8 +40,13 @@ func _run() -> void:
 	root.add_child(ui)
 	await create_timer(0.4).timeout
 	audio()
+	for symbol in ["→", "←", "·", "…"]:
+		check(StoryStyle.TEXT_FONT.has_char(symbol.unicode_at(0)), "pixel font has an explicit fallback for interface symbols: "+symbol)
 	layout(ui)
 	check(ui.screen=="menu", "loading leads to menu")
+	var arrow_label: Label = ui._label("2 → 4 units",Rect2(0,0,99,16),10)
+	await process_frame
+	check(StoryStyle.text_within_box(arrow_label),"reinforcement arrows fit without missing glyphs or growing the box")
 	for realm in GameCatalog.REALMS:
 		ui._compendium_tab(realm)
 		check(ui.screen=="compendium" and ui.compendium_realm==realm, "each realm's compendium opens")

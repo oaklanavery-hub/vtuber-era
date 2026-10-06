@@ -7,7 +7,12 @@ const GRASS := Color("a3b977")
 func _draw() -> void:
 	draw_rect(Rect2(0, 0, 640, 360), Color("cddcb0"))
 	draw_rect(Rect2(0, 0, 640, 138), Color("e9deb1"))
-	draw_circle(Vector2(487, 58), 26, Color("f7e4a5"))
+	# Stepped sun and clouds, rendered on the same integer grid as the UI.
+	for strip in [[477,32,20,52],[467,36,40,44],[463,43,48,30],[461,50,52,16]]:
+		draw_rect(Rect2(strip[0],strip[1],strip[2],strip[3]),Color("f7e4a5"))
+	for cloud in [Vector2(136,47),Vector2(358,36)]:
+		draw_rect(Rect2(cloud,Vector2(45,7)),Color("f4e9c3"))
+		draw_rect(Rect2(cloud+Vector2(8,-5),Vector2(24,12)),Color("f4e9c3"))
 	draw_rect(Rect2(0, 118, 640, 38), Color("b7c995"))
 	for index in range(15):
 		var x: float = float(index * 47 - 18)
@@ -16,9 +21,16 @@ func _draw() -> void:
 	# Distant warm cottages.
 	for x in [80, 507]:
 		draw_rect(Rect2(x, 104, 38, 28), Color("f1d8a2"))
-		draw_colored_polygon(PackedVector2Array([Vector2(x-5, 105), Vector2(x+19, 83), Vector2(x+43, 105)]), Color("b36b47"))
+		for row in range(11):
+			draw_rect(Rect2(x+17-row*2,83+row*2,4+row*4,2),Color("b36b47"))
+			if row%3 == 1:
+				draw_rect(Rect2(x+19-row*2,84+row*2,2+row*3,1),Color("cc8b58"))
+		draw_rect(Rect2(x,105,38,2),Color("795942"))
 		draw_rect(Rect2(x+15, 115, 8, 17), Color("775348"))
 		draw_rect(Rect2(x+4, 112, 7, 7), Color("f8eab8"))
+		draw_rect(Rect2(x+7,112,1,7),Color("ad8357"))
+		draw_rect(Rect2(x+4,115,7,1),Color("ad8357"))
+		draw_rect(Rect2(x+20,122,1,1),Color("e8ba61"))
 	draw_rect(Rect2(0, 148, 640, 212), GRASS)
 	draw_rect(Rect2(39, 185, 562, 117), Color("b9c588"))
 	draw_rect(Rect2(65, 195, 510, 91), Color("cbd29a"))
@@ -26,6 +38,9 @@ func _draw() -> void:
 	for x in [39, 567]:
 		draw_rect(Rect2(x, 154, 31, 35), Color("83916c"))
 		draw_rect(Rect2(x+3, 153, 24, 27), Color("b0b197"))
+		draw_rect(Rect2(x+5,155,20,2),Color("c8c5a5"))
+		draw_rect(Rect2(x+8,168,5,1),Color("83916c"))
+		draw_rect(Rect2(x+21,157,1,10),Color("83916c"))
 		draw_rect(Rect2(x-3, 182, 39, 7), Color("7f9e63"))
 	# Trees made from stepped blocks on the same pixel grid as the units.
 	for tree in [[-22, 53, 1.4], [589, 39, 1.5], [-8, 235, .8], [594, 243, .8]]:
@@ -58,14 +73,23 @@ func _draw() -> void:
 			var x: float = float(27+(index*73)%586)
 			var y: float = float(74+(index*37)%178)
 			draw_rect(Rect2(x, y, 4, 2), Color("bac58b"))
-		draw_line(Vector2(320, 64), Vector2(320, 266), Color("b7c18a"), 1)
+			if index%4 == 0:
+				draw_rect(Rect2(x+1,y-2,1,2),Color("afbd81"))
+		# Soft, dashed center seam keeps the battlefield visually open.
+		for y in range(67,264,8):
+			draw_rect(Rect2(320,y,1,3),Color("b7c18a"))
+		for x in [18,619]:
+			for y in [64,263]:
+				draw_rect(Rect2(x,y,3,3),Color("e8ba61"))
 	else:
 		# Bunting behind the title, tied between the woodland trees.
 		draw_line(Vector2(58, 23), Vector2(584, 23), BROWN, 2)
 		for index in range(14):
 			var x: float = 65.0+float(index)*37.0
 			var color := Color("cd7954") if index%2==0 else Color("e8ba61")
-			draw_colored_polygon(PackedVector2Array([Vector2(x, 24), Vector2(x+20, 24), Vector2(x+10, 41)]), color)
+			for row in range(8):
+				draw_rect(Rect2(x+row,24+row*2,20-row*2,2),color)
+			draw_rect(Rect2(x+2,25,16,1),color.lightened(0.2))
 
 func _tree(origin: Vector2, scale_value: float) -> void:
 	var shapes := [[31, 31, 15, 117, "795942"], [33, 28, 5, 114, "a07a50"],
@@ -74,4 +98,6 @@ func _tree(origin: Vector2, scale_value: float) -> void:
 		[23, 5, 30, 18, "8eac70"], [14, 21, 24, 10, "9eb97a"],
 		[13, 57, 51, 9, "466f50"], [43, 27, 18, 9, "8eac70"]]
 	for shape in shapes:
-		draw_rect(Rect2(origin+Vector2(shape[0], shape[1])*scale_value, Vector2(shape[2], shape[3])*scale_value), Color(shape[4]))
+		draw_rect(Rect2((origin+Vector2(shape[0], shape[1])*scale_value).round(), (Vector2(shape[2], shape[3])*scale_value).round()), Color(shape[4]))
+	for detail in [[16,26,5,2,"a2bc79"],[25,12,5,2,"d5de9f"],[45,33,7,2,"a2bc79"],[29,45,5,2,"466f50"],[53,48,5,2,"466f50"],[35,81,2,9,"795942"],[36,116,2,7,"c5a15e"]]:
+		draw_rect(Rect2((origin+Vector2(detail[0],detail[1])*scale_value).round(),Vector2(detail[2],detail[3])),Color(detail[4]))

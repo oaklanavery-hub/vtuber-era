@@ -98,7 +98,11 @@ break equal targeting distances. Movement-snapshot siege cluster counts are
 cached once per target/radius to avoid repeating density scans for every launcher.
 
 Tanks spawn ahead of melee, ranged/mages behind, siege furthest back, and assassins
-on flanks. Flankers prioritize ranged, mage and siege before melee/tanks. Other
+on flanks. Ninjas use their actual spawn lane (independent of roster ID parity),
+prefer backline enemies while approaching, and attack a reachable defender
+before chasing a distant target. Contact, no remaining backline or a six-second
+deadline ends the opening flank. Their 30%-HP resurrection resumes pursuit with
+the commander-adjusted attack cycle. Other
 units choose nearest enemies; siege prefers the densest reachable enemy cluster.
 Arrows and tide projectiles travel in the simulation. Siege stones aim at a fixed
 landing location, so moving targets can leave the splash area. No elemental
@@ -143,16 +147,23 @@ player actions. F3 shows decisions and scores.
 
 ## Presentation and saves
 
-Parchment and a sunny woodland frame original six-frame 32×32 creature sprites,
-drawn at 24×24 in battle. Compact cards and header open a 600×202 arena within
+Parchment and a sunny woodland frame original eight-frame 32×32 creature sprites,
+drawn at their native size in battle. Shared 32-color ramps, one-pixel outlines,
+shaded material details and dedicated attack frames preserve each silhouette.
+Ninja revival uses a distinct frame, a one-second pixel ring and a persistent
+gold mark after the resurrection is spent. Compact cards and header open a 600×202 arena within
 the same 640×360 logical resolution, up from 560×142. Fire uses
 honey/coral/orange, Water turquoise/seafoam/pearl/lavender, Earth moss/ochre/stone.
 Health bars, shield lines, Slow marks and healing crosses expose combat effects.
 Reduced effects removes bounces, flashes and particles. All values live in custom
 Resources; portraits and sprites remain replaceable placeholders.
 
-All interface text uses smooth DejaVu Sans with antialiasing and a 9px minimum
-logical font size (18px in a 1280×720 window). Labels measure their text, wrap descriptions where room
+All interface lettering uses lightly pixelated Pixelify Sans with grayscale
+antialiasing, disabled subpixel positioning and a 10px logical minimum
+(20px in a 1280×720 window). DejaVu is an explicit fallback for symbols.
+The 640×360 viewport uses nearest filtering and integer scaling at 2× or larger.
+Smaller windows use fit scaling to avoid a tiny 1× interface. Stepped panel
+corners, pixel rings and original environment details share its logical grid. Labels measure their text, wrap descriptions where room
 permits, and reduce the font size to fit their assigned rectangles. Buttons
 account for their inner margins; compact rosters use ellipsis and full tooltips
 when needed. Hearts are original pixel icons rather than fallback font glyphs.

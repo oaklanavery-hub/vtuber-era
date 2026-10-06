@@ -66,6 +66,7 @@ func _init(state) -> void:
 				"recovery_used":false, "recovery_next":0, "recovery_remaining":0,
 				"lifesteal_window":0, "lifesteal_healed":0.0,
 				"navigation_bias":(-1.0 if location.y <= 100.0 else 1.0) * (1.0 if side == 0 else -1.0),
+				"flank_y":28.0 if location.y <= 100.0 else 172.0,
 				"hit_at":-100, "heal_at":-100, "attack_at":-100, "flanking":card.role=="assassin"})
 			initial_hp[side] += hp
 			_prepare_passive_state(units.back())
@@ -220,6 +221,10 @@ func _target(unit: Dictionary) -> int:
 		var priority := 0
 		if unit.role == "assassin":
 			priority = 0 if enemy.role in BACKLINE else (2 if enemy.role == "tank" else 1)
+			# Fight a reachable defender rather than pushing forever against its
+			# solid body while selecting a distant backline unit.
+			if not in_attack_range(unit, enemy):
+				priority += 10
 		elif unit.role == "siege":
 			var cluster: int = _cluster_size(enemy,stats.splash_radius)
 			# Prefer reachable clusters, then their density. Distance/id break ties.
@@ -275,9 +280,10 @@ func _move(unit: Dictionary, dt: float) -> Vector2:
 	var target: Dictionary = units[int(unit.target)]
 	var destination: Vector2 = target.position
 	if unit.flanking:
-		var flank_y: float = 28.0 if int(unit.id)%2 == 0 else 172.0
-		var waypoint := Vector2(354.0 if unit.side == 0 else 246.0, flank_y)
-		if unit.position.distance_to(waypoint) < 12.0 or (unit.side == 0 and unit.position.x >= 346.0) or (unit.side == 1 and unit.position.x <= 254.0):
+		var waypoint := Vector2(354.0 if unit.side == 0 else 246.0, float(unit.flank_y))
+		# The opening flank follows the actual spawn lane, never roster ID
+		# parity. Contact, a cleared backline or a six-second limit ends it.
+		if in_attack_range(unit, target) or target.role not in BACKLINE or tick >= _ticks(6.0) or unit.position.distance_to(waypoint) < 12.0 or (unit.side == 0 and unit.position.x >= 346.0) or (unit.side == 1 and unit.position.x <= 254.0):
 			unit.flanking = false
 		else:
 			destination = waypoint
@@ -405,11 +411,14 @@ func _projectile(source: Dictionary, target: Dictionary, amount: float, fan: int
 		"falloff":1.0 if posthumous else stats.splash_falloff, "posthumous":posthumous, "fan":fan})
 	next_projectile_id += 1
 
+func _attack_cooldown(unit: Dictionary) -> float:
+	return float(maxi(1, int(ceil(float(config.ticks_per_second)/(cards[unit.card_id].stats.attacks_per_second*attack_speed(unit))))))
+
 func _attack(unit: Dictionary, target: Dictionary, damage: Array, hits: Array, fan_due: bool) -> void:
 	var stats: UnitStats = cards[unit.card_id].stats
 	unit.attack_at = tick
 	events.append({"kind":"attack", "card_id":unit.card_id})
-	unit.cooldown = float(maxi(1, int(ceil(float(config.ticks_per_second)/(stats.attacks_per_second*attack_speed(unit))))))
+	unit.cooldown = _attack_cooldown(unit)
 	if fan_due:
 		var targets: Array = units.filter(func(enemy: Dictionary) -> bool:
 			return enemy.side != unit.side and enemy.hp > 0.0 and in_attack_range(unit, enemy))
@@ -658,7 +667,7 @@ func _settle_damage(damage: Array, hits: Array) -> void:
 		unit.hp = unit.max_hp*cards[unit.card_id].stats.revive_fraction
 		unit.revive_at = tick
 		unit.flanking = false
-		unit.cooldown = _ticks(1.0/cards[unit.card_id].stats.attacks_per_second)
+		unit.cooldown = _attack_cooldown(unit)
 		_passive("ninja_revive", unit)
 
 func _birth_position(origin: Vector2, index: int) -> Vector2:
@@ -837,7 +846,7 @@ func signature() -> String:
 			unit.slow_until, unit.slow_fraction, unit.ice_until, unit.ice_fraction, unit.attack_slow_until,
 			unit.attack_slow_fraction, unit.flame_until, unit.flame_next, unit.flame_dps,
 			unit.recovery_used, unit.recovery_remaining, unit.recovery_next, unit.lifesteal_healed, unit.lifesteal_window,
-			unit.navigation_bias, unit.flanking, unit.revive_used, unit.death_processed, unit.is_child,
+			unit.navigation_bias, unit.flanking, unit.flank_y, unit.revive_used, unit.death_processed, unit.is_child,
 			unit.next_flame, unit.next_ice, unit.ice_anchor, unit.next_heal, unit.next_bounce, unit.next_split_shot, unit.bounce_at])
 	return JSON.stringify([tick, snapshot, projectiles, fields, pending_children, spell_prepared,
 		next_projectile_id, next_field_id, sudden_death, passive_counts, result]).sha256_text()

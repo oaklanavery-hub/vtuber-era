@@ -8,7 +8,7 @@ import math
 import struct
 import wave
 import random
-from army_sprites import army_figure
+from army_sprites import army_figure, FRAME_SIZE, FRAME_COUNT
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTLINE = '#51372f'
@@ -212,8 +212,8 @@ def art():
     }
     for ident, name, short, role, group, hp, damage, aps, speed, reach, description in names:
         realm = ident.split('_')[0]
-        content = ''.join(f'<g transform="translate({frame*32} 0)">{army_figure(ident, frame)}</g>' for frame in range(6))
-        (ROOT / f'assets/units/{ident}.svg').write_text(svg(192, 32, content))
+        content = ''.join(f'<g transform="translate({frame*FRAME_SIZE} 0)">{army_figure(ident, frame)}</g>' for frame in range(FRAME_COUNT))
+        (ROOT / f'assets/units/{ident}.svg').write_text(svg(FRAME_SIZE*FRAME_COUNT, FRAME_SIZE, content))
         resource = f'''[gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
 [ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]
 [ext_resource type="Script" path="res://data/types/unit_stats.gd" id="2"]
@@ -321,4 +321,4 @@ def combat_audio():
 if __name__ == '__main__':
     art()
     audio()
-    print('Twelve original six-frame SVG atlases, three portraits, icon and nineteen PCM WAV files rebuilt.')
+    print('Twelve original eight-frame SVG atlases, three portraits, icon and nineteen PCM WAV files rebuilt.')

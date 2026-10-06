@@ -1,0 +1,276 @@
+{
+  "status": "passed",
+  "scenario": "water",
+  "rival": "earth",
+  "commander": "water_commander",
+  "warband": [
+    "water_mage",
+    "water_tank",
+    "water_melee",
+    "water_ranged"
+  ],
+  "browser": "151.0.7922.34",
+  "screens": [
+    "menu",
+    "compendium",
+    "settings",
+    "commander",
+    "warband",
+    "battle",
+    "results"
+  ],
+  "seed": 1791256685,
+  "rounds": [
+    {
+      "round": 1,
+      "hearts": [
+        3,
+        4
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 20,
+        "ice_path": 5,
+        "slime_child": 6,
+        "slime_split": 3,
+        "split_arrows": 6
+      }
+    },
+    {
+      "round": 2,
+      "hearts": [
+        3,
+        3
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 7,
+        "ice_path": 26,
+        "pushback": 33,
+        "siege_blast": 9,
+        "slime_child": 24,
+        "slime_split": 12,
+        "split_arrows": 8
+      }
+    },
+    {
+      "round": 3,
+      "hearts": [
+        2,
+        3
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 12,
+        "ice_path": 46,
+        "pushback": 56,
+        "siege_blast": 18,
+        "slime_child": 48,
+        "slime_split": 24,
+        "split_arrows": 18,
+        "tree_heal": 18
+      }
+    },
+    {
+      "round": 4,
+      "hearts": [
+        1,
+        3
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 8,
+        "ice_path": 43,
+        "pushback": 76,
+        "siege_blast": 20,
+        "slime_child": 48,
+        "slime_split": 24,
+        "snow_head": 6,
+        "snow_head_impact": 6,
+        "split_arrows": 13,
+        "tree_heal": 21
+      }
+    },
+    {
+      "round": 5,
+      "hearts": [
+        0,
+        3
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 7,
+        "ice_path": 41,
+        "pushback": 186,
+        "siege_blast": 24,
+        "slime_child": 48,
+        "slime_split": 24,
+        "snow_head": 6,
+        "snow_head_impact": 6,
+        "split_arrows": 12,
+        "tree_heal": 22
+      }
+    }
+  ],
+  "actions": [
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "water_tank",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "water_tank",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "water_ranged",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "water_ranged",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "water_tank",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "water_tank",
+        "kind": "summon"
+      }
+    }
+  ],
+  "stats": {
+    "reinforcements": 4,
+    "promotions": 4,
+    "spell": 1,
+    "comeback": 3
+  },
+  "errors": [],
+  "headers": "ordinary HTTP; no cross-origin isolation",
+  "testedViewport": [
+    "1280x720",
+    "1000x720"
+  ],
+  "arena": [
+    600,
+    202
+  ],
+  "bodySize": 7.2,
+  "spawnCollisionPassed": true,
+  "combatCollisionPassed": true,
+  "settingsPersisted": true,
+  "rematchPassed": true,
+  "textFont": "Pixelify Sans",
+  "passives": {
+    "armadillo_bounce": 7,
+    "ice_path": 41,
+    "pushback": 186,
+    "siege_blast": 24,
+    "slime_child": 48,
+    "slime_split": 24,
+    "snow_head": 6,
+    "snow_head_impact": 6,
+    "split_arrows": 12,
+    "tree_heal": 22
+  },
+  "textOverflows": 0,
+  "combatSoundsPlayed": 591,
+  "webAudio": {
+    "starts": 654,
+    "shortEffects": 591
+  }
+}

@@ -1,0 +1,262 @@
+{
+  "status": "passed",
+  "scenario": "earth",
+  "rival": "water",
+  "commander": "earth_commander",
+  "warband": [
+    "earth_tank",
+    "earth_melee",
+    "earth_ranged",
+    "earth_siege"
+  ],
+  "browser": "151.0.7922.34",
+  "screens": [
+    "menu",
+    "compendium",
+    "settings",
+    "commander",
+    "warband",
+    "battle",
+    "results"
+  ],
+  "seed": 1791256795,
+  "rounds": [
+    {
+      "round": 1,
+      "hearts": [
+        3,
+        4
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "ice_path": 7,
+        "slime_child": 2,
+        "slime_split": 1,
+        "tree_heal": 26
+      }
+    },
+    {
+      "round": 2,
+      "hearts": [
+        3,
+        3
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "ice_path": 24,
+        "pushback": 78,
+        "siege_blast": 10,
+        "slime_child": 6,
+        "slime_split": 3,
+        "snow_head": 6,
+        "snow_head_impact": 6,
+        "tree_heal": 26
+      }
+    },
+    {
+      "round": 3,
+      "hearts": [
+        3,
+        2
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "ice_path": 43,
+        "pushback": 122,
+        "siege_blast": 16,
+        "slime_child": 6,
+        "slime_split": 3,
+        "snow_head": 6,
+        "snow_head_impact": 6,
+        "split_arrows": 6,
+        "tree_heal": 36
+      }
+    },
+    {
+      "round": 4,
+      "hearts": [
+        3,
+        1
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "ice_path": 37,
+        "pushback": 187,
+        "siege_blast": 16,
+        "slime_child": 6,
+        "slime_split": 3,
+        "snow_head": 9,
+        "snow_head_impact": 9,
+        "split_arrows": 16,
+        "tree_heal": 80
+      }
+    },
+    {
+      "round": 5,
+      "hearts": [
+        3,
+        0
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 7,
+        "ice_path": 41,
+        "pushback": 134,
+        "siege_blast": 23,
+        "slime_child": 6,
+        "slime_split": 3,
+        "snow_head": 9,
+        "snow_head_impact": 9,
+        "split_arrows": 9,
+        "tree_heal": 64
+      }
+    }
+  ],
+  "actions": [
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "earth_ranged",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "earth_ranged",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "earth_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "reinforce"
+      }
+    }
+  ],
+  "stats": {
+    "reinforcements": 4,
+    "promotions": 4,
+    "spell": 1,
+    "comeback": 1
+  },
+  "errors": [],
+  "headers": "ordinary HTTP; no cross-origin isolation",
+  "testedViewport": [
+    "1280x720",
+    "1000x720"
+  ],
+  "arena": [
+    600,
+    202
+  ],
+  "bodySize": 7.2,
+  "spawnCollisionPassed": true,
+  "combatCollisionPassed": true,
+  "settingsPersisted": true,
+  "rematchPassed": true,
+  "textFont": "Pixelify Sans",
+  "passives": {
+    "armadillo_bounce": 7,
+    "ice_path": 41,
+    "pushback": 134,
+    "siege_blast": 23,
+    "slime_child": 6,
+    "slime_split": 3,
+    "snow_head": 9,
+    "snow_head_impact": 9,
+    "split_arrows": 9,
+    "tree_heal": 64
+  },
+  "textOverflows": 0,
+  "combatSoundsPlayed": 587,
+  "webAudio": {
+    "starts": 645,
+    "shortEffects": 587
+  }
+}

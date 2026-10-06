@@ -8,14 +8,19 @@ The creature-army update adds twelve distinct animated designs, permanent solid
 unit collision, side-stepping around blocked approaches and a compact battle HUD.
 The battlefield is now 600×202, about 52% more area than the previous 560×142.
 
-The latest update uses smooth DejaVu Sans text and adds all twelve army passives:
+The latest update fixes Ninja contact attacks and opening flank lanes, adds
+lightly pixelated Pixelify Sans and redraws all twelve armies with a shared
+32-color palette, material details and eight animation frames. Native-size
+sprites, stepped panels and crisp viewport scaling unify the pixel theme.
+
+All twelve army passives remain active:
 projectile splash and pushback, death explosions and Slime splitting, one-use
 Ninja resurrection, flame walls, ice paths, Tree healing, Armadillo attack Slow,
 split arrows and huge siege blasts. The compendium explains each ability.
 Collision stays active at 7.2×7.2 with depth-sorted sprites, a compact HUD and
 twelve original combat sound effects.
 
-![Readable text and army passives](docs/screenshots/passives-compendium.png)
+![Pixel armies and readable typography](docs/screenshots/pixel-polish-compendium.png)
 
 **Play:** [Launch VTuber Era](https://oaklanavery-hub.github.io/vtuber-era/)
 **Source:** [oaklanavery-hub/vtuber-era](https://github.com/oaklanavery-hub/vtuber-era)
@@ -66,6 +71,7 @@ godot --headless --path . --editor --import --quit
 godot --headless --path . --script res://tests/run_tests.gd
 godot --headless --path . --script res://tests/elemental_tests.gd
 godot --headless --path . --script res://tests/passive_tests.gd
+godot --headless --path . --script res://tests/ninja_tests.gd
 godot --headless --path . --script res://tests/formation_tests.gd
 godot --headless --path . --script res://tests/ui_smoke.gd
 ```
@@ -79,6 +85,9 @@ All runners exit non-zero on failure. See `QA_REPORT.md` for release evidence.
 The formation runner covers 144-unit crowds, duplicate-role mixed spawns, body
 collision throughout movement and interpolation, allied/hostile detours, melee
 contact, range-based pursuit, original stats and deterministic movement replay.
+The Ninja runner covers opening contact, blocking defenders, roster-independent
+flank lanes, flank deadlines, real movement and attacks from both sides,
+30%-HP revival and deterministic collision-safe pursuit.
 The passive runner covers all twelve abilities, simultaneous death chains,
 posthumous projectiles, one-use revivals/splits, non-stacking slows, exact damage
 and healing fractions, timed auras, pushback collisions and 240-unit split crowds.

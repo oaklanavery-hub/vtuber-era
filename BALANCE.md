@@ -58,7 +58,7 @@ point, not a competitive balance claim.
 | Fire Lizard | Every projectile splashes a 16px radius, full primary / 50% secondary damage |
 | Fire Imp | Death explosion: 24px radius, 100% current attack damage, enemies only |
 | Magma Golem | Wall every 5s: 10×44px, 4s lifetime; contact refreshes an independent 2s Burn at 3 HP/s |
-| Red Ninja | Once per battle, resurrects at 30% actual max HP after simultaneous death effects settle |
+| Red Ninja | Once per battle, resurrects at 30% actual max HP after simultaneous death effects settle; attack cooldown includes commander modifiers. Opening flank ends on contact, absent backline or after 6s; reachable defenders take priority over distant backline targets |
 | Water Wizard | Each splash projectile pushes affected enemies 12px; simultaneous pushes cap at 24px per tick and stop at bodies/arena edges |
 | Ice Golem | Leaves an 18px-wide path every 1s, lasting 4s; enemy contact refreshes 15% movement Slow for 3s |
 | Water Slime | Splits once into 2 mini Slimes, each 50% parent's current attack damage and max HP; children retain lifesteal and cannot split again |

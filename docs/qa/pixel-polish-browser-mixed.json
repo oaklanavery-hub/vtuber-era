@@ -1,0 +1,251 @@
+{
+  "status": "passed",
+  "scenario": "mixed",
+  "rival": "fire",
+  "commander": "water_commander",
+  "warband": [
+    "fire_archer",
+    "water_melee",
+    "water_mage",
+    "earth_siege"
+  ],
+  "browser": "151.0.7922.34",
+  "screens": [
+    "menu",
+    "compendium",
+    "settings",
+    "commander",
+    "warband",
+    "battle",
+    "results"
+  ],
+  "seed": 1791256795,
+  "rounds": [
+    {
+      "round": 1,
+      "hearts": [
+        3,
+        4
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "imp_explosion": 3,
+        "lizard_splash": 58
+      }
+    },
+    {
+      "round": 2,
+      "hearts": [
+        3,
+        3
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "imp_explosion": 6,
+        "lizard_splash": 70,
+        "ninja_revive": 2,
+        "siege_blast": 4
+      }
+    },
+    {
+      "round": 3,
+      "hearts": [
+        3,
+        2
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "flame_wall": 3,
+        "imp_explosion": 6,
+        "lizard_splash": 135,
+        "ninja_revive": 3,
+        "pushback": 26,
+        "siege_blast": 4
+      }
+    },
+    {
+      "round": 4,
+      "hearts": [
+        3,
+        1
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "flame_burn": 4,
+        "flame_wall": 5,
+        "imp_explosion": 6,
+        "lizard_splash": 201,
+        "ninja_revive": 3,
+        "pushback": 27,
+        "siege_blast": 4,
+        "slime_child": 12,
+        "slime_split": 6
+      }
+    },
+    {
+      "round": 5,
+      "hearts": [
+        3,
+        0
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "flame_burn": 5,
+        "flame_wall": 8,
+        "imp_explosion": 6,
+        "lizard_splash": 255,
+        "ninja_revive": 3,
+        "pushback": 62,
+        "siege_blast": 5,
+        "slime_child": 12,
+        "slime_split": 6
+      }
+    }
+  ],
+  "actions": [
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "promote"
+      }
+    }
+  ],
+  "stats": {
+    "reinforcements": 2,
+    "promotions": 4,
+    "spell": 1,
+    "comeback": 1
+  },
+  "errors": [],
+  "headers": "ordinary HTTP; no cross-origin isolation",
+  "testedViewport": [
+    "1280x720",
+    "1000x720"
+  ],
+  "arena": [
+    600,
+    202
+  ],
+  "bodySize": 7.2,
+  "spawnCollisionPassed": true,
+  "combatCollisionPassed": true,
+  "settingsPersisted": true,
+  "rematchPassed": true,
+  "textFont": "Pixelify Sans",
+  "passives": {
+    "flame_burn": 5,
+    "flame_wall": 8,
+    "imp_explosion": 6,
+    "lizard_splash": 255,
+    "ninja_revive": 3,
+    "pushback": 62,
+    "siege_blast": 5,
+    "slime_child": 12,
+    "slime_split": 6
+  },
+  "textOverflows": 0,
+  "combatSoundsPlayed": 215,
+  "webAudio": {
+    "starts": 270,
+    "shortEffects": 215
+  }
+}

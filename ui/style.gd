@@ -6,8 +6,12 @@ const PARCHMENT := Color("f9e9c5")
 const HONEY := Color("e8ba61")
 const MOSS := Color("456951")
 const EMBER := Color("b75d3e")
-const TEXT_FONT = preload("res://assets/fonts/body.ttf")
-const MIN_FONT_SIZE: int = 9
+const TEXT_FONT = preload("res://assets/fonts/pixel_ui.tres")
+const ARROW = preload("res://assets/icons/arrow_down.svg")
+const SWITCH_ON = preload("res://assets/icons/switch_on.svg")
+const SWITCH_OFF = preload("res://assets/icons/switch_off.svg")
+const SLIDER_GRAB = preload("res://assets/icons/slider_grab.svg")
+const MIN_FONT_SIZE: int = 10
 
 # Font metrics are checked against the assigned rectangle, including wrapped
 # descriptions and explicit newlines. Clipping is a final safeguard for long
@@ -59,7 +63,9 @@ static func text_within_box(node: Control) -> bool:
 	if node.size.x > box.size.x+0.01 or node.size.y > box.size.y+0.01:
 		return false
 	if node is Label:
-		return node.clip_text and node.size.y+0.01 >= node.get_line_height()
+		# Label shaping is deferred until the next frame after a theme change.
+		# Use the assigned font's metrics, not a stale default-font line cache.
+		return node.clip_text and node.size.y+0.01 >= node.get_theme_font("font").get_height(node.get_theme_font_size("font_size"))
 	if node is Button:
 		return node.clip_text
 	return true
@@ -69,10 +75,11 @@ static func panel(color: Color = PARCHMENT, border: Color = INK, width: int = 2)
 	box.bg_color = color
 	box.border_color = border
 	box.set_border_width_all(width)
-	box.set_corner_radius_all(5)
-	box.shadow_color = Color(0.22, 0.13, 0.1, 0.23)
-	box.shadow_size = 3
-	box.shadow_offset = Vector2(0, 3)
+	# Two-pixel cut corners remain crisp on the viewport grid.
+	box.set_corner_radius_all(2)
+	box.corner_detail = 1
+	box.anti_aliasing = false
+	box.shadow_size = 0
 	box.content_margin_left = 8
 	box.content_margin_right = 8
 	return box
@@ -83,9 +90,16 @@ static func theme() -> Theme:
 	result.default_font_size = 11
 	result.set_constant("line_spacing", "Label", 0)
 	result.set_color("font_color", "Label", INK)
+	result.set_color("font_color", "CheckButton", INK)
+	for key in ["font_hover_color","font_hover_pressed_color","font_pressed_color","font_focus_color"]:
+		result.set_color(key,"CheckButton",INK)
+	result.set_icon("checked","CheckButton",SWITCH_ON)
+	result.set_icon("unchecked","CheckButton",SWITCH_OFF)
 	result.set_color("font_color", "Button", INK)
 	result.set_color("font_hover_color", "Button", INK)
 	result.set_color("font_pressed_color", "Button", INK)
+	result.set_color("font_hover_pressed_color", "Button", INK)
+	result.set_color("font_focus_color", "Button", INK)
 	result.set_color("font_disabled_color", "Button", Color("a2987d"))
 	result.set_stylebox("normal", "Button", panel())
 	result.set_stylebox("hover", "Button", panel(Color("fff2d4"), EMBER))
@@ -103,6 +117,20 @@ static func theme() -> Theme:
 	result.set_color("font_color", "OptionButton", INK)
 	result.set_color("font_hover_color", "OptionButton", INK)
 	result.set_color("font_pressed_color", "OptionButton", INK)
+	result.set_color("font_focus_color", "OptionButton", INK)
+	result.set_color("font_hover_pressed_color", "OptionButton", INK)
+	result.set_icon("arrow", "OptionButton", ARROW)
+	for key in ["grabber","grabber_highlight","grabber_disabled"]:
+		result.set_icon(key,"HSlider",SLIDER_GRAB)
+	for key in ["slider","grabber_area","grabber_area_highlight"]:
+		var track := StyleBoxFlat.new()
+		track.bg_color = HONEY if key != "slider" else Color("ad9f7e")
+		track.border_color = INK
+		track.set_border_width_all(1)
+		track.anti_aliasing = false
+		track.content_margin_top = 2
+		track.content_margin_bottom = 2
+		result.set_stylebox(key,"HSlider",track)
 	result.set_stylebox("panel", "PopupMenu", panel())
 	result.set_stylebox("hover", "PopupMenu", panel(HONEY, EMBER, 1))
 	result.set_color("font_color", "PopupMenu", INK)
