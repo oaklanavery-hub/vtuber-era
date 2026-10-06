@@ -195,11 +195,12 @@ func _card_face(card: ArmyCardData, rectangle: Rect2, parent: Control, action: C
 	_sprite(card, Rect2((width-64)/2.0, 38, 64, 64), tile)
 	_label(card.display_name, Rect2(7, height-65, width-14, 23), 14, true, true, tile)
 	var short_effect: String = card.role.capitalize()
-	var footer: String = "%d per summon" % card.group_size
+	var footer: String = "%d per summon · Max %d" % [card.group_size, GameCatalog.balance().unit_cap(card.role)]
 	if not choice.is_empty():
 		var army: Dictionary = state.sides[0].roster[card.id]
-		short_effect = "+%d %s" % [card.group_size, "units" if card.group_size>1 else "unit"]
-		if choice.kind == "reinforce": short_effect = "%d → %d units" % [army.count, army.count*2]
+		var gain: int = state.action_gain(0, choice)
+		short_effect = "+%d %s" % [gain, "units" if gain != 1 else "unit"]
+		if choice.kind == "reinforce": short_effect = "%d → %d units" % [army.count, state.target_count(0, choice)]
 		elif choice.kind == "promote": short_effect = "Rank %d → %d" % [army.rank, army.rank+1]
 		footer = "1 Command Point" if state.eligible(0, choice) else "Unit cap reached"
 	_label(short_effect, Rect2(7, height-39, width-14, 18), 11, true, false, tile)
@@ -223,7 +224,7 @@ func _show_card_details(card_id: String, choice: Dictionary = {}) -> void:
 	_panel(Rect2(108, 41, 424, 282), details_overlay)
 	_sprite(card, Rect2(125, 61, 64, 64), details_overlay)
 	_label(card.display_name, Rect2(200, 54, 305, 28), 22, false, true, details_overlay)
-	_label("%s · %s · %d per summon" % [card.set_id.capitalize(), card.role.capitalize(), card.group_size], Rect2(200, 87, 305, 23), 12, false, false, details_overlay)
+	_label("%s · %s · Max %d" % [card.set_id.capitalize(), card.role.capitalize(), GameCatalog.balance().unit_cap(card.role)], Rect2(200, 87, 305, 23), 12, false, false, details_overlay)
 	_label("Base stats", Rect2(127, 126, 385, 21), 14, false, true, details_overlay)
 	_label("HP %d   Damage %d   %.2f attacks/s\nRange %d   Move speed %d" % [card.stats.max_hp, card.stats.damage, card.stats.attacks_per_second, card.stats.attack_range, card.stats.move_speed], Rect2(127, 149, 385, 37), 11, false, false, details_overlay)
 	_label("Army effects", Rect2(127, 191, 385, 22), 14, false, true, details_overlay)
@@ -232,8 +233,8 @@ func _show_card_details(card_id: String, choice: Dictionary = {}) -> void:
 	if not choice.is_empty() and state:
 		var army: Dictionary = state.sides[0].roster[card_id]
 		match choice.kind:
-			"summon": note = "Summon adds %d %s. Costs 1 Command Point." % [card.group_size, "unit" if card.group_size == 1 else "units"]
-			"reinforce": note = "Reinforce doubles %d → %d units; rank stays %d." % [army.count, army.count*2, army.rank]
+			"summon": note = "Summon adds %d %s. Costs 1 Command Point." % [state.action_gain(0, choice), "unit" if state.action_gain(0, choice) == 1 else "units"]
+			"reinforce": note = "Reinforce adds units: %d → %d units; rank stays %d." % [army.count, state.target_count(0, choice), army.rank]
 			"promote": note = "Promote raises rank %d → %d; unit count stays %d." % [army.rank, army.rank+1,army.count]
 	_label(note, Rect2(127, 262, 385, 20), 10, true, false, details_overlay)
 	var close := _button("Close", Rect2(248, 289, 144, 25), _close_card_details, true, details_overlay)
@@ -521,7 +522,7 @@ func _pick(index: int) -> void:
 		return
 	if choice.kind == "reinforce":
 		var army: Dictionary = state.sides[0].roster[choice.card_id]
-		_dialog("Call Reinforcements?", "%s\n%d → %d units · Rank %d stays the same\nCosts 1 Command Point" % [state.cards[choice.card_id].display_name, army.count, army.count*2, army.rank], "Confirm Reinforcements", func(): _apply_choice(choice), "reinforce", true)
+		_dialog("Call Reinforcements?", "%s\n%d → %d units · Rank %d stays the same\nCosts 1 Command Point" % [state.cards[choice.card_id].display_name, army.count, state.target_count(0, choice), army.rank], "Confirm Reinforcements", func(): _apply_choice(choice), "reinforce", true)
 	else:
 		_apply_choice(choice)
 
@@ -772,7 +773,7 @@ func _publish() -> void:
 	if not qa_enabled:
 		return
 	var snapshot := {"screen": screen, "modal": modal_kind, "settings": SaveStore.settings,
-		"release": "commander-active-skills", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
+		"release": "army-passives-role-caps", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
 		"card_details": details_card_id, "command_popup": modal_kind == "command",
 		"battle_controls_visible": is_instance_valid(battle_button) and battle_button.is_visible_in_tree(),
 		"pixel_scale_mode":"integer" if get_window().content_scale_stretch == Window.CONTENT_SCALE_STRETCH_INTEGER else "fit",
@@ -787,9 +788,10 @@ func _publish() -> void:
 			"roster": state.sides[0].roster, "total": state.total_units(0),
 			"commander": state.commander.id, "warbands": state.warbands,
 			"commanders": [state.commander_for(0).id, state.commander_for(1).id],
-			"bond": state.bond.id if state.bond else "", "groups": {}})
+			"bond": state.bond.id if state.bond else "", "groups": {}, "caps": {}})
 		for id in state.cards:
 			snapshot.groups[id] = state.cards[id].group_size
+			snapshot.caps[id] = state.army_cap(id)
 		snapshot["arena"] = [CombatSimulation.ARENA_SIZE.x, CombatSimulation.ARENA_SIZE.y]
 		snapshot["body_size"] = CombatSimulation.BODY_SIZE
 		snapshot["spawn_spacing"] = CombatSimulation.SPAWN_SPACING
@@ -811,7 +813,7 @@ func _publish() -> void:
 			for unit in simulation.units:
 				if unit.hp > 0.0:
 					snapshot.combat_positions.append([unit.id, unit.side, unit.position.x, unit.position.y])
-					snapshot.combat_statuses.append([unit.id, simulation.move_speed(unit), simulation.defence_multiplier(unit)])
+					snapshot.combat_statuses.append([unit.id, simulation.move_speed(unit), simulation.defence_multiplier(unit), simulation.attack_rate(unit), unit.ice_aura_fraction, unit.teleport_used, simulation.teleport_charging(unit), unit.blast_burn_until])
 	JavaScriptBridge.eval("window.vtuberEraQA = %s;" % JSON.stringify(snapshot))
 
 func _text_overflows(parent: Node) -> int:

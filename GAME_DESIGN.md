@@ -25,8 +25,8 @@ manual commands, movement or targeting. Rematch resets all match state and seed.
 
 Preparation is once per round, preserves all three offers and applies only to
 the next battle. The info icon on commander selection and beside Prepare explains
-each active skill. Fire's two-second opening holds both armies and the battle
-clock until all six impacts finish. Six zones distribute impacts across the
+each active skill. Fire's two-second opening holds voluntary army movement and
+the battle clock until all six impacts finish; death blasts can push units physically. Six zones distribute impacts across the
 enemy field; each aims at a starting enemy in that zone when one exists. Damage
 uses shields and defence, and triggers normal death passives. Opposing meteors
 landing together resolve simultaneously, without unit-source attack bonuses,
@@ -84,10 +84,10 @@ shields, Burn and overkill, capped at 2% actual max HP per one-second window.
 Buffered simultaneous hit credit is prorated fairly among attackers.
 
 Each army also has a Resource-backed passive. Fire Lizards splash with every
-projectile; Fire Imps explode on death. Magma Golems raise flame walls every 5s,
-burning enemies crossing them for 2s. Red Ninjas resurrect once per battle with
-30% max HP. Water Wizards push enemies back with every splash spell. Ice Golems
-leave paths applying a non-stacking 15% movement Slow for 3s. Water Slimes split
+projectile; Fire Imps explode on death with radial pushback and a two-second Burn. Magma Golems raise flame walls every 5s,
+burning enemies crossing them for 2s. Red Ninjas charge for 2s, then teleport behind
+enemy lines once per battle. They still resurrect once with 30% max HP. Water Wizards push enemies back with every splash spell. Ice Golems
+carry a moving 48px ice aura that slows enemy attack and movement speed by 15%. Water Slimes split
 once into two smaller children at 50% damage and HP each; children do not split.
 Snowmen throw their heads on death for a small area blast. Trees heal nearby
 living allies, including themselves, for 5% max HP every 2s. Armadillos bounce
@@ -104,9 +104,13 @@ categories. The mandatory normal slot makes overall frequencies differ from
 those weights. Each side draws only from its own equipped cards.
 
 Two normal summons unlock Reinforcements and Promotions for that army.
-Reinforcement doubles count without changing Rank; confirm before spending.
-There are two uses per army, Rank caps at 3, and unit caps are 24 per army and
-72 per side. Exceeding a cap is rejected, never silently clamped. Promotion affects
+Reinforcement adds up to the current count without changing Rank; confirm the
+exact final count before spending. Both normal summons and reinforcements fill
+remaining slots at the cap. Maximum counts per army type are ranged 8, melee 10,
+tanks 3, mages 5, assassins 3 and siege 4; mixed cards sharing a role each have
+that limit. The 72-per-side ceiling remains an additional safety guard. There
+are up to two reinforcements per army and Rank caps at 3. A capped army cannot
+spend a point on more units, but can still promote. Promotion affects
 current and future units. Counts, Ranks and action history survive rounds;
 combat HP, projectiles, shields, Burn, Slow and spell/recovery timers reset.
 Slime children exist only in combat; persistent roster counts stay unchanged.
@@ -121,10 +125,15 @@ break equal targeting distances. Movement-snapshot siege cluster counts are
 cached once per target/radius to avoid repeating density scans for every launcher.
 
 Tanks spawn ahead of melee, ranged/mages behind, siege furthest back, and assassins
-on flanks. Ninjas use their actual spawn lane (independent of roster ID parity),
-prefer backline enemies while approaching, and attack a reachable defender
-before chasing a distant target. Contact, no remaining backline or a six-second
-deadline ends the opening flank. Their 30%-HP resurrection resumes pursuit with
+on flanks. Ninjas hold position during a visible two-second charge, then teleport
+to free positions beyond the enemy rear line. They can blink across terrain,
+but destinations must fit inside the arena and avoid all units and walls.
+Simultaneous Ninjas reserve distinct landing lanes; at an arena edge they land
+in an adjacent free lane. The teleport has no movement interpolation across the
+field, so it never clips through other units visually. After landing, Ninjas
+prefer reachable backline enemies and fight blocking defenders before chasing
+distant targets. Resurrection preserves the spent teleport; death during the
+charge retains the original deadline. Their 30%-HP revival resumes pursuit with
 the commander-adjusted attack cycle. Other units prefer reachable visible enemies;
 siege prefers the densest reachable enemy cluster with clear line of sight.
 Arrows and tide projectiles travel in the simulation. Siege stones aim at a fixed
@@ -177,7 +186,8 @@ shaded material details and dedicated attack frames preserve each silhouette.
 Ninja revival uses a distinct frame, a one-second pixel ring and a persistent
 gold mark after the resurrection is spent. A compact score header opens a 600×280 arena within
 the same 640×360 logical resolution. Nine spawn rows retain 24px spacing;
-movement can use the full expanded arena and Ninja flanks follow its outer rows. Fire uses
+movement can use the full expanded arena. Ninja charge bars, pixel smoke and
+arrival rings show the teleport timing; ice auras mark their true radius. Fire uses
 honey/coral/orange, Water turquoise/seafoam/pearl/lavender, Earth moss/ochre/stone.
 Health bars, shield lines, Slow marks and healing crosses expose combat effects.
 Reduced effects removes bounces, flashes and particles. All values live in custom
@@ -202,7 +212,7 @@ The same card component is used by the compendium. Its details popup closes back
 to the same realm tab; during drafting it returns to the same offers and points.
 Info remains available on disabled/capped offers. Escape/Enter closes effects,
 and keyboard focus returns to the original icon.
-Flame walls and ice paths stay visible in Reduced Effects mode because they
+Flame walls, ice auras and Ninja charge indicators stay visible in Reduced Effects mode because they
 affect gameplay. Cosmetic bounce motion never moves a unit's collision body.
 
 Twelve original short combat cues cover melee, ninja slashes, arrows, snowballs,

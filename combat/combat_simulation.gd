@@ -24,6 +24,8 @@ var target_clusters: Dictionary = {}
 var reading_movement_snapshot: bool = false
 var fields: Array = []
 var pending_children: Array = []
+# Death blasts join the next swept movement tick, including the meteor opening.
+var pending_pushback: Dictionary = {}
 var next_field_id: int = 0
 var passive_counts: Dictionary = {}
 var skills_activated: Array = [false, false]
@@ -80,7 +82,7 @@ func _init(state) -> void:
 				"lifesteal_window":0, "lifesteal_healed":0.0,
 				"navigation_bias":(-1.0 if location.y <= ARENA_SIZE.y/2.0 else 1.0) * (1.0 if side == 0 else -1.0),
 				"flank_y":FLANK_TOP if location.y <= ARENA_SIZE.y/2.0 else FLANK_BOTTOM,
-				"hit_at":-100, "heal_at":-100, "attack_at":-100, "flanking":card.role=="assassin"})
+				"hit_at":-100, "heal_at":-100, "attack_at":-100, "flanking":false})
 			initial_hp[side] += hp
 			_prepare_passive_state(units.back())
 	# Every recipient uses its own commander affinity; nearby shields do not stack.
@@ -174,6 +176,14 @@ func _step_opening() -> void:
 	damage.fill(0.0)
 	for unit in units:
 		unit.previous_position = unit.position
+	if not pending_pushback.is_empty():
+		var movements: Array = []
+		for unit in units:
+			movements.append(unit.position+pending_pushback.get(unit.id, Vector2.ZERO).limit_length(24.0) if unit.hp > 0.0 else unit.position)
+		_resolve_movements(movements, pending_pushback)
+		for unit in units:
+			unit.position = movements[int(unit.id)]
+		pending_pushback.clear()
 	for meteor in meteors:
 		if meteor.landed or opening_tick < int(meteor.impact_tick):
 			continue
@@ -259,7 +269,11 @@ func _prepare_passive_state(unit: Dictionary) -> void:
 		"revive_used":false, "death_processed":false, "is_child":false, "visual_scale":1.0,
 		"next_flame":_ticks(stats.flame_interval), "next_ice":0, "ice_anchor":unit.position,
 		"next_heal":_ticks(stats.heal_interval), "next_bounce":_ticks(stats.bounce_interval),
-		"next_split_shot":_ticks(stats.split_shot_interval), "bounce_at":-100, "revive_at":-100}, true)
+		"next_split_shot":_ticks(stats.split_shot_interval), "bounce_at":-100, "revive_at":-100,
+		"blast_burn_until":0, "blast_burn_next":0, "blast_burn_dps":0.0,
+		"ice_aura_fraction":0.0, "aura_started":false,
+		"teleport_due":_ticks(stats.teleport_delay), "teleport_started":false,
+		"teleport_used":stats.teleport_delay <= 0.0, "teleport_at":-100}, true)
 
 func _passive(ability: String, unit: Dictionary, radius: float = 0.0, location: Vector2 = Vector2.INF) -> void:
 	passive_counts[ability] = int(passive_counts.get(ability, 0))+1
@@ -361,13 +375,117 @@ func healing_multiplier(unit: Dictionary) -> float:
 	return 1.0 + (leader.matching_healing_shield_bonus if cards[unit.card_id].set_id == leader.set_id else 0.0)
 
 func move_speed(unit: Dictionary) -> float:
-	var slow: float = float(unit.slow_fraction) if tick < int(unit.slow_until) else 0.0
+	var slow: float = maxf(float(unit.ice_aura_fraction), float(unit.slow_fraction) if tick < int(unit.slow_until) else 0.0)
 	if tick < int(unit.ice_until):
 		slow = maxf(slow, float(unit.ice_fraction))
 	var rival: int = 1-int(unit.side)
 	if spell_active(rival) and commanders[rival].spell_kind == "frozen_field":
 		slow = maxf(slow, commanders[rival].spell_slow_fraction)
 	return cards[unit.card_id].stats.move_speed * (1.0-slow)
+
+func attack_rate(unit: Dictionary) -> float:
+	var slow: float = float(unit.attack_slow_fraction) if tick < int(unit.attack_slow_until) else 0.0
+	return 1.0-maxf(slow, float(unit.ice_aura_fraction))
+
+func _refresh_ice_auras() -> void:
+	var old: Array = []
+	for unit in units:
+		old.append(unit.ice_aura_fraction)
+		unit.ice_aura_fraction = 0.0
+	for source in units:
+		var stats: UnitStats = cards[source.card_id].stats
+		if source.hp <= 0.0 or stats.ice_aura_radius <= 0.0:
+			continue
+		if not source.aura_started:
+			source.aura_started = true
+			_passive("ice_aura", source, stats.ice_aura_radius)
+		for enemy in units:
+			if enemy.hp > 0.0 and enemy.side != source.side and source.position.distance_squared_to(enemy.position) <= stats.ice_aura_radius*stats.ice_aura_radius:
+				enemy.ice_aura_fraction = maxf(float(enemy.ice_aura_fraction), stats.ice_aura_slow_fraction)
+				if float(old[int(enemy.id)]) == 0.0:
+					_passive("ice_aura_slow", source, 0.0, enemy.position)
+					old[int(enemy.id)] = enemy.ice_aura_fraction
+
+func teleport_charging(unit: Dictionary) -> bool:
+	return not unit.teleport_used
+
+func _teleport_destination(unit: Dictionary, reserved: Array[Vector2] = []) -> Vector2:
+	var direction: float = 1.0 if unit.side == 0 else -1.0
+	var rear: float = -INF
+	var target: Dictionary = {}
+	var priority: int = 2
+	for enemy in units:
+		if enemy.hp <= 0.0 or enemy.side == unit.side:
+			continue
+		rear = maxf(rear, enemy.position.x*direction)
+		var candidate_priority: int = 0 if enemy.role in BACKLINE else 1
+		if target.is_empty() or candidate_priority < priority or (candidate_priority == priority and enemy.position.x*direction > target.position.x*direction):
+			target = enemy
+			priority = candidate_priority
+	if target.is_empty():
+		return Vector2.INF
+	# Blink across terrain, but never land inside terrain or another body.
+	# Stable alternating lanes reserve distinct destinations for simultaneous Ninjas.
+	var anchor := Vector2(direction*(rear+14.0), target.position.y).clamp(MIN_POSITION, MAX_POSITION)
+	for column in range(32):
+		for lane in range(41):
+			var offset: float = float(ceili(float(lane)/2.0))*10.0*(1.0 if lane%2 == 1 else -1.0)
+			var candidate: Vector2 = anchor+Vector2(direction*float(column)*8.0, offset)
+			if candidate.x < MIN_POSITION.x or candidate.x > MAX_POSITION.x or candidate.y < MIN_POSITION.y or candidate.y > MAX_POSITION.y:
+				continue
+			var free: bool = true
+			for wall in walls:
+				if wall.rect.grow(BODY_SIZE/2.0+0.01).has_point(candidate):
+					free = false
+					break
+			if not free:
+				continue
+			for other in units:
+				if other.id == unit.id or other.hp <= 0.0:
+					continue
+				var delta: Vector2 = (candidate-other.position).abs()
+				if delta.x < BODY_SIZE+0.01 and delta.y < BODY_SIZE+0.01:
+					free = false
+					break
+			if free:
+				for landing in reserved:
+					var delta: Vector2 = (candidate-landing).abs()
+					if delta.x < BODY_SIZE+0.01 and delta.y < BODY_SIZE+0.01:
+						free = false
+						break
+			if free:
+				return candidate
+	return Vector2.INF
+
+func _teleport_assassins() -> void:
+	# Plan against one position snapshot: the second team must not target the
+	# first team's already-teleported line. Reserve every simultaneous landing.
+	var plans: Array = []
+	var reserved: Array[Vector2] = []
+	for unit in units:
+		if unit.hp <= 0.0 or not teleport_charging(unit):
+			continue
+		if not unit.teleport_started:
+			unit.teleport_started = true
+			_passive("ninja_charge", unit, 14.0)
+		if tick < int(unit.teleport_due):
+			continue
+		var destination: Vector2 = _teleport_destination(unit, reserved)
+		if destination == Vector2.INF:
+			continue
+		plans.append({"unit":unit.id, "position":destination})
+		reserved.append(destination)
+	for plan in plans:
+		var unit: Dictionary = units[int(plan.unit)]
+		var destination: Vector2 = plan.position
+		_passive("ninja_vanish", unit, 14.0)
+		unit.position = destination
+		unit.previous_position = destination
+		unit.teleport_used = true
+		unit.teleport_at = tick
+		unit.flanking = false
+		unit.target = -1
+		_passive("ninja_teleport", unit, 14.0)
 
 func _grant_shield(unit: Dictionary, amount: float, until: int) -> void:
 	var value: float = amount * healing_multiplier(unit)
@@ -452,21 +570,14 @@ func _hit(source: Dictionary, target: Dictionary, amount: float, damage: Array, 
 
 func _move(unit: Dictionary, dt: float) -> Vector2:
 	var next_position: Vector2 = unit.position
-	if unit.hp <= 0.0:
+	if unit.hp <= 0.0 or teleport_charging(unit):
+		unit.target = -1
 		return next_position
 	unit.target = _target(unit)
 	if unit.target < 0:
 		return next_position
 	var target: Dictionary = units[int(unit.target)]
 	var destination: Vector2 = target.position
-	if unit.flanking:
-		var waypoint := Vector2(354.0 if unit.side == 0 else 246.0, float(unit.flank_y))
-		# The opening flank follows the actual spawn lane, never roster ID
-		# parity. Contact, a cleared backline or a six-second limit ends it.
-		if in_attack_range(unit, target) or target.role not in BACKLINE or tick >= _ticks(6.0) or unit.position.distance_to(waypoint) < 12.0 or (unit.side == 0 and unit.position.x >= 346.0) or (unit.side == 1 and unit.position.x <= 254.0):
-			unit.flanking = false
-		else:
-			destination = waypoint
 	if tick-int(unit.bounce_at) < BOUNCE_TICKS:
 		return next_position
 	if not can_attack(unit, target) or unit.flanking:
@@ -732,7 +843,8 @@ func _tree_healing() -> void:
 
 func _advance_projectiles(movements: Array, damage: Array, hits: Array) -> Dictionary:
 	var remaining: Array = []
-	var forces: Dictionary = {}
+	var forces: Dictionary = pending_pushback.duplicate()
+	pending_pushback.clear()
 	var dt: float = 1.0/float(config.ticks_per_second)
 	for projectile in projectiles:
 		var source: Dictionary = units[int(projectile.source)]
@@ -840,6 +952,17 @@ func _death_effects(deaths: Array, revivals: Array, damage: Array, hits: Array) 
 				for enemy in units:
 					if enemy.side != source.side and enemy.hp > 0.0 and source.position.distance_to(enemy.position) <= stats.death_blast_radius:
 						_hit(source, enemy, source.damage*stats.death_blast_fraction, damage, hits, false)
+						if stats.death_pushback_distance > 0.0:
+							var direction: Vector2 = (enemy.position-source.position).normalized()
+							if direction == Vector2.ZERO:
+								direction = Vector2(1 if source.side == 0 else -1, 0)
+							pending_pushback[enemy.id] = pending_pushback.get(enemy.id, Vector2.ZERO)+direction*stats.death_pushback_distance
+						if stats.death_burn_dps > 0.0:
+							if int(enemy.blast_burn_until) < tick or int(enemy.blast_burn_next) == 0:
+								enemy.blast_burn_next = tick+config.ticks_per_second
+								_passive("imp_burn", source, 0.0, enemy.position)
+							enemy.blast_burn_until = tick+_ticks(stats.death_burn_duration)
+							enemy.blast_burn_dps = maxf(float(enemy.blast_burn_dps), stats.death_burn_dps)
 				_passive("imp_explosion", source, stats.death_blast_radius)
 		if stats.revive_fraction > 0.0 and not source.revive_used:
 			revivals.append(source.id)
@@ -849,9 +972,9 @@ func _death_effects(deaths: Array, revivals: Array, damage: Array, hits: Array) 
 			_passive("slime_split", source)
 
 func _clear_statuses(unit: Dictionary) -> void:
-	for key in ["burn_until", "burn_next", "slow_until", "ice_until", "attack_slow_until", "flame_until", "flame_next", "recovery_next", "recovery_remaining", "shield_until", "cooldown"]:
+	for key in ["burn_until", "burn_next", "slow_until", "ice_until", "attack_slow_until", "flame_until", "flame_next", "recovery_next", "recovery_remaining", "shield_until", "cooldown", "blast_burn_until", "blast_burn_next"]:
 		unit[key] = 0
-	for key in ["shield", "slow_fraction", "ice_fraction", "attack_slow_fraction", "burn_dps", "flame_dps"]:
+	for key in ["shield", "slow_fraction", "ice_fraction", "attack_slow_fraction", "burn_dps", "flame_dps", "blast_burn_dps", "ice_aura_fraction"]:
 		unit[key] = 0.0
 
 func _settle_damage(damage: Array, hits: Array) -> void:
@@ -952,6 +1075,8 @@ func step() -> void:
 		_step_opening()
 		return
 	navigation_goals.clear()
+	_teleport_assassins()
+	_refresh_ice_auras()
 	var dt: float = 1.0/float(config.ticks_per_second)
 	var damage: Array = []
 	damage.resize(units.size())
@@ -979,11 +1104,11 @@ func step() -> void:
 	for unit in units:
 		if unit.hp <= 0.0:
 			continue
-		var rate: float = 1.0-float(unit.attack_slow_fraction) if tick < int(unit.attack_slow_until) else 1.0
+		var rate: float = attack_rate(unit)
 		unit.cooldown = maxf(float(unit.cooldown)-rate, 0.0)
 		var stats: UnitStats = cards[unit.card_id].stats
 		var fan_due: bool = stats.split_shot_interval > 0.0 and tick+1 >= int(unit.next_split_shot)
-		if unit.target >= 0 and (unit.cooldown <= 0.000001 or fan_due) and not unit.flanking:
+		if unit.target >= 0 and (unit.cooldown <= 0.000001 or fan_due) and not unit.flanking and not teleport_charging(unit):
 			var target: Dictionary = units[int(unit.target)]
 			if can_attack(unit, target):
 				_attack(unit, target, damage, hits, fan_due)
@@ -1000,6 +1125,13 @@ func step() -> void:
 			unit.flame_until = 0
 			unit.flame_next = 0
 			unit.flame_dps = 0.0
+		if int(unit.blast_burn_until) >= tick and int(unit.blast_burn_next) > 0 and int(unit.blast_burn_next) <= tick:
+			damage[int(unit.id)] += unit.blast_burn_dps
+			unit.blast_burn_next += config.ticks_per_second
+		if tick > int(unit.blast_burn_until):
+			unit.blast_burn_until = 0
+			unit.blast_burn_next = 0
+			unit.blast_burn_dps = 0.0
 		if sudden_death:
 			var overtime: float = float(tick)*dt-config.battle_limit_seconds
 			damage[int(unit.id)] += (config.sudden_death_dps+maxf(overtime, 0.0)*config.sudden_death_escalation)*dt
@@ -1008,13 +1140,15 @@ func step() -> void:
 		for id in forces:
 			# Simultaneous hits contribute to pushback without tunnelling through
 			# bodies or turning a forced displacement into a navigation detour.
-			movements[int(id)] += forces[id].limit_length(24.0)
+			if units[int(id)].hp > 0.0:
+				movements[int(id)] += forces[id].limit_length(24.0)
 		_resolve_movements(movements, forces)
 	_field_contacts(movements)
 	for unit in units:
 		unit.position = movements[int(unit.id)]
 	_settle_damage(damage, hits)
 	_birth_children()
+	_refresh_ice_auras()
 	_tree_healing()
 	for unit in units:
 		if unit.hp <= 0.0:
@@ -1053,12 +1187,14 @@ func _finish(winning_side: int, reason: String) -> void:
 	navigation_distances.clear()
 	navigation_goals.clear()
 	pending_children.clear()
+	pending_pushback.clear()
 	spell_prepared = [false, false]
 	skills_activated = [false, false]
 	opening_tick = opening_duration
 	for unit in units:
 		_clear_statuses(unit)
 		unit.bounce_at = -100
+		unit.teleport_used = true
 
 func signature() -> String:
 	var snapshot: Array = []
@@ -1069,7 +1205,9 @@ func signature() -> String:
 			unit.attack_slow_fraction, unit.flame_until, unit.flame_next, unit.flame_dps,
 			unit.recovery_used, unit.recovery_remaining, unit.recovery_next, unit.lifesteal_healed, unit.lifesteal_window,
 			unit.navigation_bias, unit.flanking, unit.flank_y, unit.revive_used, unit.death_processed, unit.is_child,
-			unit.next_flame, unit.next_ice, unit.ice_anchor, unit.next_heal, unit.next_bounce, unit.next_split_shot, unit.bounce_at])
-	return JSON.stringify([tick, snapshot, projectiles, fields, pending_children, spell_prepared, skills_activated,
+			unit.next_flame, unit.next_ice, unit.ice_anchor, unit.next_heal, unit.next_bounce, unit.next_split_shot, unit.bounce_at,
+			unit.blast_burn_until, unit.blast_burn_next, unit.blast_burn_dps, unit.ice_aura_fraction,
+			unit.aura_started, unit.teleport_due, unit.teleport_started, unit.teleport_used, unit.teleport_at])
+	return JSON.stringify([tick, snapshot, projectiles, fields, pending_children, pending_pushback, spell_prepared, skills_activated,
 		opening_tick, opening_duration, meteors, walls, skill_counts,
 		next_projectile_id, next_field_id, sudden_death, passive_counts, result]).sha256_text()

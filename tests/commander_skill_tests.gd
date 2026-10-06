@@ -40,6 +40,7 @@ func fixture(leader: String, own: Dictionary, rival: String, enemy: Dictionary, 
 	for value in sim.units:
 		value.cooldown = 100000
 		value.flanking = false
+		value.teleport_used = true
 		value.next_flame = 100000
 		value.next_ice = 100000
 		value.next_heal = 100000

@@ -46,7 +46,8 @@ Resource-backed values. Commander passives remain unchanged.
 
 Meteors apply normal incoming-damage reduction, defence and shields without
 army damage/rank multipliers, first-hit Burn or lifesteal. They trigger normal
-death effects, revivals and splits. Both armies remain still during the opening;
+death effects, revivals and splits. Voluntary movement waits during the opening;
+Imp death blasts can still push surviving units physically;
 the 45-second battle timer starts afterwards. Ice uses a global enemy modifier,
 so revivals and newborn Slimes remain affected. Defence is a resistance scalar:
 damage is divided by 0.92 under ice (about 8.7% more). Earth passive and ice
@@ -79,11 +80,11 @@ point, not a competitive balance claim.
 | Army | Passive |
 |---|---|
 | Fire Lizard | Every projectile splashes a 16px radius, full primary / 50% secondary damage |
-| Fire Imp | Death explosion: 24px radius, 100% current attack damage, enemies only |
+| Fire Imp | Death explosion: 24px radius, 100% current attack damage, 12px radial pushback, independent 3 HP/s Burn for 2s; enemies only. Multiple blasts refresh rather than stack Burn |
 | Magma Golem | Wall every 5s: 10×44px, 4s lifetime; contact refreshes an independent 2s Burn at 3 HP/s |
-| Red Ninja | Once per battle, resurrects at 30% actual max HP after simultaneous death effects settle; attack cooldown includes commander modifiers. Opening flank ends on contact, absent backline or after 6s; reachable defenders take priority over distant backline targets |
+| Red Ninja | Two-second charge (60 combat ticks), then one collision-safe teleport behind enemy lines per battle. Resurrects once at 30% actual max HP; does not reset a spent teleport. Reachable defenders take priority over distant targets |
 | Water Wizard | Each splash projectile pushes affected enemies 12px; simultaneous pushes cap at 24px per tick and stop at bodies/walls/arena edges |
-| Ice Golem | Leaves an 18px-wide path every 1s, lasting 4s; enemy contact refreshes 15% movement Slow for 3s |
+| Ice Golem | Moving 48px radius aura: enemy movement ×0.85 and attack cooldown progress ×0.85 while inside; does not stack with other Golems or stronger slows; ends on leaving or Golem death |
 | Water Slime | Splits once into 2 mini Slimes, each 50% parent's current attack damage and max HP; children retain lifesteal and cannot split again |
 | Snowman | On death throws its head at the nearest surviving enemy; impact has a 24px radius and 100% current attack damage |
 | Tree | Every 2s, heals itself and living allies within 48px for 5% of each recipient's max HP, before any healing affinity |
@@ -91,10 +92,12 @@ point, not a competitive balance claim.
 | Wood Archer | Every 5s when in range with clear line of sight, fires 3 arrows sharing one attack's total damage; prefers distinct visible enemies, repeats targets when fewer than 3 |
 | Wooden Siege | Every stone explodes over a huge 64px radius, retaining 70% secondary damage |
 
-Wizard and ice movement Slow use separate expiry timers; only the strongest
-active value affects speed. Attack Slow reduces progress on the ongoing attack
-cooldown as well as subsequent cycles. Flame-wall Burn and Wildfire have
-independent timers. Rank and commander damage bonuses carry through split arrows,
+Wizard movement Slow and Golem aura are independent; only the strongest active
+value affects speed. Armadillo attack Slow and the aura also use the strongest value. Attack Slow reduces progress on the ongoing attack
+cooldown as well as subsequent cycles. Imp-blast Burn, flame-wall Burn and
+Wildfire have independent timers. Death pushback enters the next swept movement
+tick, capped with other simultaneous pushes at 24px, and stops at bodies, walls
+and arena edges. Rank and commander damage bonuses carry through split arrows,
 children and death blasts. Births use free collision positions and do not change
 persistent draft counts, summon caps, reinforcements or promotions. Last-unit
 resurrection/splitting and thrown heads settle before elimination resolves.
@@ -107,10 +110,14 @@ resurrection/splitting and thrown heads settle before elimination resolves.
 | Action / spell cost | 1 point |
 | Special eligibility | 2 normal summons |
 | Reinforcements | 2 per army per match |
-| Unit caps | 24 per army; 72 per side |
+| Unit caps | Per army: ranged 8, melee 10, tanks 3, mages 5, assassins 3, siege 4; 72 per side safety ceiling |
 | Fixed ticks | 30/s |
 | Normal battle limit | 45s |
 | Sudden-death damage | 8 HP/s plus 4 HP/s per overtime second |
+
+Normal summons and reinforcements fill the remaining slots below these caps.
+Cards and confirmation show the exact gain; saturated armies cannot spend points
+on more units. Promotions are unaffected. Slime children are combat-only.
 
 Three unique offers include one mandatory normal offer. Remaining category slots
 use filtered 70% summon / 15% reinforce / 15% promote weights. Spell preparation

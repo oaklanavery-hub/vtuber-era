@@ -50,6 +50,10 @@ func _draw() -> void:
 	if simulation:
 		if (simulation.spell_active(0) and simulation.commanders[0].spell_kind == "frozen_field") or (simulation.spell_active(1) and simulation.commanders[1].spell_kind == "frozen_field"):
 			_draw_frozen_field()
+		for source in simulation.units:
+			var radius: float = state.cards[source.card_id].stats.ice_aura_radius
+			if source.hp > 0.0 and radius > 0.0:
+				_draw_ice_aura(source.previous_position.lerp(source.position, interpolation), int(radius))
 		# Fields carry gameplay information even with reduced cosmetic effects.
 		for field in simulation.fields:
 			var rectangle: Rect2 = field.rect
@@ -85,27 +89,34 @@ func _draw() -> void:
 				frame = 0
 			if simulation.tick-int(unit.attack_at) < 4 and not reduced_effects:
 				frame = 6
-			if simulation.tick-int(unit.revive_at) < 15 and not reduced_effects:
+			if (simulation.tick-int(unit.revive_at) < 15 or simulation.tick-int(unit.teleport_at) < 12 or simulation.teleport_charging(unit)) and not reduced_effects:
 				frame = 7
 			draw_rect(Rect2(location.x-8, location.y+5, 16, 2), Color("91a471"))
 			var sprite_location: Vector2 = location
 			if simulation.tick-int(unit.bounce_at) < CombatSimulation.BOUNCE_TICKS and not reduced_effects:
 				sprite_location.y -= sin(float(simulation.tick-int(unit.bounce_at))/float(CombatSimulation.BOUNCE_TICKS)*PI)*7.0
-			_draw_unit(state.cards[unit.card_id].sprite, sprite_location, frame, unit.side, unit.rank, simulation.tick-int(unit.hit_at)<3, unit.visual_scale)
+			# Teleport can put an attacker behind the other army: turn toward its target.
+			var facing: int = int(unit.side)
+			if unit.target >= 0:
+				var target_x: float = simulation.units[int(unit.target)].position.x
+				if absf(target_x-location.x) > 0.01: facing = 0 if target_x > location.x else 1
+			_draw_unit(state.cards[unit.card_id].sprite, sprite_location, frame, facing, unit.rank, simulation.tick-int(unit.hit_at)<3, unit.visual_scale)
+			if simulation.teleport_charging(unit) and not simulation.opening_active():
+				_draw_ninja_charge(unit, location)
 			var color := Color("659789") if unit.side == 0 else Color("c57857")
 			draw_rect(Rect2(location.x-10, location.y-26, 20, 3), Color("51372f"))
 			draw_rect(Rect2(location.x-9, location.y-25, roundf(18*unit.hp/unit.max_hp), 1), color)
-			if (int(unit.burn_until) >= simulation.tick and unit.burn_until > 0) or (int(unit.flame_until) >= simulation.tick and unit.flame_until > 0):
+			if (int(unit.burn_until) >= simulation.tick and unit.burn_until > 0) or (int(unit.flame_until) >= simulation.tick and unit.flame_until > 0) or (int(unit.blast_burn_until) >= simulation.tick and unit.blast_burn_until > 0):
 				draw_rect(Rect2(location.x+9, location.y-16, 2, 4), Color("d57346"))
 				draw_rect(Rect2(location.x+10, location.y-15, 1, 2), Color("f9e4b5"))
 			if unit.shield > 0.0:
 				draw_rect(Rect2(location.x-10, location.y-29, 20, 2), Color("8fc6cb"))
-			if unit.slow_until > simulation.tick or unit.ice_until > simulation.tick or simulation.defence_multiplier(unit) < 1.0:
+			if unit.slow_until > simulation.tick or unit.ice_until > simulation.tick or unit.ice_aura_fraction > 0.0 or simulation.defence_multiplier(unit) < 1.0:
 				draw_rect(Rect2(location.x+9, location.y-9, 2, 2), Color("659fbb"))
 			if simulation.defence_multiplier(unit) < 1.0:
 				draw_rect(Rect2(location.x+12, location.y-9, 3, 1), Color("b8e5e4"))
 				draw_rect(Rect2(location.x+13, location.y-8, 1, 3), Color("659fbb"))
-			if unit.attack_slow_until > simulation.tick:
+			if simulation.attack_rate(unit) < 1.0:
 				draw_rect(Rect2(location.x+9, location.y-5, 2, 2), Color("e8ba61"))
 			if simulation.tick-int(unit.revive_at) < 30:
 				_pixel_ring(location-Vector2(0,9), 18, Color("e8ba61"))
@@ -143,6 +154,31 @@ func _draw() -> void:
 			var color: Color = spark.color if index%2==0 else Color("f9e4b5")
 			color.a = 1.0-spark.age/0.7
 			draw_rect(Rect2(spark.position+offset, Vector2(3, 3)), color)
+
+func _draw_ice_aura(center: Vector2, radius: int) -> void:
+	# Stepped, translucent ice on the sprite grid; the border marks its true radius.
+	center = center.round()
+	for y in range(-radius+3, radius, 6):
+		var span: float = floorf(sqrt(maxf(0.0, float(radius*radius-y*y)))/3.0)*3.0
+		draw_rect(Rect2(center+Vector2(-span,y-3), Vector2(span*2,6)), Color(0.56,0.82,0.94,0.22))
+	_pixel_ring(center, radius, Color(0.59,0.84,0.93,0.68))
+	for index in range(9):
+		var point: Vector2 = center+Vector2((index*29)%73-36, (index*47)%67-33)
+		draw_rect(Rect2(point, Vector2(5,1)), Color(0.82,0.95,0.96,0.65))
+		draw_rect(Rect2(point+Vector2(2,-2), Vector2(1,5)), Color(0.82,0.95,0.96,0.65))
+
+func _draw_ninja_charge(unit: Dictionary, location: Vector2) -> void:
+	var progress: float = clampf(float(simulation.tick)/float(unit.teleport_due), 0.0, 1.0)
+	_pixel_ring(location, 13, Color("b75d3e"))
+	draw_rect(Rect2(location+Vector2(-11,9), Vector2(22,3)), Color("51372f"))
+	draw_rect(Rect2(location+Vector2(-10,10), Vector2(roundf(20*progress),1)), Color("e8ba61"))
+	if reduced_effects:
+		return
+	for index in range(6):
+		var angle: float = float(index)*TAU/6.0+float(simulation.tick)*0.14
+		var smoke: Vector2 = location+Vector2(cos(angle)*12, -12+sin(angle)*11)
+		draw_rect(Rect2(smoke.round(), Vector2(3,3)), Color("625261"))
+		draw_rect(Rect2(smoke.round()+Vector2.ONE, Vector2(1,1)), Color("e8ba61"))
 
 func _draw_frozen_field() -> void:
 	draw_rect(Rect2(Vector2.ZERO, CombatSimulation.ARENA_SIZE), Color(0.63,0.84,0.94,0.70))

@@ -15,11 +15,11 @@ static func score(state, side: int, choice: Dictionary, opponent: Dictionary) ->
 			enemy_ranged += int(opponent[id].count)
 	match choice.kind:
 		"reinforce":
-			return 20.0 + float(count) * (2.8 if army.role != "tank" else 4.8)
+			return 20.0 + float(state.action_gain(side, choice)) * (2.8 if army.role != "tank" else 4.8)
 		"promote":
 			return 17.0 + float(count) * (2.3 if army.role != "tank" else 4.0)
 		"summon":
-			var value: float = 25.0 + float(army.group_size) * 2.0 - float(count) * 0.8
+			var value: float = 25.0 + float(state.action_gain(side, choice)) * 2.0 - float(count) * 0.8
 			if army.role == "tank":
 				value += 24.0 if frontline == 0 else 8.0
 			if army.role == "melee" and frontline < 4:

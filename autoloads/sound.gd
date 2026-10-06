@@ -54,7 +54,8 @@ func combat_requests(events: Array) -> Dictionary:
 			"defeat": requests["disperse"] = true
 			"passive":
 				var cue: String = {"imp_explosion":"fire_breath", "flame_wall":"fire_breath",
-					"ninja_revive":"slash", "ice_path":"water_cast", "slime_split":"water_cast",
+					"ninja_revive":"slash", "ninja_charge":"slash", "ninja_teleport":"slash",
+					"ninja_vanish":"disperse", "ice_aura":"water_cast", "ice_path":"water_cast", "slime_split":"water_cast",
 					"snow_head":"snowball", "tree_heal":"heal", "armadillo_bounce":"impact",
 					"split_arrows":"arrow", "siege_blast":"siege_impact"}.get(event.ability, "")
 				if not cue.is_empty():

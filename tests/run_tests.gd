@@ -106,41 +106,66 @@ func _test_summons_and_specials() -> void:
 		expect(state.eligible(0, {"kind":"promote", "card_id":id}), "promote eligible after second normal summon")
 		var previous_count: int = state.sides[0].roster[id].count
 		expect(take(state, 0, id, "reinforce"), "targeted reinforcement legal")
-		expect(state.sides[0].roster[id].count == previous_count*2, "reinforcement exactly doubles count")
+		expect(state.sides[0].roster[id].count == mini(previous_count*2,state.army_cap(id)), "reinforcement adds up to the role cap")
 		expect(state.sides[0].roster[id].rank == 1, "reinforcement preserves Rank")
 		state.sides[0].points = 8
-		expect(take(state, 0, id, "reinforce"), "second reinforcement legal")
+		expect(take(state, 0, id, "reinforce") == (state.sides[0].roster[id].count < state.army_cap(id)), "second reinforcement is legal only below the cap")
 		expect(not state.eligible(0, {"kind":"reinforce", "card_id":id}), "maximum two reinforcements per type")
 		previous_count = state.sides[0].roster[id].count
 		expect(take(state, 0, id, "promote"), "promotion to Rank 2 legal")
 		expect(state.sides[0].roster[id].rank == 2 and state.sides[0].roster[id].count == previous_count, "promotion increases Rank without count")
 		expect(take(state, 0, id, "promote"), "promotion to Rank 3 legal")
 		expect(not take(state, 0, id, "promote"), "Rank 3 cap cannot be bypassed")
-		if state.sides[0].roster[id].count < 24:
+		if state.sides[0].roster[id].count < state.army_cap(id):
 			take(state, 0, id)
 		var sim := CombatSimulation.new(state)
 		expect(near(sim.units[0].max_hp, state.cards[id].stats.max_hp*1.55), "Rank 3 upgrades existing and future unit HP")
 		expect(near(sim.units[0].damage, state.cards[id].stats.damage*1.55*1.05), "Rank 3 upgrades damage with Commander passive")
 
 func _test_caps_and_offers() -> void:
+	var expected := {"ranged":8,"melee":10,"tank":3,"mage":5,"assassin":3,"siege":4}
+	for id in GameCatalog.ARMY_IDS:
+		var ids: Array = [id]
+		for other in GameCatalog.ARMY_IDS:
+			if ids.size() < 4 and not ids.has(other): ids.append(other)
+		var capped := MatchState.new(778,"fire_commander",ids)
+		capped.sides[0].points = 100
+		var limit: int = expected[capped.cards[id].role]
+		expect(capped.army_cap(id) == limit,"requested role cap for "+id)
+		while capped.sides[0].roster[id].count < limit:
+			var before: int = capped.sides[0].roster[id].count
+			var advertised: int = capped.action_gain(0,{"kind":"summon","card_id":id})
+			expect(take(capped,0,id),"summon can fill the remaining slots for "+id)
+			expect(capped.sides[0].roster[id].count-before == advertised,"card advertises its actual gain")
+		expect(capped.sides[0].roster[id].count == limit,"exact role cap is reachable for "+id)
+		var points: int = capped.sides[0].points
+		var history: int = capped.action_log.size()
+		expect(not take(capped,0,id) and not take(capped,0,id,"reinforce"),"summons and reinforcements stop at the cap")
+		expect(points == capped.sides[0].points and history == capped.action_log.size(),"capped cards cannot spend points or log an action")
+		expect(take(capped,0,id,"promote"),"capped armies can still be promoted")
 	var state := MatchState.new(778)
 	state.sides[0].points = 100
-	for _index in range(8):
-		take(state, 0, "fire_archer")
-	expect(state.sides[0].roster.fire_archer.count == 24, "per-type cap reachable")
-	expect(not take(state, 0, "fire_archer"), "summoning cannot exceed per-type cap")
-	for _index in range(8):
-		take(state, 0, "fire_melee")
-	for _index in range(24):
-		take(state, 0, "fire_tank")
-	expect(state.total_units(0) == 72, "total cap reachable")
-	expect(not take(state, 0, "fire_assassin"), "summoning cannot exceed total cap")
-	expect(not state.eligible(0, {"kind":"reinforce", "card_id":"fire_melee"}), "reinforcement respects per-type and total caps")
+	for id in state.warband:
+		while take(state,0,id): pass
+	expect(state.total_units(0) == 24,"Fire maxima: eight ranged, ten melee, three tanks, three assassins")
+	var mixed := MatchState.new(779,"fire_commander",["fire_archer","water_ranged","earth_ranged","water_mage"])
+	mixed.sides[0].points = 100
+	for id in mixed.warband:
+		while take(mixed,0,id): pass
+	expect(mixed.total_units(0) == 29,"same-role armies have separate caps in a mixed warband")
 	var partial := MatchState.new()
 	partial.sides[0].points = 100
-	for _index in range(5):
-		take(partial, 0, "fire_melee")
-	expect(not partial.eligible(0, {"kind":"reinforce", "card_id":"fire_melee"}), "reinforcement never silently clamps a 15 to 30 doubling")
+	take(partial,0,"fire_melee")
+	take(partial,0,"fire_melee")
+	expect(partial.action_gain(0,{"kind":"reinforce","card_id":"fire_melee"}) == 4,"reinforcement shows six to ten, adding four")
+	expect(take(partial,0,"fire_melee","reinforce") and partial.sides[0].roster.fire_melee.count == 10,"partial reinforcement fills the cap for one point")
+	var total := MatchState.new()
+	total.config = total.config.duplicate(true)
+	total.config.max_units_per_side = 10
+	total.sides[0].points = 100
+	for index in range(3): take(total,0,"fire_melee")
+	expect(take(total,0,"fire_archer") and total.sides[0].roster.fire_archer.count == 1,"a partial summon also respects the total safety cap")
+	expect(not take(total,0,"fire_tank") and not take(total,0,"fire_melee","reinforce"),"no action can exceed the total cap")
 	for subject in [state, partial, MatchState.new(82)]:
 		for _sample in range(75):
 			var choices: Array = OfferGenerator.generate(subject, 0)
@@ -221,6 +246,7 @@ func _test_combat_effects() -> void:
 	take(assassin_state, 1, "fire_tank")
 	take(assassin_state, 1, "fire_archer")
 	var assassin := CombatSimulation.new(assassin_state)
+	assassin.units[0].teleport_used = true
 	assassin.step()
 	var selected: Dictionary = assassin.units[int(assassin.units[0].target)]
 	expect(selected.role == "ranged", "assassin prefers ranged over nearer frontline tank")
@@ -267,7 +293,7 @@ func full_match(seed_value: int) -> Dictionary:
 			expect(state.sides[side].points >= 0 and state.total_units(side)<=72, "AI obeys point and total unit limits")
 			for id in state.warband:
 				var army: Dictionary = state.sides[side].roster[id]
-				expect(army.count<=24 and army.rank<=3 and army.reinforcements<=2, "AI obeys per-army limits")
+				expect(army.count<=state.army_cap(id) and army.rank<=3 and army.reinforcements<=2, "AI obeys per-army limits")
 		expect(state.start_combat(), "full match reaches automatic combat")
 		var sim := CombatSimulation.new(state)
 		resolve(sim)
@@ -282,7 +308,7 @@ func _test_ai_and_replay() -> void:
 	var state := MatchState.new(932)
 	var clone := MatchState.new(932)
 	# Alter the player's current roster after the snapshot. AI must not react.
-	clone.sides[0].roster.fire_archer.count = 24
+	clone.sides[0].roster.fire_archer.count = 8
 	NormalAI.play(state)
 	NormalAI.play(clone)
 	expect(state.sides[1].roster == clone.sides[1].roster and state.ai_explanations == clone.ai_explanations, "AI ignores player's current/future draft actions")

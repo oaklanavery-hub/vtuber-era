@@ -135,7 +135,7 @@ func _run() -> void:
 	check(ui.state.round_number==2 and ui.state.phase=="command", "next round resumes command phase")
 	check(ui.modal_kind == "command", "each new round automatically opens the picker")
 	# Reinforcement cancellation returns to the picker without spending a point.
-	ui.state.sides[0].roster.water_mage.count = 6
+	ui.state.sides[0].roster.water_mage.count = 4
 	ui.state.sides[0].roster.water_mage.summons = 2
 	ui.state.sides[0].offers = [{"kind":"reinforce", "card_id":"water_mage"}, {"kind":"summon", "card_id":"water_melee"}, {"kind":"summon", "card_id":"earth_tank"}]
 	ui.show_battle()
@@ -144,10 +144,10 @@ func _run() -> void:
 	check(ui.modal_kind == "reinforce", "reinforcement confirmation replaces the picker")
 	layout(ui)
 	ui._close_dialog()
-	check(ui.modal_kind == "command" and ui.state.sides[0].points == points_before and ui.state.sides[0].roster.water_mage.count == 6, "Cancel restores the unchanged command popup")
+	check(ui.modal_kind == "command" and ui.state.sides[0].points == points_before and ui.state.sides[0].roster.water_mage.count == 4, "Cancel restores the unchanged command popup")
 	ui._pick(0)
 	ui.modal_action.call()
-	check(ui.modal_kind == "command" and ui.state.sides[0].points == points_before-1 and ui.state.sides[0].roster.water_mage.count == 12, "confirming reinforcement plays the card and returns to the popup")
+	check(ui.modal_kind == "command" and ui.state.sides[0].points == points_before-1 and ui.state.sides[0].roster.water_mage.count == 5, "confirming reinforcement plays the card and returns to the popup")
 	layout(ui)
 	ui.state.sides[1].hearts=1
 	ui.state.phase="combat"

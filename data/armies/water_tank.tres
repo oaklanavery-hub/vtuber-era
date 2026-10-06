@@ -12,7 +12,7 @@ attack_range = 23.0
 ally_shield_fraction = 0.08
 ally_shield_radius = 58.0
 ally_shield_duration = 8.0
-ice_interval = 1.0
+ice_aura_radius = 48.0
 
 [resource]
 script = ExtResource("1")
@@ -22,6 +22,6 @@ short_name = "Ice Golem"
 set_id = "water"
 role = "tank"
 group_size = 1
-description = "Leaves an ice path: 15% movement Slow for 3s. Starts with an 8% nearby shield lasting 8s."
+description = "A moving 48px ice aura slows enemy movement and attack speed by 15%. Starts with an 8% nearby shield for 8s."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

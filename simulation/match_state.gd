@@ -61,18 +61,33 @@ func total_units(side: int) -> int:
 		total += int(sides[side].roster[id].count)
 	return total
 
+func army_cap(card_id: String) -> int:
+	return config.unit_cap(cards[card_id].role)
+
+func action_gain(side: int, choice: Dictionary) -> int:
+	if side < 0 or side >= sides.size() or not warband_for(side).has(choice.get("card_id", "")):
+		return 0
+	var army: Dictionary = sides[side].roster[choice.card_id]
+	var available: int = maxi(0, mini(army_cap(choice.card_id)-int(army.count), config.max_units_per_side-total_units(side)))
+	match choice.get("kind", ""):
+		"summon": return mini(cards[choice.card_id].group_size, available)
+		"reinforce": return mini(int(army.count), available)
+	return 0
+
+func target_count(side: int, choice: Dictionary) -> int:
+	return int(sides[side].roster[choice.card_id].count)+action_gain(side, choice)
+
 func eligible(side: int, choice: Dictionary) -> bool:
 	if side < 0 or side >= sides.size() or not choice.has("card_id") or not choice.has("kind"):
 		return false
 	if not warband_for(side).has(choice.card_id):
 		return false
 	var army: Dictionary = sides[side].roster[choice.card_id]
-	var data: ArmyCardData = cards[choice.card_id]
 	match choice.kind:
 		"summon":
-			return army.count + data.group_size <= config.max_units_per_type and total_units(side) + data.group_size <= config.max_units_per_side
+			return action_gain(side, choice) > 0
 		"reinforce":
-			return army.summons >= config.normal_summons_for_special and army.count > 0 and army.reinforcements < config.max_reinforcements and army.count * 2 <= config.max_units_per_type and total_units(side) + army.count <= config.max_units_per_side
+			return army.summons >= config.normal_summons_for_special and army.count > 0 and army.reinforcements < config.max_reinforcements and action_gain(side, choice) > 0
 		"promote":
 			return army.summons >= config.normal_summons_for_special and army.rank < config.max_rank
 	return false
@@ -88,10 +103,10 @@ func choose(side: int, choice: Dictionary) -> bool:
 	var army: Dictionary = sides[side].roster[choice.card_id]
 	match choice.kind:
 		"summon":
-			army.count += cards[choice.card_id].group_size
+			army.count += action_gain(side, choice)
 			army.summons += 1
 		"reinforce":
-			army.count *= 2
+			army.count += action_gain(side, choice)
 			army.reinforcements += 1
 		"promote":
 			army.rank += 1

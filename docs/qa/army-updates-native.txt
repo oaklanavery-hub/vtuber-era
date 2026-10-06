@@ -1,0 +1,65 @@
+Godot 4.5.stable.official.876b29033 — army passives and role caps
+
+RULES
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+
+1174 checks; 0 failures
+
+ELEMENTAL
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+MATCH fire / fire seed 42: side 1 wins in 6 rounds
+MATCH fire / fire seed 914: side 1 wins in 6 rounds
+MATCH fire / water seed 42: side 0 wins in 5 rounds
+MATCH fire / water seed 914: side 0 wins in 5 rounds
+MATCH fire / earth seed 42: side 1 wins in 7 rounds
+MATCH fire / earth seed 914: side 1 wins in 7 rounds
+MATCH water / fire seed 42: side 1 wins in 4 rounds
+MATCH water / fire seed 914: side 1 wins in 4 rounds
+MATCH water / water seed 42: side 1 wins in 6 rounds
+MATCH water / water seed 914: side 1 wins in 6 rounds
+MATCH water / earth seed 42: side 1 wins in 5 rounds
+MATCH water / earth seed 914: side 1 wins in 5 rounds
+MATCH earth / fire seed 42: side 0 wins in 7 rounds
+MATCH earth / fire seed 914: side 0 wins in 7 rounds
+MATCH earth / water seed 42: side 0 wins in 5 rounds
+MATCH earth / water seed 914: side 0 wins in 5 rounds
+MATCH earth / earth seed 42: side 0 wins in 7 rounds
+MATCH earth / earth seed 914: side 1 wins in 7 rounds
+MIXED fire / earth: side 1 wins in 6 rounds
+MIXED water / earth: side 1 wins in 7 rounds
+MIXED earth / earth: side 1 wins in 6 rounds
+
+Elemental expansion: 17462 checks; 0 failures
+
+PASSIVE
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+
+Army passives: 24537 checks; 0 failures
+
+NINJA
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+
+Ninja teleport, pursuit and resurrection: 1735 checks; 0 failures
+
+FORMATION
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+
+Creature formations and permanent collision: 75098 checks; 0 failures
+
+COMMANDER
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+
+Commander active skills: 1845 checks; 0 failures
+
+UI
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+UI smoke: 0 failures
+
+Gameplay total: 121851 checks; 0 failures

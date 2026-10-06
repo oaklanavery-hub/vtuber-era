@@ -1,3 +1,94 @@
+# Army passives and role caps — 6 October 2026
+
+Fire Imps now explode on death with a 24px enemy-only blast for one attack's
+current damage, 12px radial pushback and an independent 3 HP/s Burn for 2s.
+Death chains resolve once per corpse. Pushback uses the next swept movement
+tick, stopping at bodies, walls and arena edges; meteor-opening blasts can move
+units physically while voluntary movement remains held. Blast Burn, Wildfire
+and flame-wall Burn keep separate timers. Multiple Imp blasts refresh rather
+than stack their own Burn.
+
+Ice Golems replace the path with a moving 48px ice aura. Living enemies inside
+it have movement and attack cooldown progress multiplied by 0.85. Multiple
+Golems do not stack; stronger Wizard movement Slow and Armadillo attack Slow
+expire independently. The aura ends outside the radius or on Golem death.
+The initial nearby shield remains. Stepped ice, snowflakes and a pixel boundary
+show the radius, including in Reduced Effects mode.
+
+Red Ninjas hold a visible two-second charge, then teleport once per battle to
+free positions behind enemy lines. Both teams plan against one position snapshot
+and reserve every simultaneous landing before moving. The 60-tick charge begins after the commander
+opening. Landings reserve separate lanes, avoid bodies and walls, remain inside
+the arena and reset interpolation so sprites never travel across other armies.
+Edge cases use an adjacent free lane. Pixel smoke, a charge bar, vanish/arrival
+effects and sounds expose timing. Units turn toward targets behind them. Ninjas
+still resurrect once with 30% max HP; revival preserves a spent teleport, or the
+original deadline if still charging.
+
+Persistent limits apply per army card, on both teams and across all rounds:
+
+| Role | Maximum per army |
+|---|---:|
+| Archers / ranged | 8 |
+| Melee | 10 |
+| Tanks | 3 |
+| Mages | 5 |
+| Assassins | 3 |
+| Siege | 4 |
+
+Summons and reinforcements fill remaining slots and advertise the exact gain
+before spending. Capped cards cannot add units or spend a point, but can still
+promote. Mixed cards sharing a role have separate caps. Temporary Slime children
+keep their passive without changing the draft roster. The 72-per-side safety
+guard also applies to partial gains. Card faces, compendium details,
+confirmations and AI scoring use the same cap rules.
+
+Native validation used exact Godot **4.5.stable.official.876b29033**. Engine and
+matching Web templates were verified against the official SHA512 sums.
+
+| Runner | Checks | Failures |
+|---|---:|---:|
+| Rules, caps and drafting | 1,174 | 0 |
+| Elemental mechanics, matches and replays | 17,462 | 0 |
+| All twelve army passives | 24,537 | 0 |
+| Ninja charge, teleport, pursuit and revival | 1,735 | 0 |
+| Permanent collision and formations | 75,098 | 0 |
+| Commander skills and terrain | 1,845 | 0 |
+| **Gameplay total** | **121,851** | **0** |
+| Native UI, card details, audio and round flow | — | 0 |
+
+Four complete WebAssembly/WebGL matches passed at 3x playback:
+
+| Warband | Rival | Rounds | Combat sounds | Errors / text overflows |
+|---|---|---:|---:|---:|
+| Fire (Ninja-priority drafting) | Fire | 4 | 164 | 0 |
+| Water | Earth | 4 | 363 | 0 |
+| Earth | Water | 5 | 841 | 0 |
+| Mixed | Fire | 7 | 465 | 0 |
+
+Browser checks validate every advertised cap, partial gains, cancelled
+reinforcements, capped promotions, all twelve card-detail views, Minecraft font
+fit, spawn and battle collision, Earth walls, commander skills, real WebAudio,
+results, Rematch and saved settings. Fire records Imp explosion/Burn and Ninja
+charge/teleport events; Water and Earth record live aura contact. Native tests
+also cover exact Burn ticks, stronger Slow expiry, blocked radial pushes,
+mirrored three-Ninja landings, simultaneous Ninja-only teams, arena edges,
+meteor/charge sequencing and replay.
+
+Evidence: `docs/qa/army-updates-native.txt`,
+`docs/qa/army-updates-browser-{fire,water,earth,mixed}.json` and
+`docs/screenshots/army-{ice-aura,partial-reinforcement,caps-compendium}.png`.
+Reports identify release `army-passives-role-caps`.
+
+An additional Fire-versus-Fire match passed at 1x playback:
+4 rounds, 452 actual combat sounds, zero errors and zero text overflows. Its
+read-only report is `docs/qa/army-updates-browser-fire-normal.json`; the visible
+charge and rear-line combat are captured in
+`docs/screenshots/army-ninja-{charge,teleport}.png`. This run includes
+target-facing after teleport and confirms the normal-speed animation window.
+
+---
+
 # Commander active skills — 6 October 2026
 
 Each commander now prepares an active skill for **one Command Point**, once per

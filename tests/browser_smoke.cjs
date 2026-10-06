@@ -123,6 +123,11 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await waitScreen('settings');
   await click(341, 234);
   await page.waitForFunction(() => window.vtuberEraQA?.settings.reduced_effects === false);
+  if (process.env.QA_BATTLE_SPEED === '1') {
+    await click(383, 195);
+    await click(383, 217);
+    await page.waitForFunction(() => window.vtuberEraQA?.settings.combat_speed === 1);
+  }
   await click(320, 337);
   await waitScreen('menu');
   await click(320, 190);
@@ -166,10 +171,13 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await click(509, 336);
   await waitScreen('battle');
   const initial = await snapshot();
-  assert.equal(initial.release, 'commander-active-skills');
+  assert.equal(initial.release, 'army-passives-role-caps');
   assert.deepEqual(initial.arena, [600, 280]);
   assert.equal(initial.body_size, 7.2);
   assert.equal(initial.spawn_spacing, 24);
+  assert.deepEqual(initial.caps, {fire_archer:8, fire_melee:10, fire_tank:3, fire_assassin:3,
+    water_mage:5, water_tank:3, water_melee:10, water_ranged:8,
+    earth_tank:3, earth_melee:10, earth_ranged:8, earth_siege:4});
   assert.equal(initial.commander, `${leaderRealm}_commander`);
   assert.equal(initial.commanders[1], `${rival}_commander`);
   assert.deepEqual(initial.warbands[0], chosenCards);
@@ -199,12 +207,13 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   const eligible = (choice, s) => {
     const army = s.roster[choice.card_id];
     const group = s.groups[choice.card_id];
-    if (choice.kind === 'summon') return army.count + group <= 24 && s.total + group <= 72;
-    if (choice.kind === 'reinforce') return army.summons >= 2 && army.reinforcements < 2 && army.count * 2 <= 24 && s.total + army.count <= 72;
+    if (choice.kind === 'summon') return army.count < s.caps[choice.card_id] && s.total < 72;
+    if (choice.kind === 'reinforce') return army.summons >= 2 && army.reinforcements < 2 && army.count > 0 && army.count < s.caps[choice.card_id] && s.total < 72;
     return army.summons >= 2 && army.rank < 3;
   };
   const value = (choice, s) => {
     const army = s.roster[choice.card_id];
+    if (choice.kind === 'summon' && choice.card_id === process.env.QA_PRIORITY_CARD) return 300 - army.count;
     if (choice.kind === 'reinforce') return 120 + army.count;
     if (choice.kind === 'promote') return 80 + army.count;
     return (army.summons === 1 ? 45 : 25) + (choice.card_id.includes('tank') && army.count === 0 ? 50 : 0) - army.count;
@@ -264,8 +273,10 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
         }
         now = await snapshot();
         assert.equal(now.points, before.points - 1);
+        for (const id of Object.keys(now.roster)) assert(now.roster[id].count <= now.caps[id], 'draft cannot exceed a role cap');
+        if (choice.kind === 'summon') assert.equal(now.roster[choice.card_id].count, Math.min(before.roster[choice.card_id].count + before.groups[choice.card_id], before.caps[choice.card_id], before.roster[choice.card_id].count + 72 - before.total));
         if (choice.kind === 'reinforce') {
-          assert.equal(now.roster[choice.card_id].count, before.roster[choice.card_id].count * 2);
+          assert.equal(now.roster[choice.card_id].count, Math.min(before.roster[choice.card_id].count * 2, before.caps[choice.card_id], before.roster[choice.card_id].count + 72 - before.total));
           assert.equal(now.roster[choice.card_id].rank, before.roster[choice.card_id].rank);
         }
         if (choice.kind === 'promote') {
@@ -273,7 +284,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
           assert.equal(now.roster[choice.card_id].count, before.roster[choice.card_id].count);
           stats.promotions++;
         }
-        actions.push({ round: now.round, choice });
+        actions.push({ round: now.round, choice, beforeCount: before.roster[choice.card_id].count, afterCount: now.roster[choice.card_id].count, cap: now.caps[choice.card_id] });
       }
       // Even exhausted/disabled offers keep their info icons usable.
       if (now.points === 0) {
@@ -313,11 +324,11 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
       let skillState = await snapshot();
       const preparedSkills = [...skillState.skills.prepared];
       if (leaderRealm === 'fire') {
-        assert.equal(skillState.skills.opening, true, 'Fire meteors resolve before troop movement');
-        assert.equal(skillState.tick, 0, 'battle clock waits for all six meteor strikes');
+        if (skillState.skills.opening) assert.equal(skillState.tick, 0, 'battle clock waits for all six meteor strikes');
+        else assert.equal(skillState.skills.counts.meteors[0], 6, 'a completed opening contains all six impacts');
         for (const body of skillState.combat_positions) {
           const spawn = now.preview[body[0]];
-          if (spawn) assert.deepEqual(body.slice(2), spawn.slice(2), 'opening holds troop positions');
+          if (spawn && skillState.skills.opening && !skillState.passives?.imp_explosion) assert.deepEqual(body.slice(2), spawn.slice(2), 'opening holds troop positions until a death blast applies physical pushback');
         }
         await screenshot(`meteor-opening-${now.round}`);
         await page.waitForFunction(() => window.vtuberEraQA?.skills && !window.vtuberEraQA.skills.opening);
@@ -337,7 +348,10 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
           assert(Math.abs(status[2] - (frozen ? 0.92 : 1)) < 0.001, 'ice reduces only enemy defence');
         }
       }
-      await page.waitForTimeout(700);
+      await page.waitForTimeout(220);
+      const chargeState = await snapshot();
+      if (chargeState.combat_statuses?.some(status => status[6])) await screenshot(`ninja-charge-${now.round}`);
+      await page.waitForTimeout(480);
       await screenshot(`combat-round-${now.round}`);
       await page.waitForFunction(() => {
         const state = window.vtuberEraQA;
@@ -414,6 +428,10 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   report.commanderDetails = commanderDetails;
   report.commanderSkills = skillRounds;
   report.wallCollisionPassed = true;
+  report.armyCaps = initial.caps;
+  report.priorityCard = process.env.QA_PRIORITY_CARD || '';
+  report.battleSpeed = final.settings.combat_speed;
+  report.armyCapsPassed = true;
   report.roundPopupPassed = true;
   report.combatControlsHidden = true;
   report.reinforcementCancelPassed = reinforcementCancelPassed;

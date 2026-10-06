@@ -47,6 +47,7 @@ func freeze_attacks(sim: CombatSimulation) -> void:
 	for value in sim.units:
 		value.cooldown = 100000
 		value.flanking = false
+		value.teleport_used = true
 
 func _run() -> void:
 	_content()

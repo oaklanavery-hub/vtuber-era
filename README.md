@@ -20,12 +20,12 @@ combat, opening a 600×280 arena—39% more fighting space than the 600×202 lay
 The interface uses proportional Minecraft-style lettering by Idrees Hassan.
 All twelve armies share a 32-color palette, material details and eight animation
 frames. Native-size battle sprites, stepped panels and crisp viewport scaling
-unify the pixel theme. Ninja contact attacks, stable flanks and one-use revival
+unify the pixel theme. Ninja teleport, contact attacks and one-use revival
 remain covered by gameplay tests.
 
 All twelve army passives remain active:
 projectile splash and pushback, death explosions and Slime splitting, one-use
-Ninja resurrection, flame walls, ice paths, Tree healing, Armadillo attack Slow,
+Ninja teleport and resurrection, flame walls, ice auras, Tree healing, Armadillo attack Slow,
 split arrows and huge siege blasts. The compendium explains each ability.
 Collision stays active at 7.2×7.2 with depth-sorted sprites, a compact HUD and
 twelve original combat sound effects.
@@ -46,6 +46,18 @@ Each point summons an offered army, reinforces an eligible army, promotes its
 Rank, or prepares your Commander's active skill. Playing a card spends its point and
 refreshes the offers inside the popup. Battle starts once you own an army; unused
 points are discarded. Specials require two normal summons.
+Each army type has a role cap: **ranged 8, melee 10, tanks 3, mages 5,
+assassins 3, siege 4**. Summons and reinforcements fill the remaining slots and
+show the exact gain before spending a point. Promotions remain available at the
+cap. Separate cards of the same role have separate limits. Slime children are
+temporary combat units and do not increase the persistent roster.
+
+Fire Imps explode on death with AOE damage, radial pushback and a two-second
+Burn. Ice Golems carry a 48px aura that slows enemy movement and attack speed
+by 15%. Red Ninjas visibly charge for two seconds, then blink behind enemy lines
+once per battle; landing positions respect unit and wall collision. Their
+one-use resurrection at 30% HP remains active.
+
 Counts and Ranks persist; units return at full HP after each automatic battle.
 The first side to lose all four Hearts loses. No commands are allowed in combat.
 
@@ -95,11 +107,11 @@ The elemental runner checks all Commanders, mixed loadouts, shields, healing,
 lifesteal, Slow, splash and complete deterministic matches across all nine realm
 pairings. UI smoke exercises selection, real drafting, combat, results and Rematch.
 All runners exit non-zero on failure. See `QA_REPORT.md` for release evidence.
-The formation runner covers 144-unit crowds, duplicate-role mixed spawns, body
+The formation runner uses oversized 144-unit stress fixtures to cover crowds, duplicate-role mixed spawns, body
 collision throughout movement and interpolation, allied/hostile detours, melee
 contact, range-based pursuit, original stats and deterministic movement replay.
-The Ninja runner covers opening contact, blocking defenders, roster-independent
-flank lanes, flank deadlines, real movement and attacks from both sides,
+The Ninja runner covers the full two-second charge, mirrored rear landings,
+wall/crowd/edge destinations, blocking defenders, real attacks from both sides,
 30%-HP revival and deterministic collision-safe pursuit.
 The passive runner covers all twelve abilities, simultaneous death chains,
 posthumous projectiles, one-use revivals/splits, non-stacking slows, exact damage

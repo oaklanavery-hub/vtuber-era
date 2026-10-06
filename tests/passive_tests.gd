@@ -51,6 +51,7 @@ func fixture(own: Dictionary, enemy: Dictionary = {"fire_tank":1}) -> CombatSimu
 		value.cooldown = 100000.0
 		value.shield = 0.0
 		value.flanking = false
+		value.teleport_used = true
 	return sim
 
 func army(sim: CombatSimulation, id: String, side: int = 0) -> Array:
@@ -92,6 +93,7 @@ func solid(sim: CombatSimulation) -> bool:
 func _run() -> void:
 	_lizard()
 	_imps()
+	_imp_blast()
 	_flames()
 	_ninjas()
 	_pushback()
@@ -148,6 +150,64 @@ func _imps() -> void:
 	expect(sim.passive_counts.get("imp_explosion",0) == 2, "both explosions resolve without array-order recursion")
 	steps(sim,5)
 	expect(sim.passive_counts.imp_explosion == 2, "dead Imps cannot explode repeatedly")
+
+func _imp_blast() -> void:
+	var sim := fixture({"fire_melee":1,"fire_archer":1},{"fire_tank":3})
+	var imp: Dictionary = army(sim,"fire_melee")[0]
+	var ally: Dictionary = army(sim,"fire_archer")[0]
+	var enemies: Array = army(sim,"fire_tank",1)
+	place(imp,Vector2(200,100))
+	place(ally,Vector2(188,100))
+	place(enemies[0],Vector2(218,100))
+	place(enemies[1],Vector2(200,118))
+	place(enemies[2],Vector2(250,100))
+	imp.hp = 1.0
+	enemies[0].damage = 2.0
+	enemies[0].cooldown = 0.0
+	var hp: float = enemies[0].hp
+	sim.step()
+	expect(near(enemies[0].hp,hp-8.0) and enemies[0].blast_burn_until == 60,"Imp blast hits then starts its own two-second Burn")
+	expect(enemies[1].blast_burn_until == 60 and enemies[2].blast_burn_until == 0 and ally.blast_burn_until == 0,"blast Burn affects only enemies inside the AOE")
+	sim.step()
+	expect(near(enemies[0].position.x,230.0) and near(enemies[1].position.y,130.0),"Imp pushes every nearby enemy radially by 12 pixels")
+	expect(solid(sim),"radial pushes preserve body collision and interpolation")
+	steps(sim,59)
+	expect(near(enemies[0].hp,hp-14.0),"Imp Burn deals two ticks of three damage after leaving the blast")
+	sim.step()
+	expect(enemies[0].blast_burn_until == 0 and sim.passive_counts.imp_explosion == 1,"Burn expires and the corpse never explodes twice")
+	# Existing Wildfire and flame-wall damage must remain independent of the blast.
+	sim = fixture({"fire_melee":1,"fire_archer":1},{"fire_tank":1})
+	imp = army(sim,"fire_melee")[0]
+	var burned: Dictionary = army(sim,"fire_tank",1)[0]
+	place(imp,Vector2(200,100))
+	place(burned,Vector2(218,100))
+	imp.hp = 1.0
+	burned.damage = 2.0
+	burned.cooldown = 0.0
+	burned.burn_until = 90
+	burned.burn_next = 30
+	burned.burn_dps = 3.0
+	burned.flame_until = 60
+	burned.flame_next = 30
+	burned.flame_dps = 3.0
+	hp = burned.hp
+	steps(sim,91)
+	expect(near(burned.hp,hp-29.0),"blast Burn, flame-wall Burn and Wildfire retain all seven independent damage ticks")
+	for wall_test in [false,true]:
+		sim = fixture({"fire_melee":1,"fire_archer":1},{"fire_tank":2})
+		imp = army(sim,"fire_melee")[0]
+		enemies = army(sim,"fire_tank",1)
+		place(imp,Vector2(200,100))
+		place(enemies[0],Vector2(218,100))
+		place(enemies[1],Vector2(227,100) if not wall_test else Vector2(280,100))
+		if wall_test: sim.walls = [{"id":0,"side":0,"rect":Rect2(225,80,12,40)}]
+		imp.hp = 1.0
+		enemies[0].damage = 2.0
+		enemies[0].cooldown = 0.0
+		sim.step()
+		sim.step()
+		expect(enemies[0].position.x <= (225.0-CombatSimulation.BODY_SIZE/2.0+0.001 if wall_test else 227.0-CombatSimulation.BODY_SIZE+0.001),"Imp pushback stops at terrain or another army")
+		expect(solid(sim),"blocked Imp pushback cannot clip through a body")
 
 func _flames() -> void:
 	var sim := fixture({"fire_tank":1,"fire_archer":1})
@@ -256,27 +316,33 @@ func _ice() -> void:
 	var enemy: Dictionary = army(sim,"fire_tank",1)[0]
 	var ally: Dictionary = army(sim,"fire_melee")[0]
 	place(golems[0],Vector2(200,100))
-	place(golems[1],Vector2(200,116))
-	place(enemy,Vector2(208,108))
-	place(ally,Vector2(200,108))
+	place(golems[1],Vector2(200,124))
+	place(enemy,Vector2(232,108))
+	place(ally,Vector2(214,108))
 	sim.cards.fire_tank.stats.move_speed = 30.0
+	enemy.cooldown = 100.0
 	sim.step()
-	expect(near(enemy.ice_fraction,0.15) and near(sim.move_speed(enemy),25.5), "overlapping ice paths slow by at most 15 percent")
-	expect(enemy.ice_until == 90 and ally.ice_until == 0, "ice contact lasts three seconds and excludes allies")
-	place(enemy,Vector2(260,108))
+	expect(near(enemy.ice_aura_fraction,0.15) and near(sim.move_speed(enemy),25.5),"overlapping auras slow movement by exactly 15 percent")
+	expect(near(sim.attack_rate(enemy),0.85) and near(enemy.cooldown,99.15),"ice aura slows the actual attack timer by 15 percent")
+	expect(ally.ice_aura_fraction == 0.0 and near(sim.attack_rate(ally),1.0),"the aura never slows allies")
 	enemy.slow_fraction = 0.25
 	enemy.slow_until = 31
-	expect(near(sim.move_speed(enemy),22.5), "stronger Wizard Slow overrides ice without adding strengths")
-	while sim.tick < 31:
-		sim.step()
-	expect(near(sim.move_speed(enemy),25.5), "Wizard Slow expiry restores the remaining weaker ice Slow")
-	while sim.tick < 91:
-		sim.step()
-	expect(near(sim.move_speed(enemy),30.0), "ice Slow expires three seconds after leaving the path")
-	for golem in golems:
-		golem.hp = 0.0
-	steps(sim,130)
-	expect(sim.fields.filter(func(field: Dictionary) -> bool: return field.kind == "ice").is_empty(), "ice fields eventually expire after their creators disperse")
+	expect(near(sim.move_speed(enemy),22.5),"stronger Wizard Slow overrides the aura without stacking")
+	enemy.attack_slow_fraction = 0.20
+	enemy.attack_slow_until = 31
+	expect(near(sim.attack_rate(enemy),0.80),"stronger Armadillo attack Slow overrides the aura")
+	while sim.tick < 31: sim.step()
+	expect(near(sim.move_speed(enemy),25.5) and near(sim.attack_rate(enemy),0.85),"stronger debuffs expire independently, restoring the aura")
+	place(enemy,Vector2(300,108))
+	sim._refresh_ice_auras()
+	expect(near(sim.move_speed(enemy),30.0) and near(sim.attack_rate(enemy),1.0),"both aura slows end immediately outside the radius")
+	place(golems[0],Vector2(270,108))
+	sim._refresh_ice_auras()
+	expect(near(sim.move_speed(enemy),25.5),"the ice radius follows a moving Golem")
+	golems[0].hp = 0.0
+	sim._refresh_ice_auras()
+	expect(near(sim.move_speed(enemy),30.0),"a dead Golem cannot leave a lingering aura")
+	expect(sim.fields.is_empty(),"the new aura replaces the old trail fields")
 
 func _slimes() -> void:
 	var sim := fixture({"water_melee":1})
@@ -450,7 +516,7 @@ func _crowds_and_replay() -> void:
 				value.burn_dps = 100000.0
 	steps(first,2)
 	steps(second,2)
-	expect(first.units.size() == 240 and first.alive_count(0) == 96 and first.alive_count(1) == 96, "maximum draft crowds can split every Slime into bounded children")
+	expect(first.units.size() == 240 and first.alive_count(0) == 96 and first.alive_count(1) == 96, "oversized collision stress fixtures can split every Slime into bounded children")
 	expect(solid(first) and first.pending_children.is_empty(), "all crowd children find clear collision and interpolation positions")
 	for index in range(100):
 		first.step()

@@ -71,7 +71,7 @@ func _content_and_drafts() -> void:
 			expect(take(draft, 0, id) and take(draft, 0, id), "two normal summons are legal")
 			expect(draft.sides[0].roster[id].count == 2*cards[id].group_size, "normal summons use configured group size")
 			expect(take(draft, 0, id, "reinforce"), "special reinforcement unlocks after two summons")
-			expect(draft.sides[0].roster[id].count == 4*cards[id].group_size and draft.sides[0].points == 0, "reinforcement doubles count for one point")
+			expect(draft.sides[0].roster[id].count == mini(4*cards[id].group_size,draft.army_cap(id)) and draft.sides[0].points == 0, "reinforcement fills toward the cap for one point")
 			draft.phase = "round_result"
 			draft.begin_round()
 			expect(take(draft, 0, id, "promote") and draft.sides[0].roster[id].rank == 2, "promotion preserves new army types")
