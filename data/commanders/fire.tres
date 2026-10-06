@@ -3,4 +3,8 @@
 [ext_resource type="Texture2D" path="res://assets/portraits/fire_commander.svg" id="2"]
 [resource]
 script = ExtResource("1")
+spell_name = "Meteor Rain"
+spell_kind = "meteors"
+spell_description = "6 meteors · before battle"
+spell_details = "Six meteors strike across the enemy field before armies move. Each deals 30 area damage in a 34-pixel radius. Shields and defence apply."
 portrait = ExtResource("2")

@@ -17,16 +17,39 @@ manual commands, movement or targeting. Rematch resets all match state and seed.
 
 ## Commanders
 
-| Commander | Passive | One-point spell |
+| Commander | Passive | One-point active skill |
 |---|---|---|
-| Fire | All allies +5% attack damage; Fire allies +5% attack speed | Blazing Orders: all allies +25% attack speed for 6s |
-| Water | All allies +5% max HP; Water allies +10% healing and shields | Healing Current: all living allies heal 3% max HP/s for 5s |
-| Earth | All allies take 5% less damage; Earth allies +5% max HP | Stonewall Formation: all allies take 20% less damage for 7s |
+| Fire | All allies +5% attack damage; Fire allies +5% attack speed | Meteor Rain: 6 opening meteors, each 30 damage in a 34px area |
+| Water | All allies +5% max HP; Water allies +10% healing and shields | Frozen Field: all enemies move 15% slower and have 8% less defence for the round |
+| Earth | All allies take 5% less damage; Earth allies +5% max HP | Uproot: 3 solid earth walls on the enemy field for the round |
 
 Preparation is once per round, preserves all three offers and applies only to
-the next battle. Earth reductions multiply: 0.95 × 0.80 incoming damage while
-Stonewall is active. Water affinity belongs to the recipient of healing/shields.
-Healing never resurrects and never exceeds max HP.
+the next battle. The info icon on commander selection and beside Prepare explains
+each active skill. Fire's two-second opening holds both armies and the battle
+clock until all six impacts finish. Six zones distribute impacts across the
+enemy field; each aims at a starting enemy in that zone when one exists. Damage
+uses shields and defence, and triggers normal death passives. Opposing meteors
+landing together resolve simultaneously, without unit-source attack bonuses,
+Wildfire or lifesteal. Meteors fall from above and ignore earth walls.
+
+Frozen Field covers the full battlefield and affects enemies wherever they
+move, including revived Ninjas and newborn Slimes. Movement uses the strongest
+active slow. Defence starts at 1.0; ice reduces it to 0.92. Incoming damage is
+divided by that modifier (about 8.7% more damage), after commander reduction and
+before shields. Earth passive under enemy ice therefore takes 0.95/0.92 damage.
+Water affinity belongs to the recipient of healing/shields. Healing never
+resurrects and never exceeds max HP.
+
+Uproot places three staggered 12×72px walls between spawn columns, with clear
+routes around every end. Both teams' units and projectiles collide with walls;
+the walls are permanent for the round and cannot be destroyed. Melee and ranged
+attacks require unobstructed line of sight. An obscured ranged unit selects an
+available visible target or moves around the wall to shoot. A visibility graph
+around expanded corners supplies routes, with the swept body solver handling
+crowds and knockback. Projectiles check the entire step against walls before
+damage or splash; split arrows also require visible targets. Projectile splash
+cannot damage through a wall. Walls and ice remain visible with reduced effects.
+All skill terrain, opening state and enemy modifiers clear when the round ends.
 
 ## Armies and bonds
 
@@ -102,14 +125,14 @@ on flanks. Ninjas use their actual spawn lane (independent of roster ID parity),
 prefer backline enemies while approaching, and attack a reachable defender
 before chasing a distant target. Contact, no remaining backline or a six-second
 deadline ends the opening flank. Their 30%-HP resurrection resumes pursuit with
-the commander-adjusted attack cycle. Other
-units choose nearest enemies; siege prefers the densest reachable enemy cluster.
+the commander-adjusted attack cycle. Other units prefer reachable visible enemies;
+siege prefers the densest reachable enemy cluster with clear line of sight.
 Arrows and tide projectiles travel in the simulation. Siege stones aim at a fixed
 landing location, so moving targets can leave the splash area. No elemental
 rock-paper-scissors damage multipliers are used.
 
 Preview and combat share a unique-slot allocator, including mixed armies with
-duplicate roles. Each side has 77 potential 24px-spaced slots for its 72-unit
+duplicate roles. Each side has 99 potential 24px-spaced slots for its 72-unit
 cap. Alive units on both teams keep solid 7.2×7.2 bodies throughout combat,
 70% smaller in each dimension than the previous footprint. Spawn spacing and
 spatial bucket size remain 24px, independently of collision size.
@@ -118,8 +141,9 @@ penetration and interpolated body crossing. Sprites are painted in depth order
 and may partially overlap above their feet, leaving rear creatures visible.
 Dead units do not block movement.
 Pushback uses the same swept collision solver, including blockers and arena
-edges. It cannot detour or tunnel through another body. Slime births search for
-free positions checked against other units' whole interpolation paths; if no
+edges and solid earth walls. It cannot detour or tunnel through another body.
+Slime births search for free positions reachable from the parent, checked against
+walls and other units' whole interpolation paths; if no
 position is available, they wait. Stable IDs remain valid when children append.
 Spatial buckets limit collision checks; deterministic rotating movement priority
 avoids permanent first-unit/first-team lane priority.

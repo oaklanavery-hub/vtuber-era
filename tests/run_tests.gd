@@ -76,11 +76,12 @@ func _test_economy_and_spell() -> void:
 	expect(state.start_combat(), "rosters enter combat")
 	expect(not state.prepare_spell(1), "no spell input during combat")
 	var sim := CombatSimulation.new(state)
-	expect(near(sim.attack_speed(sim.units[0]), 1.30), "spell and passive add to 130 percent attack speed")
-	sim.tick = 179
-	expect(near(sim.attack_speed(sim.units[0]), 1.30), "spell active before six seconds")
-	sim.tick = 180
-	expect(near(sim.attack_speed(sim.units[0]), 1.05), "spell expires at exactly six seconds")
+	expect(near(sim.attack_speed(sim.units[0]), 1.05), "Fire active preserves its matching attack-speed passive")
+	sim.step()
+	expect(sim.opening_active() and sim.tick == 0 and sim.meteors.size() == 6, "prepared Fire skill starts a six-meteor opening")
+	while sim.opening_active():
+		sim.step()
+	expect(sim.skill_counts.meteors[0] == 6 and not sim.spell_active(0), "all six meteors land before combat begins")
 	state.complete_combat({"winner": 1})
 	expect(not state.sides[0].spell and not state.sides[1].spell, "both queued spells clear after combat")
 	state.begin_round()

@@ -1,0 +1,360 @@
+{
+  "status": "passed",
+  "scenario": "mixed",
+  "rival": "fire",
+  "commander": "water_commander",
+  "warband": [
+    "fire_archer",
+    "water_melee",
+    "water_mage",
+    "earth_siege"
+  ],
+  "browser": "154.0.8037.92",
+  "screens": [
+    "menu",
+    "compendium",
+    "settings",
+    "commander",
+    "warband",
+    "battle",
+    "results"
+  ],
+  "seed": 1791290457,
+  "rounds": [
+    {
+      "round": 1,
+      "hearts": [
+        3,
+        4
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "flame_wall": 2,
+        "pushback": 25,
+        "siege_blast": 2
+      }
+    },
+    {
+      "round": 2,
+      "hearts": [
+        3,
+        3
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "flame_wall": 5,
+        "imp_explosion": 6,
+        "lizard_splash": 10,
+        "ninja_revive": 1,
+        "pushback": 174,
+        "siege_blast": 2
+      }
+    },
+    {
+      "round": 3,
+      "hearts": [
+        3,
+        2
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "flame_wall": 8,
+        "imp_explosion": 6,
+        "lizard_splash": 30,
+        "ninja_revive": 2,
+        "pushback": 199,
+        "siege_blast": 6,
+        "slime_child": 6,
+        "slime_split": 3
+      }
+    },
+    {
+      "round": 4,
+      "hearts": [
+        3,
+        1
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "flame_wall": 11,
+        "imp_explosion": 6,
+        "lizard_splash": 91,
+        "ninja_revive": 3,
+        "pushback": 214,
+        "siege_blast": 6,
+        "slime_child": 6,
+        "slime_split": 3
+      }
+    },
+    {
+      "round": 5,
+      "hearts": [
+        3,
+        0
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "flame_wall": 13,
+        "imp_explosion": 6,
+        "lizard_splash": 84,
+        "ninja_revive": 3,
+        "pushback": 250,
+        "siege_blast": 9,
+        "slime_child": 6,
+        "slime_split": 3
+      }
+    }
+  ],
+  "actions": [
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "fire_archer",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "earth_siege",
+        "kind": "summon"
+      }
+    }
+  ],
+  "stats": {
+    "reinforcements": 2,
+    "promotions": 1,
+    "spell": 5,
+    "comeback": 1
+  },
+  "errors": [],
+  "headers": "ordinary HTTP; no cross-origin isolation",
+  "testedViewport": [
+    "1280x720",
+    "1000x720"
+  ],
+  "arena": [
+    600,
+    280
+  ],
+  "bodySize": 7.2,
+  "spawnCollisionPassed": true,
+  "combatCollisionPassed": true,
+  "settingsPersisted": true,
+  "rematchPassed": true,
+  "textFont": "Minecraft",
+  "cardDetails": [
+    "fire_archer",
+    "fire_melee",
+    "fire_tank",
+    "fire_assassin",
+    "water_mage",
+    "water_tank",
+    "water_melee",
+    "water_ranged",
+    "earth_tank",
+    "earth_melee",
+    "earth_ranged",
+    "earth_siege"
+  ],
+  "commanderDetails": [
+    "fire_commander",
+    "water_commander",
+    "earth_commander"
+  ],
+  "commanderSkills": [
+    {
+      "round": 1,
+      "prepared": [
+        true,
+        false
+      ],
+      "counts": {
+        "blocked_projectiles": 0,
+        "earth_walls": [
+          0,
+          0
+        ],
+        "frozen_field": [
+          1,
+          0
+        ],
+        "meteors": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "round": 2,
+      "prepared": [
+        true,
+        false
+      ],
+      "counts": {
+        "blocked_projectiles": 0,
+        "earth_walls": [
+          0,
+          0
+        ],
+        "frozen_field": [
+          1,
+          0
+        ],
+        "meteors": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "round": 3,
+      "prepared": [
+        true,
+        true
+      ],
+      "counts": {
+        "blocked_projectiles": 0,
+        "earth_walls": [
+          0,
+          0
+        ],
+        "frozen_field": [
+          1,
+          0
+        ],
+        "meteors": [
+          0,
+          6
+        ]
+      }
+    },
+    {
+      "round": 4,
+      "prepared": [
+        true,
+        true
+      ],
+      "counts": {
+        "blocked_projectiles": 0,
+        "earth_walls": [
+          0,
+          0
+        ],
+        "frozen_field": [
+          1,
+          0
+        ],
+        "meteors": [
+          0,
+          6
+        ]
+      }
+    },
+    {
+      "round": 5,
+      "prepared": [
+        true,
+        true
+      ],
+      "counts": {
+        "blocked_projectiles": 0,
+        "earth_walls": [
+          0,
+          0
+        ],
+        "frozen_field": [
+          1,
+          0
+        ],
+        "meteors": [
+          0,
+          6
+        ]
+      }
+    }
+  ],
+  "wallCollisionPassed": true,
+  "roundPopupPassed": true,
+  "combatControlsHidden": true,
+  "reinforcementCancelPassed": true,
+  "passives": {
+    "flame_wall": 13,
+    "imp_explosion": 6,
+    "lizard_splash": 84,
+    "ninja_revive": 3,
+    "pushback": 250,
+    "siege_blast": 9,
+    "slime_child": 6,
+    "slime_split": 3
+  },
+  "textOverflows": 0,
+  "combatSoundsPlayed": 289,
+  "webAudio": {
+    "starts": 372,
+    "shortEffects": 289
+  }
+}

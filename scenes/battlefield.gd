@@ -25,12 +25,12 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func ingest(events: Array) -> void:
-	if reduced_effects:
-		return
 	for event in events:
+		if reduced_effects and event.kind != "meteor_impact":
+			continue
 		if event.kind == "defeat":
 			sparks.append({"position": event.position, "age": 0.0, "color": GameCatalog.realm_color(event.get("set_id", "fire"))})
-		elif event.kind == "splash" or event.kind == "passive":
+		elif event.kind in ["splash", "passive", "meteor_impact", "wall_hit"]:
 			sparks.append({"position": event.position, "age": 0.0, "color": GameCatalog.realm_color(event.set_id),
 				"radius":event.get("radius",0.0), "ability":event.get("ability","")})
 
@@ -48,6 +48,8 @@ func _draw_unit(texture: Texture2D, location: Vector2, frame: int, side: int, ra
 
 func _draw() -> void:
 	if simulation:
+		if (simulation.spell_active(0) and simulation.commanders[0].spell_kind == "frozen_field") or (simulation.spell_active(1) and simulation.commanders[1].spell_kind == "frozen_field"):
+			_draw_frozen_field()
 		# Fields carry gameplay information even with reduced cosmetic effects.
 		for field in simulation.fields:
 			var rectangle: Rect2 = field.rect
@@ -63,14 +65,19 @@ func _draw() -> void:
 					draw_line(rectangle.position+Vector2(index*7,rectangle.size.y), rectangle.position+Vector2(index*7+5,0), Color(0.80,0.94,0.94,0.45), 1.0)
 		# Sprites can overlap above their smaller feet. Paint rear units first;
 		# never reorder the simulation array, whose indices are stable unit IDs.
-		var visible_units: Array = simulation.units.filter(func(unit: Dictionary) -> bool: return unit.hp > 0.0)
-		visible_units.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-			var first: float = a.previous_position.lerp(a.position, interpolation).y
-			var second: float = b.previous_position.lerp(b.position, interpolation).y
-			return first < second if first != second else a.id < b.id)
-		for unit in visible_units:
-			if unit.hp <= 0.0:
+		var actors: Array = []
+		for unit in simulation.units:
+			if unit.hp > 0.0:
+				actors.append({"kind":"unit", "unit":unit, "depth":unit.previous_position.lerp(unit.position, interpolation).y, "id":unit.id})
+		for wall in simulation.walls:
+			actors.append({"kind":"wall", "wall":wall, "depth":wall.rect.end.y, "id":-1-int(wall.id)})
+		actors.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return a.depth < b.depth if a.depth != b.depth else a.id < b.id)
+		for actor in actors:
+			if actor.kind == "wall":
+				_draw_earth_wall(actor.wall.rect)
 				continue
+			var unit: Dictionary = actor.unit
 			var location: Vector2 = unit.previous_position.lerp(unit.position, interpolation)
 			var moving: bool = unit.position.distance_squared_to(unit.previous_position) > 0.01
 			var frame: int = int(simulation.tick/4) % 6 if moving else int(clock*3) % 6
@@ -93,8 +100,11 @@ func _draw() -> void:
 				draw_rect(Rect2(location.x+10, location.y-15, 1, 2), Color("f9e4b5"))
 			if unit.shield > 0.0:
 				draw_rect(Rect2(location.x-10, location.y-29, 20, 2), Color("8fc6cb"))
-			if unit.slow_until > simulation.tick or unit.ice_until > simulation.tick:
+			if unit.slow_until > simulation.tick or unit.ice_until > simulation.tick or simulation.defence_multiplier(unit) < 1.0:
 				draw_rect(Rect2(location.x+9, location.y-9, 2, 2), Color("659fbb"))
+			if simulation.defence_multiplier(unit) < 1.0:
+				draw_rect(Rect2(location.x+12, location.y-9, 3, 1), Color("b8e5e4"))
+				draw_rect(Rect2(location.x+13, location.y-8, 1, 3), Color("659fbb"))
 			if unit.attack_slow_until > simulation.tick:
 				draw_rect(Rect2(location.x+9, location.y-5, 2, 2), Color("e8ba61"))
 			if simulation.tick-int(unit.revive_at) < 30:
@@ -105,6 +115,7 @@ func _draw() -> void:
 			if simulation.tick-int(unit.heal_at) < 5 and not reduced_effects:
 				draw_rect(Rect2(location.x-12, location.y-12, 5, 1), Color("7dba9d"))
 				draw_rect(Rect2(location.x-10, location.y-14, 1, 5), Color("7dba9d"))
+		_draw_meteors()
 		for projectile in simulation.projectiles:
 			var card: ArmyCardData = state.cards[projectile.card_id]
 			if projectile.posthumous:
@@ -125,11 +136,63 @@ func _draw() -> void:
 			var ring_color: Color = spark.color
 			ring_color.a = (1.0-spark.age/0.7)*0.7
 			_pixel_ring(spark.position, int(round(spark.radius*(0.5+spark.age/1.4))), ring_color)
+		if reduced_effects:
+			continue
 		for index in range(5):
 			var offset := Vector2(sin(float(index)*2.4)*spark.age*21, -spark.age*25+cos(float(index))*7)
 			var color: Color = spark.color if index%2==0 else Color("f9e4b5")
 			color.a = 1.0-spark.age/0.7
 			draw_rect(Rect2(spark.position+offset, Vector2(3, 3)), color)
+
+func _draw_frozen_field() -> void:
+	draw_rect(Rect2(Vector2.ZERO, CombatSimulation.ARENA_SIZE), Color(0.63,0.84,0.94,0.70))
+	draw_rect(Rect2(1,1,598,278), Color(0.78,0.94,0.96,0.6), false, 1.0)
+	for index in range(42):
+		var position := Vector2(8+(index*97)%580, 10+(index*61)%260)
+		draw_rect(Rect2(position, Vector2(10,1)), Color(0.80,0.95,0.96,0.45))
+		draw_rect(Rect2(position+Vector2(7,-3), Vector2(1,7)), Color(0.80,0.95,0.96,0.45))
+		draw_rect(Rect2(position+Vector2(10,1), Vector2(4,1)), Color(0.59,0.81,0.88,0.65))
+
+func _draw_earth_wall(rectangle: Rect2) -> void:
+	# Physical footprint, earthy side face, stepped grass cap and roots.
+	draw_rect(rectangle.grow(2), Color(0.24,0.30,0.20,0.30))
+	draw_rect(rectangle, Color("51372f"))
+	var top := Rect2(rectangle.position-Vector2(0,7), rectangle.size-Vector2(0,2))
+	draw_rect(top, Color("b0b197"))
+	for row in range(int(top.size.y/6.0)):
+		var offset: float = 2.0 if row%2 == 0 else 5.0
+		draw_rect(Rect2(top.position+Vector2(1,row*6), Vector2(top.size.x-2,1)), Color("c8c5a5"))
+		draw_rect(Rect2(top.position+Vector2(offset,row*6), Vector2(1,5)), Color("83916c"))
+		if row%3 == 1:
+			draw_rect(Rect2(top.position+Vector2(0,row*6+1), Vector2(4,3)), Color("456951"))
+			draw_rect(Rect2(top.position+Vector2(1,row*6), Vector2(2,2)), Color("a3b977"))
+	draw_rect(Rect2(top.position, Vector2(top.size.x,3)), Color("456951"))
+	draw_rect(Rect2(top.position+Vector2(1,0), Vector2(top.size.x-3,1)), Color("a3b977"))
+	for index in range(3):
+		draw_rect(Rect2(rectangle.position+Vector2(index*4-1,rectangle.size.y-2), Vector2(3,4+index%2*2)), Color("795942"))
+
+func _draw_meteors() -> void:
+	for meteor in simulation.meteors:
+		if meteor.landed:
+			continue
+		var position: Vector2 = meteor.position
+		_pixel_ring(position.round(), int(meteor.radius), Color(0.84,0.35,0.17,0.45))
+		draw_rect(Rect2(position-Vector2(4,0), Vector2(9,1)), Color("e8ba61"))
+		draw_rect(Rect2(position-Vector2(0,4), Vector2(1,9)), Color("e8ba61"))
+		var remaining: int = int(meteor.impact_tick)-simulation.opening_tick
+		var fall_ticks: int = int(round(0.4*simulation.config.ticks_per_second))
+		if remaining > fall_ticks:
+			continue
+		var progress: float = clampf(1.0-float(remaining)/float(fall_ticks), 0.0, 1.0)
+		var start := Vector2(position.x-34, maxf(10.0, position.y-65))
+		var falling: Vector2 = start.lerp(position, progress).round()
+		if not reduced_effects:
+			for tail in range(4):
+				draw_rect(Rect2(falling-Vector2(3+tail*3,5+tail*4), Vector2(4,5)), Color("e8ba61") if tail%2 else Color("d57346"))
+		draw_rect(Rect2(falling-Vector2(5,3), Vector2(10,6)), Color("51372f"))
+		draw_rect(Rect2(falling-Vector2(3,5), Vector2(6,10)), Color("51372f"))
+		draw_rect(Rect2(falling-Vector2(3,3), Vector2(6,6)), Color("b75d3e"))
+		draw_rect(Rect2(falling-Vector2(2,2), Vector2(3,3)), Color("f9e4b5"))
 
 func _pixel_ring(center: Vector2, radius: int, color: Color) -> void:
 	# Midpoint circle: one-pixel steps, the same grid as sprites and particles.

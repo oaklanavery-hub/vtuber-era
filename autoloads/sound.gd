@@ -44,6 +44,9 @@ func combat_requests(events: Array) -> Dictionary:
 	var requests: Dictionary = {}
 	for event in events:
 		match event.kind:
+			"commander_skill": requests["fire_breath" if event.ability == "meteors" else "water_cast" if event.ability == "frozen_field" else "siege_launch"] = true
+			"meteor_impact": requests["siege_impact"] = true
+			"wall_hit": requests["shield_hit"] = true
 			"attack": requests[ATTACK_CUES.get(event.card_id, "swing")] = true
 			"splash": requests["siege_impact" if event.set_id == "earth" else "fire_breath" if event.set_id == "fire" else "water_cast"] = true
 			"hit": requests["shield_hit" if event.absorbed > 0.0 else "impact"] = true

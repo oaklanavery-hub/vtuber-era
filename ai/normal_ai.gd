@@ -63,7 +63,14 @@ static func play(state, side: int = 1) -> void:
 			army_hp += state.cards[id].stats.max_hp * state.sides[side].roster[id].count * state.config.rank_hp[state.sides[side].roster[id].rank-1]
 		if state.can_prepare_spell(side) and (state.total_units(side) >= 10 or army_hp >= 650.0):
 			var leader: CommanderData = state.commander_for(side)
-			spell_score = 21.0 + (float(state.total_units(side))*0.7 if leader.spell_kind == "attack_speed" else army_hp/65.0)
+			var enemy_units: int = 0
+			for id in opponent:
+				enemy_units += int(opponent[id].count)
+			spell_score = 21.0+army_hp/65.0
+			if leader.spell_kind == "meteors":
+				spell_score = 21.0+float(enemy_units)*0.85
+			elif leader.spell_kind == "earth_walls":
+				spell_score += minf(float(enemy_ranged_count(state, opponent))*0.7, 8.0)
 			if state.previous_loser == side:
 				spell_score += 7.0
 		if spell_score > best_score:
@@ -75,3 +82,10 @@ static func play(state, side: int = 1) -> void:
 		else:
 			# No legal offered action. Unused points are discarded at battle start.
 			break
+
+static func enemy_ranged_count(state, opponent: Dictionary) -> int:
+	var count: int = 0
+	for id in opponent:
+		if state.cards[id].role in CombatSimulation.BACKLINE:
+			count += int(opponent[id].count)
+	return count

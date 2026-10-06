@@ -37,6 +37,8 @@ const errors = [];
 const actions = [];
 const rounds = [];
 const cardDetails = [];
+const commanderDetails = [];
+const skillRounds = [];
 let reinforcementCancelPassed = false;
 const visited = new Set();
 const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
@@ -128,6 +130,13 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   for (let i = 0; i < realms.length; i++) {
     await click(114 + i * 206, 204);
     await page.waitForFunction(id => window.vtuberEraQA?.selected_commander === id, `${realms[i]}_commander`);
+    await click(38.5 + i * 206, 145.5);
+    await page.waitForFunction(id => window.vtuberEraQA?.card_details === id, `${realms[i]}_commander`);
+    assert.equal((await snapshot()).text_overflows, 0, 'active skill details fit in their box');
+    await screenshot(`skill-details-${realms[i]}`);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => window.vtuberEraQA?.card_details === '');
+    commanderDetails.push(`${realms[i]}_commander`);
   }
   await click(114 + realms.indexOf(leaderRealm) * 206, 204);
   await page.waitForFunction(id => window.vtuberEraQA?.selected_commander === id, `${leaderRealm}_commander`);
@@ -157,7 +166,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await click(509, 336);
   await waitScreen('battle');
   const initial = await snapshot();
-  assert.equal(initial.release, 'round-picker-expanded-arena');
+  assert.equal(initial.release, 'commander-active-skills');
   assert.deepEqual(initial.arena, [600, 280]);
   assert.equal(initial.body_size, 7.2);
   assert.equal(initial.spawn_spacing, 24);
@@ -170,6 +179,15 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   assert.equal(initial.modal, 'command', 'round one automatically opens the card popup');
   assert.equal(initial.command_popup, true);
   await screenshot('round-picker');
+  await click(337.5, 322.5);
+  await page.waitForFunction(id => window.vtuberEraQA?.card_details === id, initial.commander);
+  await page.keyboard.press('Space');
+  await page.keyboard.press('b');
+  assert.equal((await snapshot()).points, 3, 'reading skill details cannot spend points');
+  assert.equal((await snapshot()).phase, 'command', 'reading skill details cannot start battle');
+  await screenshot('round-skill-details');
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => window.vtuberEraQA?.card_details === '');
   await click(187, 322);
   let now = await snapshot();
   assert.equal(now.points, 2);
@@ -197,6 +215,13 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
     if (now.phase === 'command') {
       assert.equal(now.modal, 'command', 'each round opens the picker');
       if (now.points === 4) stats.comeback++;
+      if (!now.spell && now.points > 1) {
+        const pointsBefore = now.points;
+        await click(187, 322);
+        await page.waitForFunction(points => window.vtuberEraQA?.points === points && window.vtuberEraQA?.spell, pointsBefore - 1);
+        stats.spell++;
+        now = await snapshot();
+      }
       const detailsBefore = now;
       await click(72.5, 140.5);
       await page.waitForFunction(id => window.vtuberEraQA?.card_details === id, now.offers[0].card_id);
@@ -284,12 +309,47 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
       assert.equal(combat.command_popup, false);
       assert.equal(combat.battle_controls_visible, false, 'draft controls disappear so combat fills the arena');
       assert.equal(combat.modal, '');
+      await page.waitForFunction(() => window.vtuberEraQA?.skills?.activated.some(Boolean));
+      let skillState = await snapshot();
+      const preparedSkills = [...skillState.skills.prepared];
+      if (leaderRealm === 'fire') {
+        assert.equal(skillState.skills.opening, true, 'Fire meteors resolve before troop movement');
+        assert.equal(skillState.tick, 0, 'battle clock waits for all six meteor strikes');
+        for (const body of skillState.combat_positions) {
+          const spawn = now.preview[body[0]];
+          if (spawn) assert.deepEqual(body.slice(2), spawn.slice(2), 'opening holds troop positions');
+        }
+        await screenshot(`meteor-opening-${now.round}`);
+        await page.waitForFunction(() => window.vtuberEraQA?.skills && !window.vtuberEraQA.skills.opening);
+        skillState = await snapshot();
+        assert.equal(skillState.skills.counts.meteors[0], 6, 'exactly six player meteors land');
+      }
+      for (let side = 0; side < 2; side++) {
+        if (preparedSkills[side] && initial.commanders[side] === 'earth_commander') {
+          assert.equal(skillState.skills.counts.earth_walls[side], 3, 'Earth raises three walls in the enemy field');
+        }
+      }
+      for (const status of skillState.combat_statuses) {
+        const body = skillState.combat_positions.find(unit => unit[0] === status[0]);
+        if (body) {
+          const enemySide = 1 - body[1];
+          const frozen = preparedSkills[enemySide] && initial.commanders[enemySide] === 'water_commander';
+          assert(Math.abs(status[2] - (frozen ? 0.92 : 1)) < 0.001, 'ice reduces only enemy defence');
+        }
+      }
       await page.waitForTimeout(700);
       await screenshot(`combat-round-${now.round}`);
       await page.waitForFunction(() => {
         const state = window.vtuberEraQA;
         const bodies = state?.combat_positions || [];
         for (let a = 0; a < bodies.length; a++) {
+          for (const wall of state.walls || []) {
+            const half = state.body_size / 2 - 0.001;
+            if (bodies[a][2] > wall[1] - half && bodies[a][2] < wall[1] + wall[3] + half &&
+                bodies[a][3] > wall[2] - half && bodies[a][3] < wall[2] + wall[4] + half) {
+              throw new Error(`Unit ${bodies[a][0]} clipped an Earth wall`);
+            }
+          }
           for (let b = a + 1; b < bodies.length; b++) {
             if (Math.abs(bodies[a][2] - bodies[b][2]) < state.body_size - 0.001 && Math.abs(bodies[a][3] - bodies[b][3]) < state.body_size - 0.001) {
               throw new Error(`Solid bodies overlapped: ${bodies[a][0]} / ${bodies[b][0]}`);
@@ -300,6 +360,12 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
         return ['round_result', 'finished'].includes(state?.phase);
       }, null, { timeout: 90000 });
       now = await snapshot();
+      skillRounds.push({ round: now.round, prepared: preparedSkills, counts: now.skills.counts });
+      for (let side = 0; side < 2; side++) {
+        const key = ({fire_commander: 'meteors', water_commander: 'frozen_field', earth_commander: 'earth_walls'})[initial.commanders[side]];
+        const expected = preparedSkills[side] ? ({meteors: 6, frozen_field: 1, earth_walls: 3})[key] : 0;
+        assert.equal(now.skills.counts[key][side], expected, 'prepared skills cast exactly once per round');
+      }
       const heartLoss = hearts[0] + hearts[1] - now.hearts[0] - now.hearts[1];
       assert(heartLoss === 0 || heartLoss === 1, 'a result consumes at most one Heart');
       rounds.push({ round: now.round, hearts: now.hearts, heartLoss, passives: now.passives });
@@ -338,12 +404,16 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   console.log('PASS: commander, mixed/pure loadout and rival persist after reload.');
   assert.deepEqual(errors, [], 'browser must have no engine, HTTP or JavaScript errors');
   const report = { status: 'passed', scenario, rival, commander: `${leaderRealm}_commander`, warband: chosenCards,
+    release: initial.release,
     browser: await browser.version(), screens: [...visited],
-    seed: initial.seed, rounds, actions, stats, errors, headers: 'ordinary HTTP; no cross-origin isolation',
+    seed: initial.seed, rounds, actions, stats, errors, headers: 'ordinary HTTP(S); no cross-origin isolation',
     testedViewport: ['1280x720', '1000x720'], arena: initial.arena, bodySize: initial.body_size,
     spawnCollisionPassed: true, combatCollisionPassed: true, settingsPersisted: true, rematchPassed: true };
   report.textFont = final.text_font;
   report.cardDetails = cardDetails;
+  report.commanderDetails = commanderDetails;
+  report.commanderSkills = skillRounds;
+  report.wallCollisionPassed = true;
   report.roundPopupPassed = true;
   report.combatControlsHidden = true;
   report.reinforcementCancelPassed = reinforcementCancelPassed;

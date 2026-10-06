@@ -17,6 +17,7 @@ var accumulator: float = 0.0
 var runes: Control
 var phase_label: Label
 var spell_label: Label
+var rival_spell_label: Label
 var clock_label: Label
 var offer_buttons: Array = []
 var spell_button: Button
@@ -84,6 +85,7 @@ func _reset(next_screen: String) -> void:
 	battle_button = null
 	clock_label = null
 	spell_label = null
+	rival_spell_label = null
 	for child in surface.get_children():
 		surface.remove_child(child)
 		child.queue_free()
@@ -249,6 +251,44 @@ func _close_card_details() -> void:
 	details_return_focus = null
 	_publish()
 
+func _show_skill_details(leader: CommanderData) -> void:
+	if details_overlay or (modal and modal_kind != "command"):
+		return
+	details_return_focus = get_viewport().gui_get_focus_owner()
+	details_card_id = leader.id
+	details_overlay = Control.new()
+	details_overlay.name = "CommanderSkillDetails"
+	details_overlay.size = Vector2(640, 360)
+	surface.add_child(details_overlay)
+	var dim := ColorRect.new()
+	dim.color = Color(0.19, 0.16, 0.12, 0.64)
+	dim.size = Vector2(640, 360)
+	details_overlay.add_child(dim)
+	_panel(Rect2(108, 58, 424, 264), details_overlay)
+	_portrait(Rect2(126, 77, 58, 58), details_overlay, leader)
+	_label(leader.spell_name, Rect2(198, 76, 309, 28), 22, false, true, details_overlay)
+	_label(leader.display_name+" · Active skill", Rect2(198, 111, 309, 20), 11, false, false, details_overlay)
+	_label("1 Command Point · Once per round", Rect2(127, 145, 385, 21), 13, false, true, details_overlay)
+	_label(leader.spell_details, Rect2(127, 176, 385, 84), 12, false, false, details_overlay)
+	_label("Prepare during card selection. Cast when battle starts.", Rect2(127, 267, 385, 18), 10, true, false, details_overlay)
+	var close := _button("Close", Rect2(248, 291, 144, 25), _close_card_details, true, details_overlay)
+	close.grab_focus()
+	_publish()
+
+func _skill_info(rectangle: Rect2, parent: Control, leader: CommanderData) -> Button:
+	var info := _button("", rectangle, _show_skill_details.bind(leader), false, parent)
+	info.name = "CommanderInfo"
+	info.icon = INFO_ICON
+	info.add_theme_constant_override("icon_max_width", 16)
+	for key in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var box: StyleBoxFlat = StoryStyle.panel(StoryStyle.HONEY if key == "hover" else StoryStyle.PARCHMENT, StoryStyle.INK, 1)
+		box.content_margin_left = 2
+		box.content_margin_right = 2
+		info.add_theme_stylebox_override(key, box)
+	info.tooltip_text = "View %s effects" % leader.spell_name
+	info.set_meta("skill_info_id", leader.id)
+	return info
+
 func _title(title: String, subtitle: String) -> void:
 	_label(title, Rect2(76, 48, 488, 40), 28, true, true)
 	_label(subtitle, Rect2(80, 92, 480, 22), 11, true)
@@ -277,6 +317,7 @@ func show_commander() -> void:
 		if chosen:
 			tile.add_theme_stylebox_override("normal", StoryStyle.panel(Color("e5d7ad")))
 		_portrait(Rect2(63, 6, 62, 62), tile, leader)
+		_skill_info(Rect2(7, 10, 23, 23), tile, leader)
 		_label(leader.display_name, Rect2(4, 71, 180, 20), 14, true, true, tile)
 		_label(leader.passive_description, Rect2(8, 95, 174, 32), 9, false, false, tile)
 		_label(leader.spell_name, Rect2(4, 131, 180, 17), 10, true, true, tile)
@@ -409,6 +450,12 @@ func show_battle() -> void:
 		_show_command_picker()
 	elif state.sides[0].spell:
 		spell_label = _label(state.commander.spell_name, Rect2(26, 70, 246, 17), 10)
+		spell_label.tooltip_text = state.commander.spell_details
+		spell_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	if state.phase == "combat" and state.sides[1].spell:
+		rival_spell_label = _label("Rival: "+state.commander_for(1).spell_name, Rect2(390, 70, 220, 17), 10, true)
+		rival_spell_label.tooltip_text = state.commander_for(1).spell_details
+		rival_spell_label.mouse_filter = Control.MOUSE_FILTER_STOP
 	if debug_ai:
 		var debug_panel := _panel(Rect2(354, 90, 250, 89))
 		_label("AI decisions", Rect2(8, 4, 236, 18), 12, false, false, debug_panel)
@@ -453,6 +500,7 @@ func _show_command_picker() -> void:
 	spell_button.name = "CommandSpell"
 	spell_button.disabled = not state.can_prepare_spell(0)
 	spell_button.tooltip_text = state.commander.spell_description
+	_skill_info(Rect2(326, 311, 23, 23), modal, state.commander)
 	battle_button = _button("Battle →", Rect2(410, 308, 166, 29), begin_battle, true, modal)
 	battle_button.name = "BeginBattle"
 	battle_button.disabled = state.total_units(0)==0
@@ -520,16 +568,28 @@ func _process(delta: float) -> void:
 		var seconds: float = float(simulation.tick) / float(state.config.ticks_per_second)
 		clock_label.text = "%.1fs · %dx" % [seconds, SaveStore.settings.combat_speed]
 		phase_label.text = "Sudden death" if simulation.sudden_death else "Automatic combat"
+		if simulation.opening_active():
+			phase_label.text = "Commander skills"
+			clock_label.text = "Starts in %.1fs · %dx" % [float(simulation.opening_duration-simulation.opening_tick)/float(state.config.ticks_per_second), SaveStore.settings.combat_speed]
 		StoryStyle.refit_label(clock_label)
 		StoryStyle.refit_label(phase_label)
 		if state.sides[0].spell and spell_label:
-			spell_label.text = "%s · %.1fs" % [state.commander.spell_name, maxf(0.0, state.commander.spell_duration-seconds)] if seconds < state.commander.spell_duration else state.commander.spell_name+" complete"
+			spell_label.text = _skill_status(0)
 			StoryStyle.refit_label(spell_label)
+		if rival_spell_label:
+			rival_spell_label.text = "Rival: "+_skill_status(1)
+			StoryStyle.refit_label(rival_spell_label)
 		if simulation.finished:
 			_round_over()
 	if telemetry_time >= 0.25:
 		telemetry_time = 0.0
 		_publish()
+
+func _skill_status(side: int) -> String:
+	var leader: CommanderData = state.commander_for(side)
+	if leader.spell_kind == "meteors":
+		return "%s · %d / %d" % [leader.spell_name, simulation.skill_counts.meteors[side], leader.meteor_count] if simulation.opening_active() else leader.spell_name+" complete"
+	return leader.spell_name+" active"
 
 func _round_over() -> void:
 	if not state.complete_combat(simulation.result):
@@ -712,7 +772,7 @@ func _publish() -> void:
 	if not qa_enabled:
 		return
 	var snapshot := {"screen": screen, "modal": modal_kind, "settings": SaveStore.settings,
-		"release": "round-picker-expanded-arena", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
+		"release": "commander-active-skills", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
 		"card_details": details_card_id, "command_popup": modal_kind == "command",
 		"battle_controls_visible": is_instance_valid(battle_button) and battle_button.is_visible_in_tree(),
 		"pixel_scale_mode":"integer" if get_window().content_scale_stretch == Window.CONTENT_SCALE_STRETCH_INTEGER else "fit",
@@ -740,10 +800,18 @@ func _publish() -> void:
 			snapshot["tick"] = simulation.tick
 			snapshot["passives"] = simulation.passive_counts
 			snapshot["active_fields"] = simulation.fields.size()
+			snapshot["skills"] = {"prepared":simulation.spell_prepared, "activated":simulation.skills_activated,
+				"counts":simulation.skill_counts, "opening":simulation.opening_active(), "opening_tick":simulation.opening_tick,
+				"opening_duration":simulation.opening_duration}
+			snapshot["walls"] = []
+			for wall in simulation.walls:
+				snapshot.walls.append([wall.side, wall.rect.position.x, wall.rect.position.y, wall.rect.size.x, wall.rect.size.y])
+			snapshot["combat_statuses"] = []
 			snapshot["combat_positions"] = []
 			for unit in simulation.units:
 				if unit.hp > 0.0:
 					snapshot.combat_positions.append([unit.id, unit.side, unit.position.x, unit.position.y])
+					snapshot.combat_statuses.append([unit.id, simulation.move_speed(unit), simulation.defence_multiplier(unit)])
 	JavaScriptBridge.eval("window.vtuberEraQA = %s;" % JSON.stringify(snapshot))
 
 func _text_overflows(parent: Node) -> int:

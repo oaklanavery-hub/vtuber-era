@@ -97,9 +97,9 @@ func _commanders() -> void:
 	expect(near(unit(earth,"water_melee").max_hp,52.0), "Earth affinity max HP excludes Water")
 	expect(near(earth.damage_multiplier(unit(earth,"water_melee")),.95), "Earth passive protects every realm")
 	earth.spell_prepared[0] = true
-	expect(near(earth.damage_multiplier(unit(earth,"water_melee")),.76), "Earth spell and passive compose multiplicatively")
-	earth.tick = 7*earth.config.ticks_per_second
-	expect(near(earth.damage_multiplier(unit(earth,"water_melee")),.95), "Stonewall expires at exactly seven seconds")
+	earth._activate_skills()
+	expect(near(earth.damage_multiplier(unit(earth,"water_melee")),.95), "Earth active changes terrain while its defence passive stays intact")
+	expect(earth.walls.size() == 3, "Uproot creates three solid walls")
 	for realm in GameCatalog.REALMS:
 		var state := MatchState.new(1, realm+"_commander")
 		var before: String = JSON.stringify(state.sides[0].offers)
@@ -138,24 +138,8 @@ func _shields() -> void:
 	expect(near(guard.hp,guard.max_hp-(95.0-before)) and guard.shield == 0.0, "shield overflow damages HP exactly once")
 
 func _healing() -> void:
-	var healing := fixture("water_commander", MIXED, {"water_melee":1,"fire_archer":1,"water_mage":1})
-	var blade: Dictionary = unit(healing,"water_melee")
-	var archer: Dictionary = unit(healing,"fire_archer")
-	blade.hp = blade.max_hp*.2
-	archer.hp = archer.max_hp*.2
-	unit(healing,"water_mage").hp = 0.0
-	healing.spell_prepared[0] = true
-	for index in range(5*healing.config.ticks_per_second):
-		healing.step()
-	expect(near(blade.hp,blade.max_hp*(.2+.165)), "Healing Current supplies five boosted Water healing ticks")
-	expect(near(archer.hp,archer.max_hp*(.2+.15)), "Healing Current also heals non-Water allies")
-	expect(unit(healing,"water_mage").hp == 0.0, "healing cannot resurrect dispersed units")
-	var after: float = blade.hp
-	for index in range(60):
-		healing.step()
-	expect(near(blade.hp,after), "Healing Current stops after exactly five seconds")
 	var tidal := fixture("water_commander", GameCatalog.WATER_IDS, {"water_melee":1})
-	blade = unit(tidal,"water_melee")
+	var blade: Dictionary = unit(tidal,"water_melee")
 	blade.hp = blade.max_hp*.4
 	for index in range(3*tidal.config.ticks_per_second+1):
 		tidal.step()

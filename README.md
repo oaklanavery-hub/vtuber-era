@@ -4,6 +4,14 @@ A cozy storybook drafting auto-battler at the Convergence Festival. Choose a
 Fire, Water or Earth Commander and four unique armies from twelve cards. Phase 2
 adds mixed warbands, healing, shields, Slow, lifesteal and siege splash.
 
+Commanders each have an active skill costing **1 Command Point**, once per round.
+Prepare it beside the round's cards; the info button explains its effects.
+**Fire** drops six AOE meteors before troops move. **Water** freezes the field,
+slowing all enemies by 15% and reducing defence by 8% for the round. **Earth**
+raises three walls on the enemy field. Both armies route around them, projectiles
+stop on impact, and ranged units need clear line of sight before shooting.
+Ice and walls last until the round ends; commander passives remain active.
+
 Each round opens a card-selection popup. Spend Command Points on the clean card
 faces, tap the top-left info icon for full army effects, then hit **Battle**.
 The same card design appears in the compendium. Draft controls disappear during
@@ -35,7 +43,7 @@ that realm's bond, independently of your Commander. Both sides start with four
 Hearts and three Command Points; the previous loser gets one comeback point.
 
 Each point summons an offered army, reinforces an eligible army, promotes its
-Rank, or prepares your Commander's spell. Playing a card spends its point and
+Rank, or prepares your Commander's active skill. Playing a card spends its point and
 refreshes the offers inside the popup. Battle starts once you own an army; unused
 points are discarded. Specials require two normal summons.
 Counts and Ranks persist; units return at full HP after each automatic battle.
@@ -45,7 +53,7 @@ The first side to lose all four Hearts loses. No commands are allowed in combat.
 |---|---|
 | Mouse / touch | Select Commanders, army cards and buttons |
 | 1, 2, 3 | Choose the corresponding draft offer |
-| B | Prepare your Commander's spell before combat |
+| B | Prepare your Commander's active skill before combat |
 | Space | Begin battle; unused points are discarded |
 | Enter | Confirm Reinforcements or advance a round dialog |
 | Escape | Close card effects / cancel Reinforcements; otherwise open settings or go back |
@@ -77,6 +85,7 @@ godot --headless --path . --script res://tests/elemental_tests.gd
 godot --headless --path . --script res://tests/passive_tests.gd
 godot --headless --path . --script res://tests/ninja_tests.gd
 godot --headless --path . --script res://tests/formation_tests.gd
+godot --headless --path . --script res://tests/commander_skill_tests.gd
 godot --headless --path . --script res://tests/ui_smoke.gd
 ```
 
@@ -95,6 +104,10 @@ flank lanes, flank deadlines, real movement and attacks from both sides,
 The passive runner covers all twelve abilities, simultaneous death chains,
 posthumous projectiles, one-use revivals/splits, non-stacking slows, exact damage
 and healing fractions, timed auras, pushback collisions and 240-unit split crowds.
+The commander skill runner checks payment, six opening impacts, AOE and death
+passives, global ice and defence/shield math, wall routes, obscured ranged
+repositioning, blocked fast/posthumous projectiles, safe births and knockback,
+144-unit terrain collision and deterministic replays.
 
 Optional balance sampling runs 72 full AI matches:
 
@@ -132,7 +145,7 @@ account, CDN, remote asset service or JavaScript game framework is needed.
 ## GitHub Pages
 
 `.github/workflows/deploy-pages.yml` installs the exact engine/templates,
-verifies official SHA-512 checksums, imports, runs all five correctness runners,
+verifies official SHA-512 checksums, imports, runs all seven correctness runners,
 exports, checks required files, includes notices and `.nojekyll`, then deploys
 through official Pages actions. Main pushes and manual dispatch trigger it.
 The public game uses the existing `/vtuber-era/` project path.

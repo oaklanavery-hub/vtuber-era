@@ -26,6 +26,15 @@ var fields: Array = []
 var pending_children: Array = []
 var next_field_id: int = 0
 var passive_counts: Dictionary = {}
+var skills_activated: Array = [false, false]
+var skill_counts: Dictionary = {"meteors":[0, 0], "frozen_field":[0, 0], "earth_walls":[0, 0], "blocked_projectiles":0}
+var opening_tick: int = 0
+var opening_duration: int = 0
+var meteors: Array = []
+var walls: Array = []
+var navigation_nodes: Array[Vector2] = []
+var navigation_distances: Array = []
+var navigation_goals: Dictionary = {}
 const BACKLINE := ["ranged", "mage", "siege"]
 const ARENA_SIZE := Vector2(600, 280)
 # Collision stays on, but occupies only 30% of the old 24px footprint.
@@ -40,6 +49,8 @@ const MAX_POSITION := Vector2(584, 258)
 const SPAWN_ROWS := [140.0, 116.0, 164.0, 92.0, 188.0, 68.0, 212.0, 44.0, 236.0]
 const FLANK_TOP: float = 44.0
 const FLANK_BOTTOM: float = 236.0
+const SHOT_RADIUS: float = 1.0
+const NAVIGATION_PADDING: float = BODY_SIZE/2.0+0.75
 
 func _init(state) -> void:
 	config = state.config
@@ -87,6 +98,159 @@ func _init(state) -> void:
 
 func _ticks(seconds: float) -> int:
 	return maxi(1, int(round(seconds * config.ticks_per_second)))
+
+func _activate_skills() -> void:
+	var grew_walls: bool = false
+	for side in range(2):
+		if not spell_prepared[side] or skills_activated[side]:
+			continue
+		skills_activated[side] = true
+		var leader: CommanderData = commanders[side]
+		events.append({"kind":"commander_skill", "ability":leader.spell_kind, "side":side})
+		match leader.spell_kind:
+			"meteors":
+				var locations: Array = _meteor_layout(side, leader.meteor_count)
+				for index in range(locations.size()):
+					var impact_tick: int = _ticks(leader.meteor_first_impact+float(index)*leader.meteor_interval)
+					meteors.append({"side":side, "position":locations[index], "impact_tick":impact_tick,
+						"radius":leader.meteor_radius, "damage":leader.meteor_damage, "landed":false})
+					opening_duration = maxi(opening_duration, impact_tick+_ticks(0.35))
+				opening_duration = maxi(opening_duration, _ticks(leader.meteor_opening_seconds))
+			"frozen_field":
+				skill_counts.frozen_field[side] += 1
+			"earth_walls":
+				_grow_walls(side, leader.spell_wall_size)
+				grew_walls = true
+	if grew_walls:
+		_build_navigation()
+
+func _meteor_layout(side: int, count: int) -> Array:
+	# Six non-overlapping zones cover the enemy half. Aim at the closest
+	# starting enemy in each zone, otherwise strike its centre. No RNG or
+	# roster order can concentrate all six hits on a single occupied point.
+	var locations: Array = []
+	var columns: int = maxi(1, ceili(float(count)/2.0))
+	var width: float = 252.0/float(columns)
+	for index in range(count):
+		var column: int = columns-1-int(index/2)
+		var area := Rect2(24.0+float(column)*width, 28.0+float(index%2)*115.0, width, 115.0)
+		var center: Vector2 = area.get_center()
+		var best: Vector2 = center
+		var best_distance: float = INF
+		for unit in units:
+			if unit.side == side or unit.hp <= 0.0:
+				continue
+			var local: Vector2 = unit.position if unit.side == 0 else Vector2(ARENA_SIZE.x-unit.position.x, unit.position.y)
+			if area.has_point(local) and local.distance_squared_to(center) < best_distance:
+				best_distance = local.distance_squared_to(center)
+				best = local
+		locations.append(Vector2(ARENA_SIZE.x-best.x, best.y) if side == 0 else best)
+	return locations
+
+func _grow_walls(side: int, requested_size: Vector2) -> void:
+	# Between the 24px spawn columns, never through a starting collision body.
+	# Staggered lengths leave routes around every wall and along arena edges.
+	var size := Vector2(clampf(requested_size.x, 4.0, 16.0), clampf(requested_size.y, 16.0, 96.0))
+	for anchor in [Vector2(232,100), Vector2(160,180), Vector2(88,100)]:
+		var center: Vector2 = Vector2(ARENA_SIZE.x-anchor.x, anchor.y) if side == 0 else anchor
+		for offset in [0.0, -4.0, 4.0, -8.0, 8.0, -16.0, 16.0]:
+			var rectangle := Rect2(center+Vector2(offset,0)-size/2.0, size)
+			var clear: bool = true
+			for unit in units:
+				if unit.hp > 0.0 and rectangle.grow(BODY_SIZE/2.0+0.1).has_point(unit.position):
+					clear = false
+					break
+			for wall in walls:
+				if rectangle.grow(BODY_SIZE).intersects(wall.rect):
+					clear = false
+			if clear:
+				walls.append({"id":walls.size(), "side":side, "rect":rectangle})
+				skill_counts.earth_walls[side] += 1
+				break
+
+func _step_opening() -> void:
+	var damage: Array = []
+	damage.resize(units.size())
+	damage.fill(0.0)
+	for unit in units:
+		unit.previous_position = unit.position
+	for meteor in meteors:
+		if meteor.landed or opening_tick < int(meteor.impact_tick):
+			continue
+		meteor.landed = true
+		skill_counts.meteors[int(meteor.side)] += 1
+		events.append({"kind":"meteor_impact", "position":meteor.position, "radius":meteor.radius, "set_id":"fire", "side":meteor.side})
+		for unit in units:
+			if unit.hp > 0.0 and unit.side != meteor.side and unit.position.distance_to(meteor.position) <= float(meteor.radius):
+				damage[int(unit.id)] += float(meteor.damage)
+	# Opposing meteors on the same tick resolve in one simultaneous wave.
+	_settle_damage(damage, [])
+	_birth_children()
+	opening_tick += 1
+	if not opening_active():
+		meteors.clear()
+		if (alive_count(0) == 0 or alive_count(1) == 0) and not _last_wishes_pending():
+			_finish(-1 if alive_count(0) == 0 and alive_count(1) == 0 else (0 if alive_count(1) == 0 else 1), "Meteor Rain")
+
+func _wall_path_clear(start: Vector2, end: Vector2, padding: float) -> bool:
+	for wall in walls:
+		if _crosses_rect(start, end, wall.rect.grow(padding)):
+			return false
+	return true
+
+func line_of_sight(start: Vector2, end: Vector2) -> bool:
+	return _wall_path_clear(start, end, SHOT_RADIUS)
+
+func can_attack(unit: Dictionary, target: Dictionary) -> bool:
+	return target.hp > 0.0 and in_attack_range(unit, target) and line_of_sight(unit.position, target.position)
+
+func _build_navigation() -> void:
+	# A small visibility graph around expanded wall corners. Precompute its
+	# distances once; moving targets only require fresh endpoint connections.
+	navigation_nodes.clear()
+	navigation_distances.clear()
+	navigation_goals.clear()
+	for wall in walls:
+		var rectangle: Rect2 = wall.rect.grow(NAVIGATION_PADDING)
+		for corner in [rectangle.position, Vector2(rectangle.end.x, rectangle.position.y), rectangle.end, Vector2(rectangle.position.x, rectangle.end.y)]:
+			if corner.x >= MIN_POSITION.x and corner.x <= MAX_POSITION.x and corner.y >= MIN_POSITION.y and corner.y <= MAX_POSITION.y:
+				navigation_nodes.append(corner)
+	for start in navigation_nodes:
+		var row: Array = []
+		for end in navigation_nodes:
+			row.append(start.distance_to(end) if _wall_path_clear(start, end, BODY_SIZE/2.0) else INF)
+		navigation_distances.append(row)
+	for via in range(navigation_nodes.size()):
+		for start in range(navigation_nodes.size()):
+			for end in range(navigation_nodes.size()):
+				navigation_distances[start][end] = minf(navigation_distances[start][end], navigation_distances[start][via]+navigation_distances[via][end])
+
+func _navigation_waypoint(origin: Vector2, destination: Vector2) -> Vector2:
+	if walls.is_empty() or _wall_path_clear(origin, destination, BODY_SIZE/2.0):
+		return destination
+	if not navigation_goals.has(destination):
+		var end_costs: Array = []
+		for node in navigation_nodes:
+			end_costs.append(node.distance_to(destination) if _wall_path_clear(node, destination, BODY_SIZE/2.0) else INF)
+		var costs: Array = []
+		for start in range(navigation_nodes.size()):
+			var cost: float = INF
+			for end in range(navigation_nodes.size()):
+				cost = minf(cost, navigation_distances[start][end]+end_costs[end])
+			costs.append(cost)
+		navigation_goals[destination] = costs
+	var best: Vector2 = origin
+	var best_cost: float = INF
+	for index in range(navigation_nodes.size()):
+		var node: Vector2 = navigation_nodes[index]
+		if origin.distance_squared_to(node) < 0.16:
+			continue
+		var cost: float = origin.distance_to(node)+navigation_goals[destination][index]
+		var improves: bool = cost < best_cost-0.001 or (is_finite(cost) and absf(cost-best_cost) <= 0.001 and node.distance_squared_to(destination) < best.distance_squared_to(destination))
+		if improves and _wall_path_clear(origin, node, BODY_SIZE/2.0):
+			best_cost = cost
+			best = node
+	return best
 
 func _prepare_passive_state(unit: Dictionary) -> void:
 	var stats: UnitStats = cards[unit.card_id].stats
@@ -172,18 +336,25 @@ func hp_fraction(side: int) -> float:
 	return remaining/maxf(float(initial_hp[side]), 1.0)
 
 func spell_active(side: int) -> bool:
-	return spell_prepared[side] and tick < int(round(commanders[side].spell_duration * config.ticks_per_second))
+	return spell_prepared[side] and skills_activated[side] and (commanders[side].spell_kind != "meteors" or opening_active())
+
+func opening_active() -> bool:
+	return opening_tick < opening_duration
+
+func defence_multiplier(unit: Dictionary) -> float:
+	var rival: int = 1-int(unit.side)
+	if spell_active(rival) and commanders[rival].spell_kind == "frozen_field":
+		return maxf(0.01, 1.0-commanders[rival].spell_defence_reduction)
+	return 1.0
 
 func attack_speed(unit: Dictionary) -> float:
 	var leader: CommanderData = commanders[int(unit.side)]
 	var bonus: float = leader.matching_attack_speed_bonus if cards[unit.card_id].set_id == leader.set_id else 0.0
-	if spell_active(int(unit.side)):
-		bonus += leader.spell_attack_speed_bonus
 	return 1.0+bonus
 
 func damage_multiplier(unit: Dictionary) -> float:
 	var leader: CommanderData = commanders[int(unit.side)]
-	return (1.0-leader.damage_reduction) * (1.0-leader.spell_damage_reduction if spell_active(int(unit.side)) else 1.0)
+	return (1.0-leader.damage_reduction)/defence_multiplier(unit)
 
 func healing_multiplier(unit: Dictionary) -> float:
 	var leader: CommanderData = commanders[int(unit.side)]
@@ -193,6 +364,9 @@ func move_speed(unit: Dictionary) -> float:
 	var slow: float = float(unit.slow_fraction) if tick < int(unit.slow_until) else 0.0
 	if tick < int(unit.ice_until):
 		slow = maxf(slow, float(unit.ice_fraction))
+	var rival: int = 1-int(unit.side)
+	if spell_active(rival) and commanders[rival].spell_kind == "frozen_field":
+		slow = maxf(slow, commanders[rival].spell_slow_fraction)
 	return cards[unit.card_id].stats.move_speed * (1.0-slow)
 
 func _grant_shield(unit: Dictionary, amount: float, until: int) -> void:
@@ -231,6 +405,10 @@ func _target(unit: Dictionary) -> int:
 			var cluster: int = _cluster_size(enemy,stats.splash_radius)
 			# Prefer reachable clusters, then their density. Distance/id break ties.
 			priority = (0 if distance <= stats.attack_range*stats.attack_range else 100) - cluster
+		if can_attack(unit, enemy):
+			priority -= 1000
+		elif not line_of_sight(unit.position, enemy.position):
+			priority += 200
 		if priority < best_priority or (priority == best_priority and (distance < best_distance-0.0001 or (absf(distance-best_distance) <= 0.0001 and int(enemy.id) < best_id))):
 			best_priority = priority
 			best_distance = distance
@@ -291,7 +469,8 @@ func _move(unit: Dictionary, dt: float) -> Vector2:
 			destination = waypoint
 	if tick-int(unit.bounce_at) < BOUNCE_TICKS:
 		return next_position
-	if not in_attack_range(unit, target) or unit.flanking:
+	if not can_attack(unit, target) or unit.flanking:
+		destination = _navigation_waypoint(unit.position, destination)
 		next_position = unit.position.move_toward(destination, move_speed(unit)*dt)
 	return next_position
 
@@ -302,6 +481,10 @@ func _clip_motion(origin: Vector2, motion: Vector2, neighbors: Array, reservatio
 			limit = minf(limit, (MAX_POSITION[axis]-origin[axis])/motion[axis])
 		elif motion[axis] < -0.000001:
 			limit = minf(limit, (MIN_POSITION[axis]-origin[axis])/motion[axis])
+	for wall in walls:
+		var entry: float = _segment_rect_entry(origin, origin+motion, wall.rect.grow(BODY_SIZE/2.0), true)
+		if is_finite(entry):
+			limit = minf(limit, maxf(0.0, entry-0.00001))
 	for id in neighbors:
 		if id == own_id:
 			continue
@@ -365,7 +548,7 @@ func _resolve_movements(movements: Array, forced: Dictionary = {}) -> void:
 		if unit.target >= 0 and not unit.flanking:
 			var projected: Dictionary = unit.duplicate()
 			projected.position = origin+best
-			at_contact = in_attack_range(projected, units[int(unit.target)])
+			at_contact = can_attack(projected, units[int(unit.target)])
 		if not forced.has(id) and not at_contact and best.length_squared() < desired.length_squared()*0.95:
 			# A blocked, out-of-range unit seeks a free lane. Test both sides and
 			# allow sideways/backward steps when a direct approach is congested.
@@ -423,7 +606,7 @@ func _attack(unit: Dictionary, target: Dictionary, damage: Array, hits: Array, f
 	unit.cooldown = _attack_cooldown(unit)
 	if fan_due:
 		var targets: Array = units.filter(func(enemy: Dictionary) -> bool:
-			return enemy.side != unit.side and enemy.hp > 0.0 and in_attack_range(unit, enemy))
+			return enemy.side != unit.side and can_attack(unit, enemy))
 		targets.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 			var first: float = unit.position.distance_squared_to(a.position)
 			var second: float = unit.position.distance_squared_to(b.position)
@@ -478,20 +661,27 @@ func _tick_fields() -> void:
 			unit.ice_anchor = end
 			unit.next_ice = tick+_ticks(stats.ice_interval)
 
-func _crosses_rect(start: Vector2, end: Vector2, rectangle: Rect2) -> bool:
+func _segment_rect_entry(start: Vector2, end: Vector2, rectangle: Rect2, slide_edges: bool = false) -> float:
 	var delta: Vector2 = end-start
 	var enter: float = 0.0
 	var leave: float = 1.0
 	for axis in range(2):
 		if absf(delta[axis]) < 0.000001:
 			if start[axis] < rectangle.position[axis] or start[axis] > rectangle.end[axis]:
-				return false
+				return INF
+			if slide_edges and (start[axis] <= rectangle.position[axis]+0.000001 or start[axis] >= rectangle.end[axis]-0.000001):
+				return INF
 		else:
 			var first: float = (rectangle.position[axis]-start[axis])/delta[axis]
 			var last: float = (rectangle.end[axis]-start[axis])/delta[axis]
 			enter = maxf(enter, minf(first,last))
 			leave = minf(leave, maxf(first,last))
-	return enter <= leave
+	if enter > leave or (slide_edges and leave <= 0.000001):
+		return INF
+	return enter
+
+func _crosses_rect(start: Vector2, end: Vector2, rectangle: Rect2) -> bool:
+	return is_finite(_segment_rect_entry(start, end, rectangle))
 
 func _field_contacts(movements: Array = []) -> void:
 	for field in fields:
@@ -553,7 +743,18 @@ func _advance_projectiles(movements: Array, damage: Array, hits: Array) -> Dicti
 			continue
 		if target.hp > 0.0 and source.role != "siege":
 			projectile.impact = movements[int(target.id)]
-		projectile.position = projectile.position.move_toward(projectile.impact, projectile.speed*dt)
+		var origin: Vector2 = projectile.position
+		var next_position: Vector2 = origin.move_toward(projectile.impact, projectile.speed*dt)
+		if next_position.distance_to(projectile.impact) <= 7.0:
+			next_position = projectile.impact
+		var wall_entry: float = INF
+		for wall in walls:
+			wall_entry = minf(wall_entry, _segment_rect_entry(origin, next_position, wall.rect.grow(SHOT_RADIUS)))
+		if is_finite(wall_entry):
+			skill_counts.blocked_projectiles += 1
+			events.append({"kind":"wall_hit", "position":origin.lerp(next_position, wall_entry), "set_id":"earth", "radius":5.0})
+			continue
+		projectile.position = next_position
 		if projectile.position.distance_to(projectile.impact) > 7.0:
 			remaining.append(projectile)
 			continue
@@ -561,6 +762,8 @@ func _advance_projectiles(movements: Array, damage: Array, hits: Array) -> Dicti
 			if victim.side == source.side or victim.hp <= 0.0:
 				continue
 			if (radius <= 0.0 and victim.id != target.id) or (radius > 0.0 and movements[int(victim.id)].distance_to(projectile.impact) > radius):
+				continue
+			if not line_of_sight(projectile.impact, movements[int(victim.id)]):
 				continue
 			_hit(source, victim, projectile.damage*(1.0 if victim.id == target.id else projectile.falloff), damage, hits, not projectile.posthumous)
 			if stats.knockback_distance > 0.0 and not projectile.posthumous:
@@ -681,7 +884,15 @@ func _birth_position(origin: Vector2, index: int) -> Vector2:
 			var candidate: Vector2 = origin+Vector2(cos(angle), sin(angle))*float(ring)*8.0
 			if candidate.x < MIN_POSITION.x or candidate.x > MAX_POSITION.x or candidate.y < MIN_POSITION.y or candidate.y > MAX_POSITION.y:
 				continue
+			if not _wall_path_clear(origin, candidate, BODY_SIZE/2.0):
+				continue
 			var free: bool = true
+			for wall in walls:
+				if wall.rect.grow(BODY_SIZE/2.0+0.01).has_point(candidate):
+					free = false
+					break
+			if not free:
+				continue
 			for unit in units:
 				if unit.hp <= 0.0:
 					continue
@@ -736,6 +947,11 @@ func step() -> void:
 	if finished:
 		return
 	events.clear()
+	_activate_skills()
+	if opening_active():
+		_step_opening()
+		return
+	navigation_goals.clear()
 	var dt: float = 1.0/float(config.ticks_per_second)
 	var damage: Array = []
 	damage.resize(units.size())
@@ -769,7 +985,7 @@ func step() -> void:
 		var fan_due: bool = stats.split_shot_interval > 0.0 and tick+1 >= int(unit.next_split_shot)
 		if unit.target >= 0 and (unit.cooldown <= 0.000001 or fan_due) and not unit.flanking:
 			var target: Dictionary = units[int(unit.target)]
-			if in_attack_range(unit, target):
+			if can_attack(unit, target):
 				_attack(unit, target, damage, hits, fan_due)
 		if int(unit.burn_until) >= tick and int(unit.burn_next) > 0 and int(unit.burn_next) <= tick:
 			damage[int(unit.id)] += unit.burn_dps
@@ -809,9 +1025,6 @@ func step() -> void:
 				_heal(unit, unit.max_hp*realm.recovery_fraction/float(realm.recovery_seconds))
 				unit.recovery_remaining -= 1
 				unit.recovery_next += config.ticks_per_second
-		var leader: CommanderData = commanders[int(unit.side)]
-		if spell_active(int(unit.side)) and leader.spell_healing_per_second > 0.0 and (tick+1)%config.ticks_per_second == 0:
-			_heal(unit, unit.max_hp*leader.spell_healing_per_second)
 	tick += 1
 	var left: int = alive_count(0)
 	var right: int = alive_count(1)
@@ -834,8 +1047,15 @@ func _finish(winning_side: int, reason: String) -> void:
 		"survivors":[alive_count(0), alive_count(1)], "hp_percent":[hp_fraction(0), hp_fraction(1)]}
 	projectiles.clear()
 	fields.clear()
+	walls.clear()
+	meteors.clear()
+	navigation_nodes.clear()
+	navigation_distances.clear()
+	navigation_goals.clear()
 	pending_children.clear()
 	spell_prepared = [false, false]
+	skills_activated = [false, false]
+	opening_tick = opening_duration
 	for unit in units:
 		_clear_statuses(unit)
 		unit.bounce_at = -100
@@ -850,5 +1070,6 @@ func signature() -> String:
 			unit.recovery_used, unit.recovery_remaining, unit.recovery_next, unit.lifesteal_healed, unit.lifesteal_window,
 			unit.navigation_bias, unit.flanking, unit.flank_y, unit.revive_used, unit.death_processed, unit.is_child,
 			unit.next_flame, unit.next_ice, unit.ice_anchor, unit.next_heal, unit.next_bounce, unit.next_split_shot, unit.bounce_at])
-	return JSON.stringify([tick, snapshot, projectiles, fields, pending_children, spell_prepared,
+	return JSON.stringify([tick, snapshot, projectiles, fields, pending_children, spell_prepared, skills_activated,
+		opening_tick, opening_duration, meteors, walls, skill_counts,
 		next_projectile_id, next_field_id, sudden_death, passive_counts, result]).sha256_text()

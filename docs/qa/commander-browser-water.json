@@ -1,0 +1,322 @@
+{
+  "status": "passed",
+  "scenario": "water",
+  "rival": "earth",
+  "commander": "water_commander",
+  "warband": [
+    "water_mage",
+    "water_tank",
+    "water_melee",
+    "water_ranged"
+  ],
+  "browser": "154.0.8037.92",
+  "screens": [
+    "menu",
+    "compendium",
+    "settings",
+    "commander",
+    "warband",
+    "battle",
+    "results"
+  ],
+  "seed": 1791290290,
+  "rounds": [
+    {
+      "round": 1,
+      "hearts": [
+        3,
+        4
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 20,
+        "ice_path": 10,
+        "tree_heal": 7
+      }
+    },
+    {
+      "round": 2,
+      "hearts": [
+        2,
+        4
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 23,
+        "ice_path": 65,
+        "pushback": 56,
+        "siege_blast": 4,
+        "slime_child": 6,
+        "slime_split": 3,
+        "split_arrows": 20,
+        "tree_heal": 12
+      }
+    },
+    {
+      "round": 3,
+      "hearts": [
+        1,
+        4
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 20,
+        "ice_path": 62,
+        "pushback": 116,
+        "siege_blast": 10,
+        "slime_child": 6,
+        "slime_split": 3,
+        "split_arrows": 24,
+        "tree_heal": 24
+      }
+    },
+    {
+      "round": 4,
+      "hearts": [
+        0,
+        4
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 14,
+        "ice_path": 88,
+        "pushback": 125,
+        "siege_blast": 16,
+        "slime_child": 12,
+        "slime_split": 6,
+        "split_arrows": 24,
+        "tree_heal": 44
+      }
+    }
+  ],
+  "actions": [
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "water_tank",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "water_tank",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "water_tank",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "water_tank",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "water_tank",
+        "kind": "promote"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "water_mage",
+        "kind": "reinforce"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "water_melee",
+        "kind": "summon"
+      }
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "water_tank",
+        "kind": "summon"
+      }
+    }
+  ],
+  "stats": {
+    "reinforcements": 2,
+    "promotions": 2,
+    "spell": 4,
+    "comeback": 3
+  },
+  "errors": [],
+  "headers": "ordinary HTTP; no cross-origin isolation",
+  "testedViewport": [
+    "1280x720",
+    "1000x720"
+  ],
+  "arena": [
+    600,
+    280
+  ],
+  "bodySize": 7.2,
+  "spawnCollisionPassed": true,
+  "combatCollisionPassed": true,
+  "settingsPersisted": true,
+  "rematchPassed": true,
+  "textFont": "Minecraft",
+  "cardDetails": [
+    "fire_archer",
+    "fire_melee",
+    "fire_tank",
+    "fire_assassin",
+    "water_mage",
+    "water_tank",
+    "water_melee",
+    "water_ranged",
+    "earth_tank",
+    "earth_melee",
+    "earth_ranged",
+    "earth_siege"
+  ],
+  "commanderDetails": [
+    "fire_commander",
+    "water_commander",
+    "earth_commander"
+  ],
+  "commanderSkills": [
+    {
+      "round": 1,
+      "prepared": [
+        true,
+        false
+      ],
+      "counts": {
+        "blocked_projectiles": 0,
+        "earth_walls": [
+          0,
+          0
+        ],
+        "frozen_field": [
+          1,
+          0
+        ],
+        "meteors": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "round": 2,
+      "prepared": [
+        true,
+        false
+      ],
+      "counts": {
+        "blocked_projectiles": 0,
+        "earth_walls": [
+          0,
+          0
+        ],
+        "frozen_field": [
+          1,
+          0
+        ],
+        "meteors": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "round": 3,
+      "prepared": [
+        true,
+        false
+      ],
+      "counts": {
+        "blocked_projectiles": 0,
+        "earth_walls": [
+          0,
+          0
+        ],
+        "frozen_field": [
+          1,
+          0
+        ],
+        "meteors": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "round": 4,
+      "prepared": [
+        true,
+        true
+      ],
+      "counts": {
+        "blocked_projectiles": 0,
+        "earth_walls": [
+          0,
+          3
+        ],
+        "frozen_field": [
+          1,
+          0
+        ],
+        "meteors": [
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "wallCollisionPassed": true,
+  "roundPopupPassed": true,
+  "combatControlsHidden": true,
+  "reinforcementCancelPassed": true,
+  "passives": {
+    "armadillo_bounce": 14,
+    "ice_path": 88,
+    "pushback": 125,
+    "siege_blast": 16,
+    "slime_child": 12,
+    "slime_split": 6,
+    "split_arrows": 24,
+    "tree_heal": 44
+  },
+  "textOverflows": 0,
+  "combatSoundsPlayed": 418,
+  "webAudio": {
+    "starts": 491,
+    "shortEffects": 418
+  }
+}

@@ -25,11 +25,34 @@ initial unit values; preserve custom tuning before rebuilding assets.
 | 2 | 1.25 | 1.25 |
 | 3 | 1.55 | 1.55 |
 
-Commander bonuses apply after Rank. Fire attack speed is 1.05x for Fire allies,
-1.30x during Blazing Orders; other realms receive the spell's 1.25x. Water max HP
+Commander bonuses apply after Rank. Fire attack speed is 1.05x for Fire allies.
+Water max HP
 is 1.05x for all allies, with 1.10x healing/shields only on Water recipients.
-Earth max HP is 1.05x only for Earth allies; incoming damage is 0.95x normally
-and 0.76x during Stonewall. Attack intervals round up to whole 30Hz ticks.
+Earth max HP is 1.05x only for Earth allies; incoming damage is 0.95x.
+Attack intervals round up to whole 30Hz ticks.
+
+## Commander active skills
+
+All cost one Command Point, prepare once per round independently of offers,
+and cast automatically at battle start. These replace the earlier timed buffs.
+Unspecified damage, area, opening duration and wall dimensions use these initial
+Resource-backed values. Commander passives remain unchanged.
+
+| Skill | Shipping value |
+|---|---|
+| Meteor Rain | Exactly 6 strikes across 3×2 enemy zones; 30 damage per enemy within 34px; first impact 0.5s, then 0.22s intervals; 2s opening at normal playback |
+| Frozen Field | All enemies move ×0.85 and have defence ×0.92 for the whole round; strongest movement slow wins |
+| Uproot | 3 staggered 12×72px solid walls on the enemy field; blocks movement, projectiles and attack line of sight for both teams; lasts the round |
+
+Meteors apply normal incoming-damage reduction, defence and shields without
+army damage/rank multipliers, first-hit Burn or lifesteal. They trigger normal
+death effects, revivals and splits. Both armies remain still during the opening;
+the 45-second battle timer starts afterwards. Ice uses a global enemy modifier,
+so revivals and newborn Slimes remain affected. Defence is a resistance scalar:
+damage is divided by 0.92 under ice (about 8.7% more). Earth passive and ice
+compose as 0.95/0.92, before shield absorption. Walls are indestructible, stand
+between spawn columns and leave routes around their ends. Projectiles are
+absorbed at a swept wall intersection and do not splash through the obstacle.
 
 | Effect | Shipping value |
 |---|---|
@@ -42,8 +65,8 @@ and 0.76x during Stonewall. Attack intervals round up to whole 30Hz ticks.
 | Wooden Siege | 64px splash, 70% secondary damage; fixed landing position |
 | Projectile speeds | Fire 260, Water Wizard 220, Snowman 280, Wood Archer 240, Wooden Siege 140 px/s |
 
-Water affinity boosts Tidal Recovery to 13.2% and five Healing Current ticks to
-16.5% max HP on Water units. Healing is capped by missing HP; the lifesteal cap
+Water affinity boosts Tidal Recovery to 13.2% max HP on Water units.
+Healing is capped by missing HP; the lifesteal cap
 includes affinity. Shield absorption, Burn and overkill do not generate lifesteal.
 
 ## Army passives
@@ -59,13 +82,13 @@ point, not a competitive balance claim.
 | Fire Imp | Death explosion: 24px radius, 100% current attack damage, enemies only |
 | Magma Golem | Wall every 5s: 10×44px, 4s lifetime; contact refreshes an independent 2s Burn at 3 HP/s |
 | Red Ninja | Once per battle, resurrects at 30% actual max HP after simultaneous death effects settle; attack cooldown includes commander modifiers. Opening flank ends on contact, absent backline or after 6s; reachable defenders take priority over distant backline targets |
-| Water Wizard | Each splash projectile pushes affected enemies 12px; simultaneous pushes cap at 24px per tick and stop at bodies/arena edges |
+| Water Wizard | Each splash projectile pushes affected enemies 12px; simultaneous pushes cap at 24px per tick and stop at bodies/walls/arena edges |
 | Ice Golem | Leaves an 18px-wide path every 1s, lasting 4s; enemy contact refreshes 15% movement Slow for 3s |
 | Water Slime | Splits once into 2 mini Slimes, each 50% parent's current attack damage and max HP; children retain lifesteal and cannot split again |
 | Snowman | On death throws its head at the nearest surviving enemy; impact has a 24px radius and 100% current attack damage |
 | Tree | Every 2s, heals itself and living allies within 48px for 5% of each recipient's max HP, before any healing affinity |
 | Armadillo | Bounces every 3s; enemies within 36px receive 20% attack-speed Slow for 2s; strongest value wins |
-| Wood Archer | Every 5s when in range, fires 3 arrows sharing one attack's total damage; prefers distinct enemies, repeats targets when fewer than 3 |
+| Wood Archer | Every 5s when in range with clear line of sight, fires 3 arrows sharing one attack's total damage; prefers distinct visible enemies, repeats targets when fewer than 3 |
 | Wooden Siege | Every stone explodes over a huge 64px radius, retaining 70% secondary damage |
 
 Wizard and ice movement Slow use separate expiry timers; only the strongest

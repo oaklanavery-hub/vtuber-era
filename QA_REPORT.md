@@ -1,3 +1,70 @@
+# Commander active skills — 6 October 2026
+
+Each commander now prepares an active skill for **one Command Point**, once per
+round. Preparation preserves the three offers and the draft RNG. Skills cast
+when Battle starts; commander passives remain active. Info buttons on commander
+selection and beside Prepare show the full rules, with the existing readable
+Minecraft font and protected detail-overlay keyboard behavior.
+
+- **Meteor Rain:** six AOE impacts across the enemy field, 30 damage in a 34px
+  radius each. Both armies and the battle clock wait during the two-second
+  opening. Shields, defence and normal death passives apply. Opposing impacts
+  resolve simultaneously and all six strikes complete before elimination.
+- **Frozen Field:** full-field ice; all enemies move 15% slower and have defence
+  multiplied by 0.92 for the round. Stronger slows take priority. Defence divides
+  incoming damage before shields (about 8.7% more); new Slimes and revived Ninjas
+  remain affected. Allies are unaffected by their own commander’s ice.
+- **Uproot:** three staggered 12×72px walls on the enemy field for the round.
+  Both armies route around their expanded corners. Swept collision stops units,
+  knockback and projectiles. Attacks require clear line of sight; obscured ranged
+  units seek visible targets or reposition. Split arrows and projectile splash
+  obey wall visibility. Slimes cannot be born through or inside walls.
+
+Pixel meteor warnings, falling stones, impact rings, icy ground, enemy debuff
+marks and mossy earth walls show the effects. Skill casts, meteor impacts and
+blocked shots use combat sound cues. Essential terrain and meteor warnings
+remain visible with reduced effects. Terrain and modifiers clear at round end.
+Unspecified damage, dimensions and round-long durations use the defaults above.
+
+Native validation used exact Godot **4.5.stable.official.876b29033**:
+
+| Runner | Checks | Failures |
+|---|---:|---:|
+| Rules and drafting | 1,016 | 0 |
+| Elemental mechanics, full matches and replays | 18,674 | 0 |
+| All twelve army passives | 24,522 | 0 |
+| Ninja pursuit and resurrection | 976 | 0 |
+| Permanent collision and formations | 75,098 | 0 |
+| Commander active skills, terrain and 144-unit replays | 1,845 | 0 |
+| **Gameplay total** | **122,131** | **0** |
+| Native UI, skill details, audio and round flows | — | 0 |
+
+Four complete WebAssembly/WebGL browser matches passed:
+
+| Warband | Rival | Rounds | Combat sound cues | Errors / overflows |
+|---|---|---:|---:|---:|
+| Fire | Fire | 4 | 177 | 0 |
+| Water | Earth | 4 | 418 | 0 |
+| Earth | Water | 5 | 947 | 0 |
+| Mixed | Fire | 5 | 289 | 0 |
+
+Every match exercises all twelve army details and all three commander details,
+preparation each round, exact skill counts, ice defence values, collision against
+units and earth walls, card picking, reinforcement/promotions, Battle/Space,
+hidden combat controls, Hearts, results, saved settings/loadouts and Rematch.
+The Earth browser match recorded 14 blocked projectiles across its last three
+rounds. The mixed match exercised the rival's six-meteor opening alongside ice.
+The existing 1280×720 and 1000×720 layouts retain the full arena and fitted text.
+Final terrain colour improvements passed native UI and targeted browser visual
+inspection at normal playback. The workflow includes the new skill runner.
+
+Evidence: `docs/qa/commander-native.txt` and
+`docs/qa/commander-browser-{fire,water,earth,mixed}.json`.
+Screenshots: `docs/screenshots/commander-{meteors,ice,walls,skill-details}.png`.
+Following sections are historical evidence for earlier builds.
+
+---
+
 # Round picker, card details and expanded combat — 6 October 2026
 
 Each Command Phase opens a centered card picker. Cards show the army, action,
