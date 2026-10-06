@@ -116,6 +116,28 @@ activate that Realm Bond.
 
 ## Drafting and persistence
 
+Commander selection fronts contain only their portrait and the top-left info
+button. The details view contains their name, identity, passive bonuses and paid
+active skill. The builder displays a single 5×3 grid of army portrait cards;
+click to select or remove an army. Each face shows its character name, elemental
+info button at top left, role symbol beside its name, and a numbered spawn-count
+circle at top right. All detailed army effects and limits stay in the info view.
+Compendium and draft cards share these symbols; draft action and point cost
+remain visible so a player can tell Summon, Reinforce and Promote apart.
+
+Army appearance scales are 1× for Red Ninja, Water Wizard, Snowman, Wood Archer,
+Pitcher Plant and full Slime; 1.5× for Magma Golem, Ice Golem, Tree and Wooden
+Siege; 0.6× for split Slime, Armadillo, Penguin, Candle, Fire Imp and Fire Lizard.
+Preview and battle rendering use the same scales and feet anchor. Health bars
+follow sprite height. Their solid 7.2px movement footprint is independent of art.
+
+Wall navigation uses visibility-graph routes, with a body-width passing lane
+around corners and complete-route costs for stationary firing allies. Exact
+edge contact permits sliding and moving away, using a float32-sized tolerance;
+movement into a wall or body remains blocked. Projectiles keep strict wall and
+line-of-sight checks. Crowded armies can reposition rather than queuing forever
+behind a firing ally at a corner.
+
 Three unique offers always contain a normal card. Other slots use editable
 70/15/15 summon/reinforce/promote category weights after filtering unavailable
 categories. The mandatory normal slot makes overall frequencies differ from

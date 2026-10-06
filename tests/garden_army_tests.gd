@@ -4,6 +4,7 @@ const Store = preload("res://autoloads/save_store.gd")
 const NEW_WARBAND := ["fire_candle", "water_penguin", "earth_pitcher", "fire_tank"]
 
 func _run() -> void:
+	_army_sizes()
 	_limits_and_loadouts()
 	_ring()
 	_candle_ground()
@@ -12,6 +13,18 @@ func _run() -> void:
 	_combat_replay()
 	print("\nGarden armies, fire ring and stacking puddles: %d checks; %d failures" % [checks, failures])
 	quit(0 if failures == 0 else 1)
+
+func _army_sizes() -> void:
+	var sizes := {
+		1.0:["fire_assassin","water_mage","water_ranged","earth_ranged","earth_pitcher","water_melee"],
+		1.5:["fire_tank","water_tank","earth_tank","earth_siege"],
+		0.6:["earth_melee","water_penguin","fire_candle","fire_melee","fire_archer"]}
+	for scale_value in sizes:
+		for id in sizes[scale_value]:
+			var sim := fixture({id:1},{"water_tank":1})
+			var actor: Dictionary = army(sim,id)[0]
+			expect(near(actor.visual_scale,scale_value),"spawned army uses its requested character scale: "+id)
+			expect(near(sim.BODY_SIZE,7.2),"visual size keeps the existing compact collision footprint")
 
 func _limits_and_loadouts() -> void:
 	var caps := {"fire_candle":4,"water_penguin":4,"earth_pitcher":6}

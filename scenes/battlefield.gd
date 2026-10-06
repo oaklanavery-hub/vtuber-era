@@ -40,11 +40,12 @@ func _draw_unit(texture: Texture2D, location: Vector2, frame: int, side: int, ra
 		tint = Color(1.0, 0.68, 0.55)
 	# Mirror around the unit's actual center, so its portrait, HP and position
 	# remain aligned. Negative destination widths alone offset Godot regions.
-	draw_set_transform(location, 0.0, Vector2(-1 if side==1 else 1, 1)*visual_scale)
-	draw_texture_rect_region(texture, Rect2(-16, -24, 32, 32), Rect2(frame*32, 0, 32, 32), tint)
+	# All sizes share the same feet anchor; enlarging a tank grows it upward.
+	draw_set_transform(location+Vector2(0, 8), 0.0, Vector2(-1 if side==1 else 1, 1)*visual_scale)
+	draw_texture_rect_region(texture, Rect2(-16, -32, 32, 32), Rect2(frame*32, 0, 32, 32), tint)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for star in range(rank_value-1):
-		draw_rect(Rect2(location.x-4+star*6, location.y-32, 4, 2), Color("e8ba61"))
+		draw_rect(Rect2(location.x-4+star*6, location.y-32*visual_scale, 4, 2), Color("e8ba61"))
 
 func _draw() -> void:
 	if simulation:
@@ -99,7 +100,8 @@ func _draw() -> void:
 				frame = 6
 			if (simulation.tick-int(unit.revive_at) < 15 or simulation.tick-int(unit.teleport_at) < 12 or simulation.teleport_charging(unit)) and not reduced_effects:
 				frame = 7
-			draw_rect(Rect2(location.x-8, location.y+5, 16, 2), Color("91a471"))
+			var shadow_width: float = roundf(16*unit.visual_scale)
+			draw_rect(Rect2(location.x-shadow_width/2.0, location.y+5, shadow_width, 2), Color("91a471"))
 			var sprite_location: Vector2 = location
 			if simulation.tick-int(unit.bounce_at) < CombatSimulation.BOUNCE_TICKS and not reduced_effects:
 				sprite_location.y -= sin(float(simulation.tick-int(unit.bounce_at))/float(CombatSimulation.BOUNCE_TICKS)*PI)*7.0
@@ -113,13 +115,15 @@ func _draw() -> void:
 			if simulation.teleport_charging(unit) and not simulation.opening_active():
 				_draw_ninja_charge(unit, location)
 			var color := Color("659789") if unit.side == 0 else Color("c57857")
-			draw_rect(Rect2(location.x-10, location.y-26, 20, 3), Color("51372f"))
-			draw_rect(Rect2(location.x-9, location.y-25, roundf(18*unit.hp/unit.max_hp), 1), color)
+			var bar_width: float = roundf(20*unit.visual_scale)
+			var bar_y: float = roundf(location.y+6-32*unit.visual_scale)
+			draw_rect(Rect2(location.x-bar_width/2.0, bar_y, bar_width, 3), Color("51372f"))
+			draw_rect(Rect2(location.x-bar_width/2.0+1, bar_y+1, roundf((bar_width-2)*unit.hp/unit.max_hp), 1), color)
 			if (int(unit.burn_until) >= simulation.tick and unit.burn_until > 0) or (int(unit.flame_until) >= simulation.tick and unit.flame_until > 0) or (int(unit.blast_burn_until) >= simulation.tick and unit.blast_burn_until > 0) or unit.fire_aura_dps > 0.0 or unit.ground_fire_dps > 0.0:
 				draw_rect(Rect2(location.x+9, location.y-16, 2, 4), Color("d57346"))
 				draw_rect(Rect2(location.x+10, location.y-15, 1, 2), Color("f9e4b5"))
 			if unit.shield > 0.0:
-				draw_rect(Rect2(location.x-10, location.y-29, 20, 2), Color("8fc6cb"))
+				draw_rect(Rect2(location.x-bar_width/2.0, bar_y-3, bar_width, 2), Color("8fc6cb"))
 			if unit.slow_until > simulation.tick or unit.ice_until > simulation.tick or unit.ice_aura_fraction > 0.0 or simulation.defence_multiplier(unit) < 1.0:
 				draw_rect(Rect2(location.x+9, location.y-9, 2, 2), Color("659fbb"))
 			if simulation.defence_multiplier(unit) < 1.0:
@@ -131,7 +135,7 @@ func _draw() -> void:
 				_pixel_ring(location-Vector2(0,9), 18, Color("e8ba61"))
 				# A spent resurrection remains visible after its one-second cue.
 			if unit.revive_used:
-				draw_rect(Rect2(location.x+12,location.y-26,3,3), Color("e8ba61"))
+				draw_rect(Rect2(location.x+bar_width/2.0+2,bar_y,3,3), Color("e8ba61"))
 			if simulation.tick-int(unit.heal_at) < 5 and not reduced_effects:
 				draw_rect(Rect2(location.x-12, location.y-12, 5, 1), Color("7dba9d"))
 				draw_rect(Rect2(location.x-10, location.y-14, 1, 5), Color("7dba9d"))
@@ -151,7 +155,7 @@ func _draw() -> void:
 			draw_rect(Rect2(projectile.position, Vector2(2, 2)), Color("f9e4b5"))
 	elif state:
 		for entry in preview_units:
-			_draw_unit(state.cards[entry.card_id].sprite, entry.position, 0 if reduced_effects else int(clock*3+entry.index)%6, entry.side, entry.rank)
+			_draw_unit(state.cards[entry.card_id].sprite, entry.position, 0 if reduced_effects else int(clock*3+entry.index)%6, entry.side, entry.rank, false, GameCatalog.army_scale(entry.card_id))
 	for spark in sparks:
 		if float(spark.get("radius",0.0)) > 0.0:
 			var ring_color: Color = spark.color

@@ -36,7 +36,10 @@ var meteors: Array = []
 var walls: Array = []
 var navigation_nodes: Array[Vector2] = []
 var navigation_distances: Array = []
+var navigation_edges: Array = []
 var navigation_goals: Dictionary = {}
+var navigation_blockers: Array = [[], []]
+var navigation_routes: Array = [[], []]
 const BACKLINE := ["ranged", "mage", "siege"]
 const ARENA_SIZE := Vector2(600, 280)
 # Collision stays on, but occupies only 30% of the old 24px footprint.
@@ -52,7 +55,9 @@ const SPAWN_ROWS := [140.0, 116.0, 164.0, 92.0, 188.0, 68.0, 212.0, 44.0, 236.0]
 const FLANK_TOP: float = 44.0
 const FLANK_BOTTOM: float = 236.0
 const SHOT_RADIUS: float = 1.0
-const NAVIGATION_PADDING: float = BODY_SIZE/2.0+0.75
+# Leave a body-width passing lane around corners, so an ally that stops to
+# attack does not seal the only waypoint against the wall.
+const NAVIGATION_PADDING: float = BODY_SIZE*1.5
 
 func _init(state) -> void:
 	config = state.config
@@ -202,9 +207,9 @@ func _step_opening() -> void:
 		if (alive_count(0) == 0 or alive_count(1) == 0) and not _last_wishes_pending():
 			_finish(-1 if alive_count(0) == 0 and alive_count(1) == 0 else (0 if alive_count(1) == 0 else 1), "Meteor Rain")
 
-func _wall_path_clear(start: Vector2, end: Vector2, padding: float) -> bool:
+func _wall_path_clear(start: Vector2, end: Vector2, padding: float, slide_edges: bool = false) -> bool:
 	for wall in walls:
-		if _crosses_rect(start, end, wall.rect.grow(padding)):
+		if is_finite(_segment_rect_entry(start, end, wall.rect.grow(padding), slide_edges)):
 			return false
 	return true
 
@@ -219,6 +224,7 @@ func _build_navigation() -> void:
 	# distances once; moving targets only require fresh endpoint connections.
 	navigation_nodes.clear()
 	navigation_distances.clear()
+	navigation_edges.clear()
 	navigation_goals.clear()
 	for wall in walls:
 		var rectangle: Rect2 = wall.rect.grow(NAVIGATION_PADDING)
@@ -228,36 +234,84 @@ func _build_navigation() -> void:
 	for start in navigation_nodes:
 		var row: Array = []
 		for end in navigation_nodes:
-			row.append(start.distance_to(end) if _wall_path_clear(start, end, BODY_SIZE/2.0) else INF)
+			row.append(start.distance_to(end) if _wall_path_clear(start, end, BODY_SIZE/2.0, true) else INF)
 		navigation_distances.append(row)
+	navigation_edges = navigation_distances.duplicate(true)
 	for via in range(navigation_nodes.size()):
 		for start in range(navigation_nodes.size()):
 			for end in range(navigation_nodes.size()):
 				navigation_distances[start][end] = minf(navigation_distances[start][end], navigation_distances[start][via]+navigation_distances[via][end])
 
-func _navigation_waypoint(origin: Vector2, destination: Vector2) -> Vector2:
-	if walls.is_empty() or _wall_path_clear(origin, destination, BODY_SIZE/2.0):
-		return destination
-	if not navigation_goals.has(destination):
-		var end_costs: Array = []
-		for node in navigation_nodes:
-			end_costs.append(node.distance_to(destination) if _wall_path_clear(node, destination, BODY_SIZE/2.0) else INF)
-		var costs: Array = []
+func _refresh_navigation_blockers() -> void:
+	if walls.is_empty():
+		return
+	var blockers: Array = [[], []]
+	# A firing ally may occupy the shortest corner indefinitely. Account for
+	# those bodies when choosing a route, rather than steering into the queue.
+	for unit in units:
+		if unit.hp > 0.0 and unit.target >= 0 and can_attack(unit, units[int(unit.target)]):
+			blockers[int(unit.side)].append({"id":unit.id, "rect":Rect2(unit.position-Vector2.ONE*BODY_SIZE, Vector2.ONE*BODY_SIZE*2.0)})
+	# Firing bodies often stand still for many ticks. Reuse their graph and
+	# exact destination costs until that snapshot changes; bound moving-goal
+	# cache growth without altering route selection or replay state.
+	if blockers == navigation_blockers and not navigation_routes[0].is_empty():
+		return
+	navigation_blockers = blockers
+	navigation_routes = [[], []]
+	navigation_goals.clear()
+	for side in range(2):
+		navigation_routes[side] = navigation_edges.duplicate(true)
 		for start in range(navigation_nodes.size()):
-			var cost: float = INF
-			for end in range(navigation_nodes.size()):
-				cost = minf(cost, navigation_distances[start][end]+end_costs[end])
-			costs.append(cost)
-		navigation_goals[destination] = costs
+			for end in range(start+1,navigation_nodes.size()):
+				if is_finite(navigation_edges[start][end]):
+					var cost: float = navigation_edges[start][end]+_navigation_congestion(navigation_nodes[start],navigation_nodes[end],side)
+					navigation_routes[side][start][end] = cost
+					navigation_routes[side][end][start] = cost
+
+func _navigation_congestion(start: Vector2, end: Vector2, side: int) -> float:
+	var cost: float = 0.0
+	if side >= 0:
+		for blocker in navigation_blockers[side]:
+			if is_finite(_segment_rect_entry(start,end,blocker.rect,true)):
+				cost += BODY_SIZE*12.0
+	return cost
+
+func _navigation_waypoint(origin: Vector2, destination: Vector2, own_id: int = -1) -> Vector2:
+	if walls.is_empty():
+		return destination
+	var side: int = int(units[own_id].side) if own_id >= 0 else -1
+	var direct_clear: bool = _wall_path_clear(origin,destination,BODY_SIZE/2.0,true)
+	if direct_clear:
+		return destination
+	var key := Vector3(destination.x,destination.y,side)
+	if not navigation_goals.has(key):
+		var costs: Array = []
+		for node in navigation_nodes:
+			costs.append(node.distance_to(destination)+_navigation_congestion(node,destination,side) if _wall_path_clear(node,destination,BODY_SIZE/2.0,true) else INF)
+		var edges: Array = navigation_routes[side] if side >= 0 else navigation_edges
+		var settled: Dictionary = {}
+		# Multi-source Dijkstra from the destination. Congestion must affect
+		# the complete route; penalizing only its first leg creates loops.
+		for iteration in range(navigation_nodes.size()):
+			var closest: int = -1
+			for index in range(navigation_nodes.size()):
+				if not settled.has(index) and (closest < 0 or costs[index] < costs[closest]):
+					closest = index
+			if closest < 0 or not is_finite(costs[closest]):
+				break
+			settled[closest] = true
+			for index in range(navigation_nodes.size()):
+				costs[index] = minf(costs[index],edges[index][closest]+costs[closest])
+		navigation_goals[key] = costs
 	var best: Vector2 = origin
 	var best_cost: float = INF
 	for index in range(navigation_nodes.size()):
 		var node: Vector2 = navigation_nodes[index]
 		if origin.distance_squared_to(node) < 0.16:
 			continue
-		var cost: float = origin.distance_to(node)+navigation_goals[destination][index]
+		var cost: float = origin.distance_to(node)+navigation_goals[key][index]+_navigation_congestion(origin,node,side)
 		var improves: bool = cost < best_cost-0.001 or (is_finite(cost) and absf(cost-best_cost) <= 0.001 and node.distance_squared_to(destination) < best.distance_squared_to(destination))
-		if improves and _wall_path_clear(origin, node, BODY_SIZE/2.0):
+		if improves and _wall_path_clear(origin, node, BODY_SIZE/2.0, true):
 			best_cost = cost
 			best = node
 	return best
@@ -266,7 +320,7 @@ func _prepare_passive_state(unit: Dictionary) -> void:
 	var stats: UnitStats = cards[unit.card_id].stats
 	unit.merge({"flame_until":0, "flame_next":0, "flame_dps":0.0,
 		"ice_until":0, "ice_fraction":0.0, "attack_slow_until":0, "attack_slow_fraction":0.0,
-		"revive_used":false, "death_processed":false, "is_child":false, "visual_scale":1.0,
+		"revive_used":false, "death_processed":false, "is_child":false, "visual_scale":GameCatalog.army_scale(unit.card_id),
 		"next_flame":_ticks(stats.flame_interval), "next_ice":0, "ice_anchor":unit.position,
 		"next_heal":_ticks(stats.heal_interval), "next_bounce":_ticks(stats.bounce_interval),
 		"next_split_shot":_ticks(stats.split_shot_interval), "bounce_at":-100, "revive_at":-100,
@@ -583,7 +637,7 @@ func _move(unit: Dictionary, dt: float) -> Vector2:
 	if tick-int(unit.bounce_at) < BOUNCE_TICKS:
 		return next_position
 	if not can_attack(unit, target) or unit.flanking:
-		destination = _navigation_waypoint(unit.position, destination)
+		destination = _navigation_waypoint(unit.position, destination, int(unit.id))
 		next_position = unit.position.move_toward(destination, move_speed(unit)*dt)
 	return next_position
 
@@ -605,23 +659,10 @@ func _clip_motion(origin: Vector2, motion: Vector2, neighbors: Array, reservatio
 		# A diagonal path's conservative reservation can surround a neighbor's
 		# old corner without the actual bodies touching. That neighbor waits
 		# this tick; treating a negative ray entry as clear would let it clip.
-		if origin.x > obstacle.position.x+0.000001 and origin.x < obstacle.end.x-0.000001 and origin.y > obstacle.position.y+0.000001 and origin.y < obstacle.end.y-0.000001:
-			return Vector2.ZERO
-		var entry: float = -INF
-		var leave: float = INF
-		var possible: bool = true
-		for axis in range(2):
-			if absf(motion[axis]) < 0.000001:
-				# Exact edge contact is legal: slide along, never into, a body.
-				if origin[axis] <= obstacle.position[axis]+0.000001 or origin[axis] >= obstacle.end[axis]-0.000001:
-					possible = false
-					break
-			else:
-				var first: float = (obstacle.position[axis]-origin[axis])/motion[axis]
-				var last: float = (obstacle.end[axis]-origin[axis])/motion[axis]
-				entry = maxf(entry, minf(first, last))
-				leave = minf(leave, maxf(first, last))
-		if possible and entry <= leave and leave > 0.000001 and entry >= -0.000001:
+		# Use the same float32-safe edge handling as walls. A conservative
+		# swept reservation still blocks an origin strictly inside it.
+		var entry: float = _segment_rect_entry(origin,origin+motion,obstacle,true)
+		if is_finite(entry):
 			limit = minf(limit, maxf(0.0, entry-0.00001))
 	return motion*clampf(limit, 0.0, 1.0)
 
@@ -781,6 +822,11 @@ func _segment_rect_entry(start: Vector2, end: Vector2, rectangle: Rect2, slide_e
 	var enter: float = 0.0
 	var leave: float = 1.0
 	for axis in range(2):
+		# Vector2 rounds to float32. A clipped body can sit exactly on the
+		# expanded wall edge; its route must still allow sliding or moving away.
+		# Keep this spatial tolerance below the collision verification tolerance.
+		if slide_edges and ((start[axis] <= rectangle.position[axis]+0.0001 and delta[axis] <= 0.0) or (start[axis] >= rectangle.end[axis]-0.0001 and delta[axis] >= 0.0)):
+			return INF
 		if absf(delta[axis]) < 0.000001:
 			if start[axis] < rectangle.position[axis] or start[axis] > rectangle.end[axis]:
 				return INF
@@ -1169,7 +1215,7 @@ func _birth_children() -> void:
 		_prepare_passive_state(child)
 		_clear_statuses(child)
 		child.is_child = true
-		child.visual_scale = 0.65
+		child.visual_scale = GameCatalog.army_scale(child.card_id, true)
 		child.recovery_used = false
 		child.lifesteal_healed = 0.0
 		child.hit_at = -100
@@ -1196,7 +1242,8 @@ func step() -> void:
 	if opening_active():
 		_step_opening()
 		return
-	navigation_goals.clear()
+	if navigation_goals.size() > 256:
+		navigation_goals.clear()
 	_teleport_assassins()
 	_refresh_ice_auras()
 	_start_tendrils()
@@ -1209,6 +1256,7 @@ func step() -> void:
 	_tick_fields()
 	_field_contacts()
 	_bounce_passives()
+	_refresh_navigation_blockers()
 	target_clusters.clear()
 	reading_movement_snapshot = true
 	for unit in units:
@@ -1312,7 +1360,10 @@ func _finish(winning_side: int, reason: String) -> void:
 	meteors.clear()
 	navigation_nodes.clear()
 	navigation_distances.clear()
+	navigation_edges.clear()
 	navigation_goals.clear()
+	navigation_blockers = [[], []]
+	navigation_routes = [[], []]
 	pending_children.clear()
 	pending_pushback.clear()
 	spell_prepared = [false, false]

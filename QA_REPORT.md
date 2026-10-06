@@ -1,3 +1,59 @@
+# Wall routing, portrait cards and character sizes — 7 October 2026
+
+Fixed an Uproot edge-contact deadlock: bodies touching a wall can slide along it
+or move away. Swept movement uses the same float32-safe edge handling for allies.
+The wall visibility graph leaves a body-width passing lane around corners and
+uses complete-route congestion costs for allies that stop to attack. Projectiles
+and attack line of sight remain blocked by walls. Route caches are invalidated
+when the firing-body snapshot changes and remain bounded for moving targets.
+
+Commander fronts now contain only the portrait and top-left info control. Their
+info view includes name, identity, passive bonuses and active skill. The builder
+shows fifteen cards once in a 5×3 grid: portrait, character name, role symbol,
+elemental info control at top left, and spawn-count circle at top right. Selected
+cards have a green border; effects and caps remain in the info view. Compendium
+and draft faces share the same symbols, with draft action and cost still visible.
+
+All requested size groups apply to preview, live sprites and card portraits:
+1× for Red Ninja, Water Wizard, Snowman, Wood Archer, Pitcher Plant and full
+Slime; 1.5× for Magma Golem, Ice Golem, Tree and Wooden Siege; 0.6× for split
+Slime, Armadillo, Penguin, Candle, Fire Imp and Fire Lizard. Feet remain anchored
+and health bars follow size. Their 7.2×7.2 solid movement footprint remains active.
+
+| Native runner | Checks | Failures |
+|---|---:|---:|
+| Rules, caps and drafting | 1,203 | 0 |
+| Elemental mechanics and matches | 18,029 | 0 |
+| Army passives | 24,536 | 0 |
+| New armies and character sizes | 20,834 | 0 |
+| Ninja teleport and revival | 1,735 | 0 |
+| Permanent collision and formations | 75,101 | 0 |
+| Commander skills, wall routing and cache equivalence | 4,383 | 0 |
+| **Gameplay total** | **145,821** | **0** |
+| UI, typography, front/detail contents and audio | — | 0 |
+
+Wall regressions cover contact on all four wall edges, full melee/archer/siege
+armies on both sides, actual three-wall casts, clear firing range, and solid
+movement at endpoints and halfway interpolation. Existing 144-body stress cases
+compare cached route simulation with forcing a fresh graph and goal solve every
+tick, and retain identical replay signatures. Size tests inspect spawned units
+and the two actual 0.6× split Slimes.
+
+A complete Earth-versus-Earth browser match passed at 3× speed: six rounds,
+957 combat sounds, zero browser/engine/HTTP errors and zero text overflows.
+Rounds four through six activated all six walls from both commanders. The run
+checked card details, selection, paid skills, all spawn caps, live character
+sizes, body/wall collision, results, rematch and persistent settings/loadouts.
+The final route cache was separately checked against full recomputation above.
+
+Evidence: `docs/qa/clear-cards-native.txt`, `docs/qa/clear-cards-browser.json`.
+
+![Portrait-only commander cards](docs/screenshots/clear-commander.png)
+![Army cards with elemental, role and spawn symbols](docs/screenshots/clear-warband.png)
+![Scaled armies and six Uproot walls in real combat](docs/screenshots/scaled-wall-combat.png)
+
+---
+
 # Fire ring and new realm armies — 7 October 2026
 
 Magma Golem replaces its wall with a moving 48px fire ring, matching Ice Golem.

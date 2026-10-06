@@ -72,16 +72,31 @@ func _run() -> void:
 	check(ui.screen=="settings", "settings open")
 	layout(ui)
 	ui.show_commander()
+	for child in ui.surface.get_children():
+		if child.has_meta("commander_face"):
+			check(child.get_children().filter(func(node: Node) -> bool: return node is Label).is_empty(), "commander fronts contain only their portrait and info control")
 	for id in GameCatalog.COMMANDER_IDS:
 		ui._select_commander(id)
 		check(ui.selected_commander_id==id, "all three commanders can be selected")
 		layout(ui)
 		ui._show_skill_details(GameCatalog.commander(id))
 		check(ui.details_card_id == id and ui.details_overlay != null, "commander active skill details open")
+		var labels: Array = ui.details_overlay.get_children().filter(func(node: Node) -> bool: return node is Label).map(func(node: Label) -> String: return node.text)
+		check(labels.has(GameCatalog.commander(id).passive_description) and labels.has(GameCatalog.commander(id).spell_details), "commander details include both passive and active effects")
 		layout(ui)
 		ui._close_card_details()
 	ui.show_warband()
 	layout(ui)
+	var builder_faces: int = 0
+	for child in ui.surface.get_children():
+		if child.has_meta("card_face"):
+			builder_faces += 1
+			var card: ArmyCardData = GameCatalog.cards()[child.get_meta("card_face")]
+			var labels: Array = child.get_children().filter(func(node: Node) -> bool: return node is Label).map(func(node: Label) -> String: return node.text)
+			check(labels == [str(card.group_size),card.short_name], "builder card text contains only spawn count and character name")
+			check(child.get_node("CardInfo").icon == ui.ELEMENT_ICONS[card.set_id], "top-left elemental icon opens card effects")
+			check(child.get_children().any(func(node: Node) -> bool: return node.get_meta("army_role", "") == card.role), "builder cards use the correct role symbol")
+	check(builder_faces == 15,"all armies remain visible in the portrait card builder")
 	ui._preset("clear")
 	ui.new_match()
 	check(ui.screen=="warband" and ui.state==null, "incomplete loadout cannot start")

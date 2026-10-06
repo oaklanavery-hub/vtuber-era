@@ -344,6 +344,7 @@ func _slimes() -> void:
 	expect(not sim.finished and children.size() == 2 and parent.hp == 0.0, "a last Slime's two children keep its side in the battle")
 	for child in children:
 		expect(near(child.damage,6.0) and near(child.max_hp,52.0), "each child inherits half its parent's promoted damage and HP")
+		expect(near(parent.visual_scale,1.0) and near(child.visual_scale,0.6), "full Slimes keep normal size while their two children become small")
 		child.hp = 1.0
 		child.burn_until = sim.tick
 		child.burn_next = sim.tick

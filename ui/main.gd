@@ -6,6 +6,18 @@ const Runes = preload("res://ui/command_runes.gd")
 const Hearts = preload("res://ui/hearts.gd")
 const HEADING = StoryStyle.TEXT_FONT
 const INFO_ICON = preload("res://assets/icons/info.svg")
+const ELEMENT_ICONS = {
+	"fire":preload("res://assets/icons/element_fire.svg"),
+	"water":preload("res://assets/icons/element_water.svg"),
+	"earth":preload("res://assets/icons/element_earth.svg")}
+const ROLE_ICONS = {
+	"ranged":preload("res://assets/icons/role_ranged.svg"),
+	"melee":preload("res://assets/icons/role_melee.svg"),
+	"tank":preload("res://assets/icons/role_tank.svg"),
+	"mage":preload("res://assets/icons/role_mage.svg"),
+	"assassin":preload("res://assets/icons/role_assassin.svg"),
+	"siege":preload("res://assets/icons/role_siege.svg")}
+const SPAWN_BADGE = preload("res://assets/icons/spawn_badge.svg")
 
 var world: Node2D
 var battlefield: Node2D
@@ -166,6 +178,17 @@ func _sprite(card: ArmyCardData, rectangle: Rect2, parent: Control) -> void:
 	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(image)
 
+func _icon(texture: Texture2D, rectangle: Rect2, parent: Control) -> TextureRect:
+	var image := TextureRect.new()
+	image.texture = texture
+	image.position = rectangle.position
+	image.size = rectangle.size
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(image)
+	return image
+
 # The same clean card face is used in the round picker and the compendium.
 # Passive rules and statistics live behind the dedicated, keyboard-focusable icon.
 func _card_face(card: ArmyCardData, rectangle: Rect2, parent: Control, action: Callable = Callable(), choice: Dictionary = {}) -> Control:
@@ -173,38 +196,36 @@ func _card_face(card: ArmyCardData, rectangle: Rect2, parent: Control, action: C
 	tile.set_meta("card_face", card.id)
 	var width: float = rectangle.size.x
 	var height: float = rectangle.size.y
-	var accent := ColorRect.new()
-	accent.position = Vector2(4, 4)
-	accent.size = Vector2(width-8, 3)
-	accent.color = GameCatalog.realm_color(card.set_id)
-	accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tile.add_child(accent)
-	var info := _button("", Rect2(7, 10, 23, 23), _show_card_details.bind(card.id, choice), false, tile)
+	var compact: bool = height < 80.0
+	var info := _button("", Rect2(5, 5, 23, 23) if compact else Rect2(7, 10, 23, 23), _show_card_details.bind(card.id, choice), false, tile)
 	info.name = "CardInfo"
-	info.icon = INFO_ICON
+	info.icon = ELEMENT_ICONS[card.set_id]
 	info.add_theme_constant_override("icon_max_width", 16)
 	for key in ["normal", "hover", "pressed", "focus", "disabled"]:
 		var box: StyleBoxFlat = StoryStyle.panel(StoryStyle.HONEY if key == "hover" else StoryStyle.PARCHMENT, StoryStyle.INK, 1)
 		box.content_margin_left = 2
 		box.content_margin_right = 2
 		info.add_theme_stylebox_override(key, box)
-	info.tooltip_text = "View %s effects" % card.display_name
+	info.tooltip_text = "%s · View %s effects" % [card.set_id.capitalize(), card.display_name]
 	info.set_meta("card_info_id", card.id)
-	var title: String = card.set_id.capitalize() if choice.is_empty() else {"summon":"Summon", "reinforce":"Reinforce", "promote":"Promote"}[choice.kind]
-	_label(title, Rect2(34, 11, width-42, 20), 11, true, false, tile)
-	_sprite(card, Rect2((width-64)/2.0, 38, 64, 64), tile)
-	_label(card.display_name, Rect2(7, height-65, width-14, 23), 14, true, true, tile)
-	var short_effect: String = card.role.capitalize()
-	var footer: String = "%d %s · Max %d" % [card.group_size, "unit" if card.group_size == 1 else "units", GameCatalog.army_cap(card)]
+	_icon(SPAWN_BADGE, Rect2(width-23, 5 if compact else 11, 16, 16), tile)
+	var count_label := _label(str(card.group_size), Rect2(width-23, 5 if compact else 11, 16, 16), 10, true, true, tile)
+	count_label.set_meta("spawn_units", card.group_size)
+	var size: float = (28.0 if compact else 48.0)*GameCatalog.army_scale(card.id)
+	var center := Vector2(width/2.0, 24.0 if compact else 77.0)
+	_sprite(card, Rect2(center-Vector2.ONE*size/2.0, Vector2.ONE*size), tile)
+	var name_y: float = 46.0 if compact else height-62.0
+	_icon(ROLE_ICONS[card.role], Rect2(5 if compact else 7, name_y+1, 14, 14), tile).set_meta("army_role", card.role)
+	_label(card.short_name, Rect2(20 if compact else 24, name_y, width-(25 if compact else 31), 17 if compact else 25), 10 if compact else 13, true, true, tile)
 	if not choice.is_empty():
+		_label({"summon":"Summon", "reinforce":"Reinforce", "promote":"Promote"}[choice.kind], Rect2(34, 11, width-63, 20), 11, true, false, tile)
 		var army: Dictionary = state.sides[0].roster[card.id]
 		var gain: int = state.action_gain(0, choice)
-		short_effect = "+%d %s" % [gain, "units" if gain != 1 else "unit"]
+		var short_effect: String = "+%d %s" % [gain, "units" if gain != 1 else "unit"]
 		if choice.kind == "reinforce": short_effect = "%d → %d units" % [army.count, state.target_count(0, choice)]
 		elif choice.kind == "promote": short_effect = "Rank %d → %d" % [army.rank, army.rank+1]
-		footer = "1 Command Point" if state.eligible(0, choice) else "Unit cap reached"
-	_label(short_effect, Rect2(7, height-39, width-14, 18), 11, true, false, tile)
-	_label(footer, Rect2(7, height-20, width-14, 16), 10, true, false, tile)
+		_label(short_effect, Rect2(7, height-36, width-14, 18), 11, true, false, tile)
+		_label("1 Command Point" if state.eligible(0, choice) else "Unit cap reached", Rect2(7, height-18, width-14, 16), 10, true, false, tile)
 	return tile
 
 func _show_card_details(card_id: String, choice: Dictionary = {}) -> void:
@@ -265,14 +286,16 @@ func _show_skill_details(leader: CommanderData) -> void:
 	dim.color = Color(0.19, 0.16, 0.12, 0.64)
 	dim.size = Vector2(640, 360)
 	details_overlay.add_child(dim)
-	_panel(Rect2(108, 58, 424, 264), details_overlay)
-	_portrait(Rect2(126, 77, 58, 58), details_overlay, leader)
-	_label(leader.spell_name, Rect2(198, 76, 309, 28), 22, false, true, details_overlay)
-	_label(leader.display_name+" · Active skill", Rect2(198, 111, 309, 20), 11, false, false, details_overlay)
-	_label("1 Command Point · Once per round", Rect2(127, 145, 385, 21), 13, false, true, details_overlay)
-	_label(leader.spell_details, Rect2(127, 176, 385, 84), 12, false, false, details_overlay)
-	_label("Prepare during card selection. Cast when battle starts.", Rect2(127, 267, 385, 18), 10, true, false, details_overlay)
-	var close := _button("Close", Rect2(248, 291, 144, 25), _close_card_details, true, details_overlay)
+	_panel(Rect2(83, 27, 474, 307), details_overlay)
+	_portrait(Rect2(104, 47, 64, 64), details_overlay, leader)
+	_label(leader.display_name, Rect2(181, 46, 351, 28), 21, false, true, details_overlay)
+	_label(leader.identity, Rect2(181, 80, 351, 35), 11, false, false, details_overlay)
+	_label("Passive", Rect2(104, 123, 428, 19), 12, false, true, details_overlay)
+	_label(leader.passive_description, Rect2(104, 146, 428, 35), 12, false, false, details_overlay)
+	_label(leader.spell_name+" · 1 Command Point", Rect2(104, 188, 428, 22), 13, false, true, details_overlay)
+	_label(leader.spell_details, Rect2(104, 215, 428, 63), 11, false, false, details_overlay)
+	_label("Once per round. Prepare before battle.", Rect2(104, 278, 428, 18), 10, true, false, details_overlay)
+	var close := _button("Close", Rect2(248, 301, 144, 25), _close_card_details, true, details_overlay)
 	close.grab_focus()
 	_publish()
 
@@ -314,17 +337,12 @@ func show_commander() -> void:
 		var leader: CommanderData = GameCatalog.commander(GameCatalog.COMMANDER_IDS[index])
 		var chosen: bool = selected_commander_id == leader.id
 		var tile := _button("", Rect2(20+index*206, 124, 188, 179), _select_commander.bind(leader.id))
-		tile.tooltip_text = leader.identity
+		tile.tooltip_text = leader.display_name
+		tile.set_meta("commander_face", leader.id)
 		if chosen:
 			tile.add_theme_stylebox_override("normal", StoryStyle.panel(Color("e5d7ad")))
-		_portrait(Rect2(63, 6, 62, 62), tile, leader)
+		_portrait(Rect2(17, 11, 154, 154), tile, leader)
 		_skill_info(Rect2(7, 10, 23, 23), tile, leader)
-		_label(leader.display_name, Rect2(4, 71, 180, 20), 14, true, true, tile)
-		_label(leader.passive_description, Rect2(8, 95, 174, 32), 9, false, false, tile)
-		_label(leader.spell_name, Rect2(4, 131, 180, 17), 10, true, true, tile)
-		_label(leader.spell_description, Rect2(4, 151, 180, 16), 9, true, false, tile)
-		if chosen:
-			_label("OK", Rect2(164, 6, 16, 16), 8, true, false, tile)
 	_button("Back", Rect2(20, 315, 100, 28), show_menu)
 	_button("Build your warband →", Rect2(323, 312, 297, 31), show_warband, true)
 	_publish()
@@ -363,38 +381,26 @@ func show_warband() -> void:
 	rival.item_selected.connect(func(index: int): rival_realm=rival_ids[index]; _publish())
 	surface.add_child(rival)
 	var cards: Dictionary = GameCatalog.cards()
-	for index in range(4):
-		if index < selected_warband.size():
-			var card: ArmyCardData = cards[selected_warband[index]]
-			var slot := _button("", Rect2(17+index*152, 74, 143, 43), _toggle_card.bind(card.id))
-			_sprite(card, Rect2(2, 5, 32, 32), slot)
-			_label(card.short_name, Rect2(35, 3, 105, 19), 10, false, true, slot)
-			_label("%s · remove" % card.set_id.capitalize(), Rect2(35, 23, 104, 15), 8, false, false, slot)
-		else:
-			var slot := _panel(Rect2(17+index*152, 74, 143, 43))
-			_label("Choose an army", Rect2(5, 7, 133, 28), 10, true, false, slot)
 	for index in range(3):
 		var realm: String = GameCatalog.REALMS[index]
-		var preset := _button("%s set" % realm.capitalize(), Rect2(20+index*99, 124, 94, 23), _preset.bind(realm))
+		var preset := _button("%s set" % realm.capitalize(), Rect2(20+index*99, 74, 94, 23), _preset.bind(realm))
 		preset.add_theme_font_size_override("font_size",10)
 		preset.size = Vector2(94,23)
-	_button("Clear", Rect2(322, 124, 72, 23), _preset.bind("clear"))
-	_label("Choose any four armies", Rect2(402, 126, 216, 19), 10)
+	_button("Clear", Rect2(322, 74, 72, 23), _preset.bind("clear"))
+	_label("Choose any four armies", Rect2(402, 76, 216, 19), 10)
 	for index in range(GameCatalog.ARMY_IDS.size()):
 		var card: ArmyCardData = cards[GameCatalog.ARMY_IDS[index]]
 		var chosen: bool = selected_warband.has(card.id)
-		var tile := _button("", Rect2(17+(index%5)*122, 155+int(index/5)*44, 118, 41), _toggle_card.bind(card.id))
+		var tile: Button = _card_face(card, Rect2(17+(index%5)*122, 102+int(index/5)*70, 118, 67), surface, _toggle_card.bind(card.id))
 		tile.disabled = not chosen and selected_warband.size() == 4
 		if chosen:
-			tile.add_theme_stylebox_override("normal", StoryStyle.panel(Color("e5d7ad")))
-		_sprite(card, Rect2(2, 3, 32, 32), tile)
-		_label(card.short_name, Rect2(35, 3, 80, 18), 10, false, true, tile)
-		_label("%s · %d%s" % [card.role.capitalize(), card.group_size, " +" if chosen else ""], Rect2(35, 22, 80, 14), 10, false, false, tile)
-		tile.tooltip_text = "%s\n%s" % [card.display_name, card.description]
+			tile.add_theme_stylebox_override("normal", StoryStyle.panel(Color("e5d7ad"), StoryStyle.MOSS, 2))
+		tile.set_meta("selected_army", chosen)
+		tile.tooltip_text = "Remove %s" % card.display_name if chosen else "Select %s" % card.display_name
 	var realm_bond: SetBonusData = GameCatalog.warband_bond(selected_warband, cards)
-	_panel(Rect2(15, 286, 610, 40))
-	_label("Realm Bond: %s" % realm_bond.display_name if realm_bond else "Mixed warbands have no Realm Bond" if selected_warband.size()==4 else "Choose exactly four unique armies", Rect2(20, 288, 600, 20), 12, true, true)
-	_label(realm_bond.description if realm_bond else "Your commander's bonuses still apply to your chosen armies.", Rect2(20, 308, 600, 15), 9, true)
+	var bond_label := _label("Realm Bond: %s" % realm_bond.display_name if realm_bond else "Mixed warband" if selected_warband.size()==4 else "Choose exactly four unique armies", Rect2(20, 309, 600, 16), 10, true, true)
+	bond_label.tooltip_text = realm_bond.description if realm_bond else "Your commander's bonuses apply to every chosen army."
+	bond_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	_button("Back", Rect2(20, 328, 99, 26), show_commander)
 	var enter := _button("Enter the festival →", Rect2(440, 328, 180, 26), new_match, true)
 	enter.disabled = not GameCatalog.valid_warband(selected_warband, cards)
@@ -775,7 +781,7 @@ func _publish() -> void:
 	if not qa_enabled:
 		return
 	var snapshot := {"screen": screen, "modal": modal_kind, "settings": SaveStore.settings,
-		"release": "elemental-garden-armies", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
+		"release": "clear-cards-wall-routing", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
 		"card_details": details_card_id, "command_popup": modal_kind == "command",
 		"battle_controls_visible": is_instance_valid(battle_button) and battle_button.is_visible_in_tree(),
 		"pixel_scale_mode":"integer" if get_window().content_scale_stretch == Window.CONTENT_SCALE_STRETCH_INTEGER else "fit",
@@ -798,6 +804,10 @@ func _publish() -> void:
 		snapshot["arena"] = [CombatSimulation.ARENA_SIZE.x, CombatSimulation.ARENA_SIZE.y]
 		snapshot["body_size"] = CombatSimulation.BODY_SIZE
 		snapshot["spawn_spacing"] = CombatSimulation.SPAWN_SPACING
+		snapshot["army_scales"] = {}
+		for id in GameCatalog.ARMY_IDS:
+			snapshot.army_scales[id] = GameCatalog.army_scale(id)
+		snapshot["split_slime_scale"] = GameCatalog.army_scale("water_melee", true)
 		snapshot["preview"] = []
 		for entry in battlefield.preview_units:
 			snapshot.preview.append([entry.side, entry.card_id, entry.position.x, entry.position.y])
@@ -817,9 +827,11 @@ func _publish() -> void:
 				snapshot.walls.append([wall.side, wall.rect.position.x, wall.rect.position.y, wall.rect.size.x, wall.rect.size.y])
 			snapshot["combat_statuses"] = []
 			snapshot["combat_positions"] = []
+			snapshot["combat_appearances"] = []
 			for unit in simulation.units:
 				if unit.hp > 0.0:
 					snapshot.combat_positions.append([unit.id, unit.side, unit.position.x, unit.position.y])
+					snapshot.combat_appearances.append([unit.id, unit.card_id, unit.visual_scale, unit.is_child])
 					snapshot.combat_statuses.append([unit.id, simulation.move_speed(unit), simulation.defence_multiplier(unit), simulation.attack_rate(unit), unit.ice_aura_fraction, unit.teleport_used, simulation.teleport_charging(unit), unit.blast_burn_until, unit.fire_aura_dps, unit.ground_fire_dps, unit.pull_target])
 	JavaScriptBridge.eval("window.vtuberEraQA = %s;" % JSON.stringify(snapshot))
 

@@ -40,6 +40,13 @@ static func army_cap(card: ArmyCardData, config: BalanceConfig = null) -> int:
 		config = balance()
 	return mini(config.max_units_per_type, card.spawn_limit) if card.spawn_limit > 0 else config.unit_cap(card.role)
 
+static func army_scale(id: String, split_child: bool = false) -> float:
+	if split_child or id in ["earth_melee", "water_penguin", "fire_candle", "fire_melee", "fire_archer"]:
+		return 0.6
+	if id in ["fire_tank", "water_tank", "earth_tank", "earth_siege"]:
+		return 1.5
+	return 1.0
+
 static func realm_color(realm: String) -> Color:
 	return Color({"fire":"d57346", "water":"659fbb", "earth":"7d9661"}.get(realm, "7d9661"))
 

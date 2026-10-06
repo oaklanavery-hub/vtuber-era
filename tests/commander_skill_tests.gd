@@ -92,6 +92,8 @@ func _run() -> void:
 	_meteor_deaths()
 	_frozen_field()
 	_wall_routes()
+	_wall_edge_routes()
+	_crowded_wall_routes()
 	_wall_shots()
 	_births_and_pushback()
 	_dense_and_replays()
@@ -252,6 +254,51 @@ func _wall_routes() -> void:
 	for shot in alternate.projectiles:
 		expect(shot.target == 2, "split arrows never select an obscured secondary target")
 
+func _wall_edge_routes() -> void:
+	var rectangle := Rect2(290,76,12,128)
+	var body_wall: Rect2 = rectangle.grow(CombatSimulation.BODY_SIZE/2.0)
+	for pair in [
+		[Vector2(body_wall.end.x,140),Vector2(240,140)],
+		[Vector2(body_wall.position.x,140),Vector2(350,140)],
+		[Vector2(296,body_wall.position.y),Vector2(296,235)],
+		[Vector2(296,body_wall.end.y),Vector2(296,45)]]:
+		var sim := fixture("fire_commander", {"fire_melee":1}, "earth_commander", {"earth_tank":1})
+		var walker: Dictionary = sim.units[0]
+		var enemy: Dictionary = sim.units[1]
+		walker.position = pair[0]
+		enemy.position = pair[1]
+		sim.cards.earth_tank.stats.move_speed = 0.0
+		add_wall(sim,rectangle)
+		expect(sim._navigation_waypoint(walker.position,enemy.position) != walker.position, "a body touching any wall edge retains an escape route")
+		expect(not sim.line_of_sight(walker.position,enemy.position), "allowing body edge sliding never permits a shot through the wall")
+		for step in range(450):
+			sim.step()
+			expect(bodies_clear(sim) and bodies_clear(sim,.5), "edge escape remains solid during movement and interpolation")
+		expect(sim.can_attack(walker,enemy), "edge-touching melee eventually reaches enemy contact")
+
+func _crowded_wall_routes() -> void:
+	for side in range(2):
+		for id in ["earth_melee", "earth_ranged", "earth_siege"]:
+			var count: int = {"earth_melee":10, "earth_ranged":8, "earth_siege":4}[id]
+			var crowd: Dictionary = {id:count}
+			var own: Dictionary = crowd if side == 0 else {"water_tank":1}
+			var enemy_counts: Dictionary = {"water_tank":1} if side == 0 else crowd
+			var sim := fixture("earth_commander", own, "earth_commander", enemy_counts, [side == 1,side == 0])
+			var defender: Dictionary = unit(sim,"water_tank",1-side)
+			defender.position = Vector2(350 if side == 0 else 250,140)
+			sim.cards.water_tank.stats.move_speed = 0.0
+			sim.cards.water_tank.stats.ice_aura_radius = 0.0
+			sim._activate_skills()
+			var reached: Dictionary = {}
+			for step in range(600):
+				sim.step()
+				for actor in sim.units:
+					if actor.side == side and sim.can_attack(actor,defender):
+						reached[actor.id] = true
+				if step%5 == 0:
+					expect(bodies_clear(sim) and bodies_clear(sim,.5), "a full army navigates the real three-wall Uproot cast without clipping")
+			expect(reached.size() == count, "every crowded %s reaches contact or clear firing range around Uproot on side %d" % [id,side])
+
 func _wall_shots() -> void:
 	for id in ["fire_archer","water_mage","water_ranged","earth_ranged","earth_siege"]:
 		for posthumous in [false,true] if id == "water_ranged" else [false]:
@@ -320,6 +367,9 @@ func _dense_and_replays() -> void:
 		expect(first.walls.size() == expected_walls, "every Earth cast produces three walls, including both sides together")
 		for step in range(120):
 			first.step()
+			# Compare cached routes with rebuilding the same snapshot every tick.
+			second.navigation_routes = [[], []]
+			second.navigation_goals.clear()
 			second.step()
 			expect(first.signature() == second.signature(), "opening, terrain, navigation and skills replay deterministically: "+str(pair))
 			expect(bodies_clear(first) and bodies_clear(first,.5), "full crowds remain solid around walls: "+str(pair))

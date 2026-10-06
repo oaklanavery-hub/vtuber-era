@@ -151,13 +151,13 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await screenshot('commander');
   await click(432, 328);
   await waitScreen('warband');
-  await click(358, 135);
+  await click(358, 85);
   await page.waitForFunction(() => window.vtuberEraQA?.selected_warband.length === 0);
   await click(530, 341);
   assert.equal((await snapshot()).screen, 'warband', 'an incomplete loadout cannot start');
   const pickCard = async id => {
     const index = cards.indexOf(id);
-    await click(76 + (index % 5) * 122, 175 + Math.floor(index / 5) * 44);
+    await click(76 + (index % 5) * 122, 135 + Math.floor(index / 5) * 70);
   };
   for (const id of chosenCards) await pickCard(id);
   await page.waitForFunction(() => window.vtuberEraQA?.selected_warband.length === 4);
@@ -174,7 +174,11 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await click(509, 336);
   await waitScreen('battle');
   const initial = await snapshot();
-  assert.equal(initial.release, 'elemental-garden-armies');
+  assert.equal(initial.release, 'clear-cards-wall-routing');
+  assert.deepEqual(initial.army_scales, {fire_archer:.6,fire_melee:.6,fire_tank:1.5,fire_assassin:1,
+    water_mage:1,water_tank:1.5,water_melee:1,water_ranged:1,water_penguin:.6,
+    earth_tank:1.5,earth_melee:.6,earth_ranged:1,earth_siege:1.5,earth_pitcher:1,fire_candle:.6});
+  assert.equal(initial.split_slime_scale,.6);
   assert.deepEqual(initial.arena, [600, 280]);
   assert.equal(initial.body_size, 7.2);
   assert.equal(initial.spawn_spacing, 24);
@@ -361,6 +365,11 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
       await page.waitForFunction(() => {
         const state = window.vtuberEraQA;
         const bodies = state?.combat_positions || [];
+        for (const [, id, scale, child] of state?.combat_appearances || []) {
+          if (scale !== (child ? .6 : state.army_scales[id])) {
+            throw new Error(`Incorrect character scale: ${id} / ${scale}`);
+          }
+        }
         for (let a = 0; a < bodies.length; a++) {
           for (const wall of state.walls || []) {
             const half = state.body_size / 2 - 0.001;

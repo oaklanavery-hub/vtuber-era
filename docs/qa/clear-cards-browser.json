@@ -1,0 +1,468 @@
+{
+  "status": "passed",
+  "scenario": "earth",
+  "rival": "earth",
+  "commander": "earth_commander",
+  "warband": [
+    "earth_tank",
+    "earth_melee",
+    "earth_ranged",
+    "earth_pitcher"
+  ],
+  "release": "clear-cards-wall-routing",
+  "browser": "151.0.7922.34",
+  "screens": [
+    "menu",
+    "compendium",
+    "settings",
+    "commander",
+    "warband",
+    "battle",
+    "results"
+  ],
+  "seed": 1791309152,
+  "rounds": [
+    {
+      "round": 1,
+      "hearts": [
+        3,
+        4
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 15,
+        "pitcher_bite": 6,
+        "pitcher_pull": 10,
+        "split_arrows": 4
+      }
+    },
+    {
+      "round": 2,
+      "hearts": [
+        2,
+        4
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 21,
+        "pitcher_bite": 7,
+        "pitcher_pull": 25,
+        "siege_blast": 5,
+        "split_arrows": 22,
+        "tree_heal": 36
+      }
+    },
+    {
+      "round": 3,
+      "hearts": [
+        2,
+        3
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 17,
+        "pitcher_bite": 9,
+        "pitcher_pull": 26,
+        "siege_blast": 21,
+        "split_arrows": 46,
+        "tree_heal": 72
+      }
+    },
+    {
+      "round": 4,
+      "hearts": [
+        1,
+        3
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 7,
+        "pitcher_bite": 16,
+        "pitcher_pull": 28,
+        "siege_blast": 28,
+        "split_arrows": 64,
+        "tree_heal": 71
+      }
+    },
+    {
+      "round": 5,
+      "hearts": [
+        1,
+        2
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 26,
+        "pitcher_bite": 5,
+        "pitcher_pull": 23,
+        "siege_blast": 21,
+        "split_arrows": 80,
+        "tree_heal": 76
+      }
+    },
+    {
+      "round": 6,
+      "hearts": [
+        0,
+        2
+      ],
+      "heartLoss": 1,
+      "passives": {
+        "armadillo_bounce": 48,
+        "pitcher_bite": 4,
+        "pitcher_pull": 18,
+        "siege_blast": 16,
+        "split_arrows": 79,
+        "tree_heal": 68
+      }
+    }
+  ],
+  "actions": [
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "earth_pitcher",
+        "kind": "summon"
+      },
+      "beforeCount": 0,
+      "afterCount": 2,
+      "cap": 6
+    },
+    {
+      "round": 1,
+      "choice": {
+        "card_id": "earth_pitcher",
+        "kind": "summon"
+      },
+      "beforeCount": 2,
+      "afterCount": 4,
+      "cap": 6
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "summon"
+      },
+      "beforeCount": 0,
+      "afterCount": 1,
+      "cap": 3
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_pitcher",
+        "kind": "summon"
+      },
+      "beforeCount": 4,
+      "afterCount": 6,
+      "cap": 6
+    },
+    {
+      "round": 2,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "summon"
+      },
+      "beforeCount": 1,
+      "afterCount": 2,
+      "cap": 3
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "earth_ranged",
+        "kind": "summon"
+      },
+      "beforeCount": 0,
+      "afterCount": 2,
+      "cap": 8
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "reinforce"
+      },
+      "beforeCount": 2,
+      "afterCount": 3,
+      "cap": 3
+    },
+    {
+      "round": 3,
+      "choice": {
+        "card_id": "earth_tank",
+        "kind": "promote"
+      },
+      "beforeCount": 3,
+      "afterCount": 3,
+      "cap": 3
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "earth_pitcher",
+        "kind": "promote"
+      },
+      "beforeCount": 6,
+      "afterCount": 6,
+      "cap": 6
+    },
+    {
+      "round": 4,
+      "choice": {
+        "card_id": "earth_ranged",
+        "kind": "summon"
+      },
+      "beforeCount": 2,
+      "afterCount": 4,
+      "cap": 8
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "earth_ranged",
+        "kind": "promote"
+      },
+      "beforeCount": 4,
+      "afterCount": 4,
+      "cap": 8
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "earth_ranged",
+        "kind": "reinforce"
+      },
+      "beforeCount": 4,
+      "afterCount": 8,
+      "cap": 8
+    },
+    {
+      "round": 5,
+      "choice": {
+        "card_id": "earth_pitcher",
+        "kind": "promote"
+      },
+      "beforeCount": 6,
+      "afterCount": 6,
+      "cap": 6
+    }
+  ],
+  "stats": {
+    "reinforcements": 2,
+    "promotions": 4,
+    "spell": 6,
+    "comeback": 3
+  },
+  "errors": [],
+  "headers": "ordinary HTTP(S); no cross-origin isolation",
+  "testedViewport": [
+    "1280x720",
+    "1000x720"
+  ],
+  "arena": [
+    600,
+    280
+  ],
+  "bodySize": 7.2,
+  "spawnCollisionPassed": true,
+  "combatCollisionPassed": true,
+  "settingsPersisted": true,
+  "rematchPassed": true,
+  "textFont": "Minecraft",
+  "cardDetails": [
+    "fire_archer",
+    "fire_melee",
+    "fire_tank",
+    "fire_assassin",
+    "fire_candle",
+    "water_mage",
+    "water_tank",
+    "water_melee",
+    "water_ranged",
+    "water_penguin",
+    "earth_tank",
+    "earth_melee",
+    "earth_ranged",
+    "earth_siege",
+    "earth_pitcher"
+  ],
+  "commanderDetails": [
+    "fire_commander",
+    "water_commander",
+    "earth_commander"
+  ],
+  "commanderSkills": [
+    {
+      "round": 1,
+      "prepared": [
+        true,
+        false
+      ],
+      "counts": {
+        "blocked_projectiles": 3,
+        "earth_walls": [
+          3,
+          0
+        ],
+        "frozen_field": [
+          0,
+          0
+        ],
+        "meteors": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "round": 2,
+      "prepared": [
+        true,
+        false
+      ],
+      "counts": {
+        "blocked_projectiles": 16,
+        "earth_walls": [
+          3,
+          0
+        ],
+        "frozen_field": [
+          0,
+          0
+        ],
+        "meteors": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "round": 3,
+      "prepared": [
+        true,
+        false
+      ],
+      "counts": {
+        "blocked_projectiles": 16,
+        "earth_walls": [
+          3,
+          0
+        ],
+        "frozen_field": [
+          0,
+          0
+        ],
+        "meteors": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "round": 4,
+      "prepared": [
+        true,
+        true
+      ],
+      "counts": {
+        "blocked_projectiles": 28,
+        "earth_walls": [
+          3,
+          3
+        ],
+        "frozen_field": [
+          0,
+          0
+        ],
+        "meteors": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "round": 5,
+      "prepared": [
+        true,
+        true
+      ],
+      "counts": {
+        "blocked_projectiles": 33,
+        "earth_walls": [
+          3,
+          3
+        ],
+        "frozen_field": [
+          0,
+          0
+        ],
+        "meteors": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "round": 6,
+      "prepared": [
+        true,
+        true
+      ],
+      "counts": {
+        "blocked_projectiles": 27,
+        "earth_walls": [
+          3,
+          3
+        ],
+        "frozen_field": [
+          0,
+          0
+        ],
+        "meteors": [
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "wallCollisionPassed": true,
+  "armyCaps": {
+    "earth_melee": 10,
+    "earth_pitcher": 6,
+    "earth_ranged": 8,
+    "earth_siege": 4,
+    "earth_tank": 3,
+    "fire_archer": 8,
+    "fire_assassin": 3,
+    "fire_candle": 4,
+    "fire_melee": 10,
+    "fire_tank": 3,
+    "water_mage": 5,
+    "water_melee": 10,
+    "water_penguin": 4,
+    "water_ranged": 8,
+    "water_tank": 3
+  },
+  "priorityCard": "",
+  "battleSpeed": 3,
+  "armyCapsPassed": true,
+  "roundPopupPassed": true,
+  "combatControlsHidden": true,
+  "reinforcementCancelPassed": true,
+  "passives": {
+    "armadillo_bounce": 48,
+    "pitcher_bite": 4,
+    "pitcher_pull": 18,
+    "siege_blast": 16,
+    "split_arrows": 79,
+    "tree_heal": 68
+  },
+  "textOverflows": 0,
+  "combatSoundsPlayed": 957,
+  "webAudio": {
+    "starts": 1053,
+    "shortEffects": 957
+  }
+}

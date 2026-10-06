@@ -17,11 +17,30 @@ faces, tap the top-left info icon for full army effects, then hit **Battle**.
 The same card design appears in the compendium. Draft controls disappear during
 combat, opening a 600×280 arena—39% more fighting space than the 600×202 layout.
 
+Commander cards show only a portrait and their top-left info button. That button
+opens their identity, passive bonuses and active skill. The warband builder shows
+all fifteen portrait cards once, with the character name underneath, a role icon,
+a top-left elemental info button and a numbered circle at the top right for
+units per summon. Selected cards have a green border; click again to remove them.
+The same army symbols appear in the compendium and round picker.
+
 The interface uses proportional Minecraft-style lettering by Idrees Hassan.
 All fifteen armies share a 32-color palette, material details and eight animation
-frames. Native-size battle sprites, stepped panels and crisp viewport scaling
+frames. Battle sprites use three sizes, with health bars following their size:
+normal 1×, large 1.5× and small 0.6×. Full Slimes are normal and split children
+are small. Stepped panels and crisp viewport scaling
 unify the pixel theme. Ninja teleport, contact attacks and one-use revival
 remain covered by gameplay tests.
+
+| Size | Armies |
+|---|---|
+| 1× | Red Ninja, Water Wizard, Snowman, Wood Archer, Pitcher Plant, full Slime |
+| 1.5× | Magma Golem, Ice Golem, Tree, Wooden Siege |
+| 0.6× | split Slime, Armadillo, Penguin, Candle, Fire Imp, Fire Lizard |
+
+Uproot navigation allows bodies to slide along wall edges and choose routes
+around firing allies. Walls still stop bodies, projectiles and line of sight;
+the compact 7.2×7.2 collision footprint remains active for every visual size.
 
 All fifteen army passives remain active:
 projectile splash and pushback, death explosions and Slime splitting, one-use
@@ -34,7 +53,8 @@ two units, capped at four Candles, four Penguins and six Pitcher Plants.
 Collision stays active at 7.2×7.2 with depth-sorted sprites, a compact HUD and
 twelve original combat sound effects.
 
-![Round picker with clean cards](docs/screenshots/round-picker.png)
+![Portrait-only commander cards](docs/screenshots/clear-commander.png)
+![Army cards with elemental, role and spawn symbols](docs/screenshots/clear-warband.png)
 
 **Play:** [Launch VTuber Era](https://oaklanavery-hub.github.io/vtuber-era/)
 **Source:** [oaklanavery-hub/vtuber-era](https://github.com/oaklanavery-hub/vtuber-era)
