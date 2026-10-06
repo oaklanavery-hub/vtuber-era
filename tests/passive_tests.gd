@@ -42,6 +42,7 @@ func fixture(own: Dictionary, enemy: Dictionary = {"fire_tank":1}) -> CombatSimu
 	for id in state.cards:
 		state.cards[id] = state.cards[id].duplicate(true)
 		state.cards[id].stats.move_speed = 0.0
+		state.cards[id].stats.fire_aura_radius = 0.0
 	for id in own:
 		state.sides[0].roster[id].count = own[id]
 	for id in enemy:
@@ -210,39 +211,21 @@ func _imp_blast() -> void:
 		expect(solid(sim),"blocked Imp pushback cannot clip through a body")
 
 func _flames() -> void:
-	var sim := fixture({"fire_tank":1,"fire_archer":1})
+	var sim := fixture({"fire_tank":1,"fire_archer":1},{"water_tank":1})
+	sim.cards.fire_tank.stats.fire_aura_radius = 48.0
 	var golem: Dictionary = army(sim,"fire_tank")[0]
 	var ally: Dictionary = army(sim,"fire_archer")[0]
-	var enemy: Dictionary = army(sim,"fire_tank",1)[0]
+	var enemy: Dictionary = army(sim,"water_tank",1)[0]
 	place(golem,Vector2(200,100))
 	place(ally,Vector2(214,112))
-	place(enemy,Vector2(214,100))
-	golem.next_flame = 1
-	sim.step()
-	expect(sim.fields.size() == 1 and sim.fields[0].kind == "flame", "Magma Golem creates a distinct flame wall")
-	expect(enemy.flame_until == 60 and ally.flame_until == 0, "wall crossing applies a two-second enemy-only Burn")
+	place(enemy,Vector2(248,100))
 	var before: float = enemy.hp
-	place(enemy,Vector2(260,100))
-	steps(sim,60)
-	expect(near(enemy.hp,before-6.0), "wall Burn deals two one-second damage ticks after leaving")
-	steps(sim,1)
-	expect(enemy.flame_until == 0, "wall Burn clears after two seconds")
-	steps(sim,60)
-	expect(sim.fields.is_empty(), "the old flame wall expires before the next one")
-	sim = fixture({"fire_tank":1})
-	golem = army(sim,"fire_tank")[0]
-	enemy = army(sim,"fire_tank",1)[0]
-	place(golem,Vector2(200,100))
-	place(enemy,Vector2(214,100))
-	golem.next_flame = 1
-	enemy.burn_until = 90
-	enemy.burn_next = 30
-	enemy.burn_dps = 3.0
-	before = enemy.hp
-	sim.step()
-	place(enemy,Vector2(260,100))
-	steps(sim,90)
-	expect(near(enemy.hp,before-15.0), "two-second wall Burn and three-second Wildfire keep independent damage timers")
+	steps(sim,30)
+	expect(near(enemy.hp,before-3.0) and near(ally.hp,ally.max_hp),"48px moving ring deals three enemy-only HP per second")
+	expect(sim.fields.is_empty() and sim.passive_counts.get("fire_ring",0) == 1,"fire ring replaces the old flame wall")
+	place(enemy,Vector2(249,100))
+	steps(sim,30)
+	expect(near(enemy.hp,before-3.0) and enemy.fire_aura_dps == 0.0,"leaving the ring immediately ends its damage")
 
 func _ninjas() -> void:
 	var sim := fixture({"fire_assassin":1})

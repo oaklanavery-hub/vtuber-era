@@ -54,8 +54,14 @@ func _draw() -> void:
 			var radius: float = state.cards[source.card_id].stats.ice_aura_radius
 			if source.hp > 0.0 and radius > 0.0:
 				_draw_ice_aura(source.previous_position.lerp(source.position, interpolation), int(radius))
+			var fire_radius: float = state.cards[source.card_id].stats.fire_aura_radius
+			if source.hp > 0.0 and fire_radius > 0.0:
+				_draw_fire_ring(source.previous_position.lerp(source.position, interpolation), int(fire_radius))
 		# Fields carry gameplay information even with reduced cosmetic effects.
 		for field in simulation.fields:
+			if field.kind in ["ground_fire", "puddle"]:
+				_draw_ground_pool(field)
+				continue
 			var rectangle: Rect2 = field.rect
 			var color := Color(0.46,0.75,0.87,0.36) if field.kind == "ice" else Color(0.86,0.35,0.14,0.45)
 			draw_rect(rectangle, color)
@@ -89,6 +95,8 @@ func _draw() -> void:
 				frame = 0
 			if simulation.tick-int(unit.attack_at) < 4 and not reduced_effects:
 				frame = 6
+			if unit.pull_target >= 0 and not reduced_effects:
+				frame = 6
 			if (simulation.tick-int(unit.revive_at) < 15 or simulation.tick-int(unit.teleport_at) < 12 or simulation.teleport_charging(unit)) and not reduced_effects:
 				frame = 7
 			draw_rect(Rect2(location.x-8, location.y+5, 16, 2), Color("91a471"))
@@ -97,8 +105,9 @@ func _draw() -> void:
 				sprite_location.y -= sin(float(simulation.tick-int(unit.bounce_at))/float(CombatSimulation.BOUNCE_TICKS)*PI)*7.0
 			# Teleport can put an attacker behind the other army: turn toward its target.
 			var facing: int = int(unit.side)
-			if unit.target >= 0:
-				var target_x: float = simulation.units[int(unit.target)].position.x
+			var face_target: int = int(unit.pull_target) if unit.pull_target >= 0 else int(unit.target)
+			if face_target >= 0:
+				var target_x: float = simulation.units[face_target].position.x
 				if absf(target_x-location.x) > 0.01: facing = 0 if target_x > location.x else 1
 			_draw_unit(state.cards[unit.card_id].sprite, sprite_location, frame, facing, unit.rank, simulation.tick-int(unit.hit_at)<3, unit.visual_scale)
 			if simulation.teleport_charging(unit) and not simulation.opening_active():
@@ -106,7 +115,7 @@ func _draw() -> void:
 			var color := Color("659789") if unit.side == 0 else Color("c57857")
 			draw_rect(Rect2(location.x-10, location.y-26, 20, 3), Color("51372f"))
 			draw_rect(Rect2(location.x-9, location.y-25, roundf(18*unit.hp/unit.max_hp), 1), color)
-			if (int(unit.burn_until) >= simulation.tick and unit.burn_until > 0) or (int(unit.flame_until) >= simulation.tick and unit.flame_until > 0) or (int(unit.blast_burn_until) >= simulation.tick and unit.blast_burn_until > 0):
+			if (int(unit.burn_until) >= simulation.tick and unit.burn_until > 0) or (int(unit.flame_until) >= simulation.tick and unit.flame_until > 0) or (int(unit.blast_burn_until) >= simulation.tick and unit.blast_burn_until > 0) or unit.fire_aura_dps > 0.0 or unit.ground_fire_dps > 0.0:
 				draw_rect(Rect2(location.x+9, location.y-16, 2, 4), Color("d57346"))
 				draw_rect(Rect2(location.x+10, location.y-15, 1, 2), Color("f9e4b5"))
 			if unit.shield > 0.0:
@@ -126,6 +135,7 @@ func _draw() -> void:
 			if simulation.tick-int(unit.heal_at) < 5 and not reduced_effects:
 				draw_rect(Rect2(location.x-12, location.y-12, 5, 1), Color("7dba9d"))
 				draw_rect(Rect2(location.x-10, location.y-14, 1, 5), Color("7dba9d"))
+		_draw_tendrils()
 		_draw_meteors()
 		for projectile in simulation.projectiles:
 			var card: ArmyCardData = state.cards[projectile.card_id]
@@ -166,6 +176,57 @@ func _draw_ice_aura(center: Vector2, radius: int) -> void:
 		var point: Vector2 = center+Vector2((index*29)%73-36, (index*47)%67-33)
 		draw_rect(Rect2(point, Vector2(5,1)), Color(0.82,0.95,0.96,0.65))
 		draw_rect(Rect2(point+Vector2(2,-2), Vector2(1,5)), Color(0.82,0.95,0.96,0.65))
+
+func _pixel_disc(center: Vector2, radius: int, color: Color) -> void:
+	for y in range(-radius, radius+1, 4):
+		var span: int = int(floor(sqrt(maxf(0.0,float(radius*radius-y*y)))/2.0))*2
+		draw_rect(Rect2(center.round()+Vector2(-span,y),Vector2(span*2,4)),color)
+
+func _draw_fire_ring(center: Vector2, radius: int) -> void:
+	center = center.round()
+	_pixel_disc(center,radius,Color(0.86,0.33,0.16,0.12))
+	_pixel_ring(center,radius,Color(0.89,0.45,0.23,0.75))
+	_pixel_ring(center,radius-2,Color(0.97,0.72,0.35,0.65))
+	for index in range(16):
+		var angle: float = TAU*float(index)/16.0
+		var point: Vector2 = (center+Vector2(cos(angle),sin(angle))*float(radius-1)).round()
+		var height: int = 3 if reduced_effects else 3+(int(simulation.tick/5)+index)%3
+		draw_rect(Rect2(point-Vector2(1,height),Vector2(3,height)),Color("d57346"))
+		draw_rect(Rect2(point-Vector2(0,height-1),Vector2(1,height-1)),Color("ffc477"))
+
+func _draw_ground_pool(field: Dictionary) -> void:
+	var center: Vector2 = field.position.round()
+	var radius: int = int(field.radius)
+	var water: bool = field.kind == "puddle"
+	_pixel_disc(center,radius,Color(0.35,0.66,0.79,0.32) if water else Color(0.83,0.29,0.14,0.30))
+	_pixel_ring(center,radius,Color(0.61,0.85,0.84,0.82) if water else Color("ee8e58"))
+	for index in range(8):
+		var point: Vector2 = center+Vector2((index*13)%37-18,(index*19)%31-15)
+		if water:
+			draw_rect(Rect2(point,Vector2(5,1)),Color("a7d6dd"))
+			if index%3 == 0: draw_rect(Rect2(point+Vector2(2,-2),Vector2(1,5)),Color("a2bc79"))
+		else:
+			var height: int = 3 if reduced_effects else 3+(int(simulation.tick/4)+index)%3
+			draw_rect(Rect2(point,Vector2(3,height)),Color("d65c49"))
+			draw_rect(Rect2(point+Vector2(1,-1),Vector2(1,height-1)),Color("ffc477"))
+
+func _draw_tendrils() -> void:
+	for source in simulation.units:
+		if source.hp <= 0.0 or source.pull_target < 0:
+			continue
+		var target: Dictionary = simulation.units[int(source.pull_target)]
+		if target.hp <= 0.0:
+			continue
+		var start: Vector2 = source.previous_position.lerp(source.position,interpolation)-Vector2(0,12)
+		var end: Vector2 = target.previous_position.lerp(target.position,interpolation)-Vector2(0,9)
+		var progress: float = clampf(float(simulation.tick-int(source.pull_started_at))/float(maxi(1,int(source.pull_ready_at)-int(source.pull_started_at))),0.0,1.0)
+		end = start.lerp(end,progress)
+		var count: int = maxi(1,ceili(start.distance_to(end)/2.0))
+		for index in range(count+1):
+			var point: Vector2 = start.lerp(end,float(index)/float(count)).round()
+			draw_rect(Rect2(point,Vector2(2,2)),Color("4d6850"))
+			if index%2 == 0: draw_rect(Rect2(point,Vector2.ONE),Color("a2bc79"))
+		_pixel_ring(end,3,Color("d3a368"))
 
 func _draw_ninja_charge(unit: Dictionary, location: Vector2) -> void:
 	var progress: float = clampf(float(simulation.tick)/float(unit.teleport_due), 0.0, 1.0)

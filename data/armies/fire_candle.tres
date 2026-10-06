@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
+[ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]
+[ext_resource type="Script" path="res://data/types/unit_stats.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/units/fire_candle.svg" id="3"]
+[sub_resource type="Resource" id="Stats"]
+script = ExtResource("2")
+max_hp = 65.0
+damage = 7.0
+attacks_per_second = 0.55
+move_speed = 26.0
+attack_range = 132.0
+projectile_speed = 210.0
+splash_radius = 24.0
+splash_falloff = 1.0
+ground_fire_duration = 3.0
+
+[resource]
+script = ExtResource("1")
+id = "fire_candle"
+display_name = "Candle"
+short_name = "Candle"
+set_id = "fire"
+role = "mage"
+group_size = 2
+spawn_limit = 4
+description = "Spits fire into a 24px area. The ground burns for 3s, dealing 3 damage/s to enemies inside."
+stats = SubResource("Stats")
+sprite = ExtResource("3")

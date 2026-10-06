@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
+[ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]
+[ext_resource type="Script" path="res://data/types/unit_stats.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/units/water_penguin.svg" id="3"]
+[sub_resource type="Resource" id="Stats"]
+script = ExtResource("2")
+max_hp = 72.0
+damage = 4.0
+attacks_per_second = 0.5
+move_speed = 28.0
+attack_range = 138.0
+projectile_speed = 200.0
+splash_radius = 30.0
+splash_falloff = 1.0
+puddle_duration = 3.0
+
+[resource]
+script = ExtResource("1")
+id = "water_penguin"
+display_name = "Penguin"
+short_name = "Penguin"
+set_id = "water"
+role = "mage"
+group_size = 2
+spawn_limit = 4
+description = "Splashes a 30px area, leaving a 3s puddle. Each puddle heals allies for 5% max HP/s. Puddles stack."
+stats = SubResource("Stats")
+sprite = ExtResource("3")

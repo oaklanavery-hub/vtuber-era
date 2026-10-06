@@ -342,6 +342,58 @@ def army_figure(ident, frame):
         oval(24,11,7,6,WOOD[0]); oval(25,12,5,3,WOOD[2]); r(26,11,3,2,EARTH[2]); r(27,11,1,1,EARTH[4])
         r(3,16,6,6,WOOD[0]); r(4,17,4,4,WOOD[1]); r(4,17,4,1,WOOD[3]); r(5,19,2,1,STEEL)
         r(16,20,4,4,EARTH[0]); r(17,20,2,3,EARTH[2]); r(17,21,2,1,CREAM)
+    elif ident == 'fire_candle':
+        # Wax creature with a scalloped saucer, drips, a wick and animated flame.
+        oval(4,25,24,6,INK); oval(5,26,22,4,WOOD[2]); r(7,26,17,1,GOLD)
+        for x, stride in [(9,step),(21,-step)]:
+            r(x+stride,28,4,3,INK,True); r(x+stride,28,3,2,WOOD[3],True)
+        r(9,10,15,18,INK); r(10,11,13,16,WOOD[4]); r(10,12,3,14,CREAM)
+        r(21,13,2,13,WOOD[2]); r(13,25,8,2,GOLD)
+        oval(9,8,15,6,INK); oval(10,9,13,4,CREAM); oval(12,10,9,2,WOOD[2])
+        r(12,11,2,7,CREAM); r(17,12,2,4,CREAM); r(22,12,1,5,GOLD)
+        r(16,6,2,5,INK)
+        flame_x = 1 if frame in (1,4) else 0
+        poly([(14,9),(12,6),(14,3),(16+flame_x,0),(18,4),(21,6),(19,9)],FIRE[1])
+        poly([(15,8),(14,6),(16+flame_x,2),(18,6),(18,8)],FIRE[3])
+        r(16,6,1,2,CREAM)
+        eye(12,18,CREAM); eye(19,18,CREAM); r(16,22,3,2,INK)
+        r(6,18,3,5,INK); r(6,19,2,3,WOOD[4]); r(24,18,3,5,INK); r(24,19,2,3,WOOD[3])
+        if attack:
+            r(23,21,4,3,FIRE[2]); r(27,20,4,5,FIRE[3]); r(28,21,2,2,CREAM)
+    elif ident == 'water_penguin':
+        # Round blue-black penguin, cream belly, flippers, webbed feet and scarf.
+        for x, stride in [(9,step),(20,-step)]:
+            r(x+stride,27,6,4,INK,True); r(x+stride,28,5,2,GOLD,True)
+        oval(7,10,19,19,INK); oval(8,11,17,17,WATER[0]); oval(10,13,13,14,CREAM)
+        oval(7,3,19,16,INK); oval(8,4,17,14,WATER[0]); r(11,5,9,1,WATER[1])
+        oval(10,8,6,8,CREAM); oval(17,8,6,8,CREAM)
+        eye(11,9,WATER[4]); eye(19,9,WATER[4])
+        poly([(15,12),(24,13),(18,16),(15,15)],WOOD[1]); r(16,12,6,2,GOLD); r(17,12,4,1,CREAM)
+        poly([(7,14),(3,18+step),(4,24),(9,22),(11,17)],INK)
+        line(7,16,5,22,WATER[1]); poly([(24,14),(28,18-step),(27,24),(23,22),(21,17)],INK)
+        line(24,16,26,22,WATER[1])
+        r(8,16,17,3,WATER[2]); r(9,16,13,1,WATER[3]); r(21,18,3,6,WATER[2]); r(21,23,3,1,WATER[4])
+        r(12,22,1,2,WOOD[4]); r(19,23,1,2,WOOD[4]); r(13,26,8,1,WOOD[4])
+        if attack:
+            r(25,13,4,2,WATER[3]); r(29,11,2,3,WATER[4]); r(28,16,3,2,WATER[2])
+    elif ident == 'earth_pitcher':
+        # A walking pitcher with red lip, open lid, nectar, veins and root feet.
+        for x, stride in [(9,step),(20,-step)]:
+            line(16,25,x+stride,28,EARTH[0]); line(x+stride,28,x-3+stride,30,EARTH[0])
+            line(16,25,x+stride,27,EARTH[2]); r(x-2+stride,29,4,1,WOOD[2],True)
+        poly([(8,11),(23,10),(25,17),(23,25),(19,28),(12,27),(8,22),(6,17)],EARTH[0])
+        poly([(9,12),(22,11),(23,18),(21,25),(17,26),(12,24),(9,19)],EARTH[2])
+        line(11,13,12,22,EARTH[3]); line(18,15,19,24,EARTH[1]); line(22,16,20,22,EARTH[3])
+        oval(5,8,22,9,FIRE[0]); oval(6,9,20,7,FIRE[2]); oval(8,10,16,4,INK)
+        r(9,10,12,1,FIRE[4]); r(8,13,15,1,FIRE[1])
+        for x in (10,16,21): r(x,11,1,2,CREAM)
+        poly([(8,8),(10,3),(17,1),(24,4),(25,8),(19,7),(12,8)],EARTH[0])
+        poly([(10,7),(12,4),(17,2),(23,5),(23,7),(17,6)],EARTH[2]); line(13,5,19,4,EARTH[4])
+        eye(10,18,EARTH[4]); eye(19,18,EARTH[4]); r(16,23,2,1,EARTH[0])
+        poly([(8,21),(2,19),(0,15),(6,16),(10,19)],EARTH[0]); line(2,16,7,19,EARTH[3])
+        poly([(23,20),(29,16),(31,18),(27,23),(22,24)],EARTH[0]); line(25,21,29,18,EARTH[3])
+        if attack:
+            line(24,13,31,10,EARTH[0]); line(24,12,31,9,EARTH[3]); r(29,8,3,2,WOOD[4])
     else:
         raise ValueError(ident)
     return p.svg()

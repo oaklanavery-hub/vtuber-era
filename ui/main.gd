@@ -195,7 +195,7 @@ func _card_face(card: ArmyCardData, rectangle: Rect2, parent: Control, action: C
 	_sprite(card, Rect2((width-64)/2.0, 38, 64, 64), tile)
 	_label(card.display_name, Rect2(7, height-65, width-14, 23), 14, true, true, tile)
 	var short_effect: String = card.role.capitalize()
-	var footer: String = "%d per summon · Max %d" % [card.group_size, GameCatalog.balance().unit_cap(card.role)]
+	var footer: String = "%d %s · Max %d" % [card.group_size, "unit" if card.group_size == 1 else "units", GameCatalog.army_cap(card)]
 	if not choice.is_empty():
 		var army: Dictionary = state.sides[0].roster[card.id]
 		var gain: int = state.action_gain(0, choice)
@@ -224,7 +224,7 @@ func _show_card_details(card_id: String, choice: Dictionary = {}) -> void:
 	_panel(Rect2(108, 41, 424, 282), details_overlay)
 	_sprite(card, Rect2(125, 61, 64, 64), details_overlay)
 	_label(card.display_name, Rect2(200, 54, 305, 28), 22, false, true, details_overlay)
-	_label("%s · %s · Max %d" % [card.set_id.capitalize(), card.role.capitalize(), GameCatalog.balance().unit_cap(card.role)], Rect2(200, 87, 305, 23), 12, false, false, details_overlay)
+	_label("%s · %s · Max %d" % [card.set_id.capitalize(), card.role.capitalize(), GameCatalog.army_cap(card)], Rect2(200, 87, 305, 23), 12, false, false, details_overlay)
 	_label("Base stats", Rect2(127, 126, 385, 21), 14, false, true, details_overlay)
 	_label("HP %d   Damage %d   %.2f attacks/s\nRange %d   Move speed %d" % [card.stats.max_hp, card.stats.damage, card.stats.attacks_per_second, card.stats.attack_range, card.stats.move_speed], Rect2(127, 149, 385, 37), 11, false, false, details_overlay)
 	_label("Army effects", Rect2(127, 191, 385, 22), 14, false, true, details_overlay)
@@ -334,11 +334,11 @@ func _select_commander(id: String) -> void:
 	var previous_bond: SetBonusData = GameCatalog.warband_bond(selected_warband, GameCatalog.cards())
 	selected_commander_id = id
 	if previous_bond != null and previous_bond.set_id == previous:
-		selected_warband = GameCatalog.realm_cards(GameCatalog.commander(id).set_id)
+		selected_warband = GameCatalog.realm_preset(GameCatalog.commander(id).set_id)
 	show_commander()
 
 func _preset(realm: String) -> void:
-	selected_warband = GameCatalog.realm_cards(realm) if realm != "clear" else []
+	selected_warband = GameCatalog.realm_preset(realm) if realm != "clear" else []
 	show_warband()
 
 func _toggle_card(id: String) -> void:
@@ -375,21 +375,21 @@ func show_warband() -> void:
 			_label("Choose an army", Rect2(5, 7, 133, 28), 10, true, false, slot)
 	for index in range(3):
 		var realm: String = GameCatalog.REALMS[index]
-		var preset := _button("%s preset" % realm.capitalize(), Rect2(20+index*99, 124, 94, 23), _preset.bind(realm))
+		var preset := _button("%s set" % realm.capitalize(), Rect2(20+index*99, 124, 94, 23), _preset.bind(realm))
 		preset.add_theme_font_size_override("font_size",10)
 		preset.size = Vector2(94,23)
 	_button("Clear", Rect2(322, 124, 72, 23), _preset.bind("clear"))
-	_label("Pick cards below · each army may appear once", Rect2(402, 126, 216, 19), 8)
-	for index in range(12):
+	_label("Choose any four armies", Rect2(402, 126, 216, 19), 10)
+	for index in range(GameCatalog.ARMY_IDS.size()):
 		var card: ArmyCardData = cards[GameCatalog.ARMY_IDS[index]]
 		var chosen: bool = selected_warband.has(card.id)
-		var tile := _button("", Rect2(17+(index%4)*152, 155+int(index/4)*44, 143, 41), _toggle_card.bind(card.id))
+		var tile := _button("", Rect2(17+(index%5)*122, 155+int(index/5)*44, 118, 41), _toggle_card.bind(card.id))
 		tile.disabled = not chosen and selected_warband.size() == 4
 		if chosen:
 			tile.add_theme_stylebox_override("normal", StoryStyle.panel(Color("e5d7ad")))
 		_sprite(card, Rect2(2, 3, 32, 32), tile)
-		_label(card.short_name, Rect2(35, 3, 105, 18), 10, false, true, tile)
-		_label("%s · %d units%s" % [card.role.capitalize(), card.group_size, " +" if chosen else ""], Rect2(35, 22, 105, 14), 8, false, false, tile)
+		_label(card.short_name, Rect2(35, 3, 80, 18), 10, false, true, tile)
+		_label("%s · %d%s" % [card.role.capitalize(), card.group_size, " +" if chosen else ""], Rect2(35, 22, 80, 14), 10, false, false, tile)
 		tile.tooltip_text = "%s\n%s" % [card.display_name, card.description]
 	var realm_bond: SetBonusData = GameCatalog.warband_bond(selected_warband, cards)
 	_panel(Rect2(15, 286, 610, 40))
@@ -420,7 +420,8 @@ func _roster_text(side: int, abbreviated: bool = false) -> String:
 	var pieces: Array[String] = []
 	var abbreviations := {"fire_archer":"Liza", "fire_melee":"Imp", "fire_tank":"Magma", "fire_assassin":"Ninja",
 		"water_mage":"Wiz", "water_tank":"Ice", "water_melee":"Slime", "water_ranged":"Snow",
-		"earth_tank":"Tree", "earth_melee":"Arma", "earth_ranged":"Bow", "earth_siege":"Siege"}
+		"earth_tank":"Tree", "earth_melee":"Arma", "earth_ranged":"Bow", "earth_siege":"Siege",
+		"fire_candle":"Candle", "water_penguin":"Peng", "earth_pitcher":"Pitch"}
 	for id in state.warband_for(side):
 		var army: Dictionary = state.sides[side].roster[id]
 		var army_name: String = abbreviations[id] if abbreviated else state.cards[id].short_name
@@ -686,9 +687,10 @@ func show_compendium() -> void:
 		var realm: String = GameCatalog.REALMS[index]
 		_button(realm.capitalize(), Rect2(161+index*106, 86, 100, 27), _compendium_tab.bind(realm), compendium_realm == realm)
 	var cards: Dictionary = GameCatalog.cards()
-	for index in range(4):
-		var card: ArmyCardData = cards[GameCatalog.realm_cards(compendium_realm)[index]]
-		_card_face(card, Rect2(26+index*149, 123, 141, 184), surface)
+	var realm_ids: Array = GameCatalog.realm_cards(compendium_realm)
+	for index in range(realm_ids.size()):
+		var card: ArmyCardData = cards[realm_ids[index]]
+		_card_face(card, Rect2(16+index*123, 123, 116, 184), surface)
 	_button("← Main menu", Rect2(223, 322, 194, 29), show_menu)
 	_publish()
 
@@ -773,13 +775,14 @@ func _publish() -> void:
 	if not qa_enabled:
 		return
 	var snapshot := {"screen": screen, "modal": modal_kind, "settings": SaveStore.settings,
-		"release": "army-passives-role-caps", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
+		"release": "elemental-garden-armies", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
 		"card_details": details_card_id, "command_popup": modal_kind == "command",
 		"battle_controls_visible": is_instance_valid(battle_button) and battle_button.is_visible_in_tree(),
 		"pixel_scale_mode":"integer" if get_window().content_scale_stretch == Window.CONTENT_SCALE_STRETCH_INTEGER else "fit",
 		"combat_sounds": Sound.combat_sounds_played, "text_overflows": _text_overflows(surface),
 		"selected_commander": selected_commander_id, "selected_warband": selected_warband,
-		"rival": rival_realm, "compendium_realm": compendium_realm}
+		"rival": rival_realm, "compendium_realm": compendium_realm,
+		"compendium_cards":GameCatalog.realm_cards(compendium_realm), "army_ids":GameCatalog.ARMY_IDS}
 	if state:
 		snapshot.merge({"phase": state.phase, "round": state.round_number,
 			"points": state.sides[0].points, "spell": state.sides[0].spell,
@@ -802,6 +805,10 @@ func _publish() -> void:
 			snapshot["tick"] = simulation.tick
 			snapshot["passives"] = simulation.passive_counts
 			snapshot["active_fields"] = simulation.fields.size()
+			snapshot["ground_fields"] = []
+			for field in simulation.fields:
+				if field.kind in ["ground_fire", "puddle"]:
+					snapshot.ground_fields.append([field.kind, field.side, field.position.x, field.position.y, field.radius, field.until])
 			snapshot["skills"] = {"prepared":simulation.spell_prepared, "activated":simulation.skills_activated,
 				"counts":simulation.skill_counts, "opening":simulation.opening_active(), "opening_tick":simulation.opening_tick,
 				"opening_duration":simulation.opening_duration}
@@ -813,7 +820,7 @@ func _publish() -> void:
 			for unit in simulation.units:
 				if unit.hp > 0.0:
 					snapshot.combat_positions.append([unit.id, unit.side, unit.position.x, unit.position.y])
-					snapshot.combat_statuses.append([unit.id, simulation.move_speed(unit), simulation.defence_multiplier(unit), simulation.attack_rate(unit), unit.ice_aura_fraction, unit.teleport_used, simulation.teleport_charging(unit), unit.blast_burn_until])
+					snapshot.combat_statuses.append([unit.id, simulation.move_speed(unit), simulation.defence_multiplier(unit), simulation.attack_rate(unit), unit.ice_aura_fraction, unit.teleport_used, simulation.teleport_charging(unit), unit.blast_burn_until, unit.fire_aura_dps, unit.ground_fire_dps, unit.pull_target])
 	JavaScriptBridge.eval("window.vtuberEraQA = %s;" % JSON.stringify(snapshot))
 
 func _text_overflows(parent: Node) -> int:

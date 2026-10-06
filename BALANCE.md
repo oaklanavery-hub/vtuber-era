@@ -18,6 +18,9 @@ initial unit values; preserve custom tuning before rebuilding assets.
 | Water Slimes | 3 | 52 | 6 | 0.9 | 35 | 21 |
 | Snowmen | 3 | 34 | 7 | 1 | 32 | 154 |
 | Ice Golems | 1 | 180 | 6 | 0.55 | 24 | 23 |
+| Candle | 2 | 65 | 7 | 0.55 | 26 | 132 |
+| Penguin | 2 | 72 | 4 | 0.50 | 28 | 138 |
+| Pitcher Plant | 2 | 95 | 13 | 0.65 | 26 | 20 |
 
 | Rank | HP multiplier | Damage multiplier |
 |---|---:|---:|
@@ -81,7 +84,7 @@ point, not a competitive balance claim.
 |---|---|
 | Fire Lizard | Every projectile splashes a 16px radius, full primary / 50% secondary damage |
 | Fire Imp | Death explosion: 24px radius, 100% current attack damage, 12px radial pushback, independent 3 HP/s Burn for 2s; enemies only. Multiple blasts refresh rather than stack Burn |
-| Magma Golem | Wall every 5s: 10×44px, 4s lifetime; contact refreshes an independent 2s Burn at 3 HP/s |
+| Magma Golem | Moving 48px fire ring, matching the Ice Golem radius: 3 HP/s to enemies inside; strongest overlapping ring wins; stops on leaving or Golem death |
 | Red Ninja | Two-second charge (60 combat ticks), then one collision-safe teleport behind enemy lines per battle. Resurrects once at 30% actual max HP; does not reset a spent teleport. Reachable defenders take priority over distant targets |
 | Water Wizard | Each splash projectile pushes affected enemies 12px; simultaneous pushes cap at 24px per tick and stop at bodies/walls/arena edges |
 | Ice Golem | Moving 48px radius aura: enemy movement ×0.85 and attack cooldown progress ×0.85 while inside; does not stack with other Golems or stronger slows; ends on leaving or Golem death |
@@ -91,11 +94,15 @@ point, not a competitive balance claim.
 | Armadillo | Bounces every 3s; enemies within 36px receive 20% attack-speed Slow for 2s; strongest value wins |
 | Wood Archer | Every 5s when in range with clear line of sight, fires 3 arrows sharing one attack's total damage; prefers distinct visible enemies, repeats targets when fewer than 3 |
 | Wooden Siege | Every stone explodes over a huge 64px radius, retaining 70% secondary damage |
+| Candle | Full attack damage across a 24px splash. Leaves a stationary 3s fire pool: 3 HP/s while inside; pools do not stack and cannot burn through a wall |
+| Penguin | Full attack damage across a 30px splash. Each stationary puddle lasts 3s and heals living allies in range for 5% actual max HP at 1s, 2s and 3s. Every puddle heals independently, so overlaps stack. Recipient affinity applies and HP clamps at max |
+| Pitcher Plant | First available pull after 1s, then 5s cast cooldown. Prefers visible ranged/mage/siege prey within 154px; distinct plants claim distinct targets. 0.5s root windup, then up to 2s of 180px/s swept pulling, stopping at bodies/walls/arena bounds. One attack's melee damage on reaching contact; otherwise releases without a remote bite |
 
 Wizard movement Slow and Golem aura are independent; only the strongest active
 value affects speed. Armadillo attack Slow and the aura also use the strongest value. Attack Slow reduces progress on the ongoing attack
-cooldown as well as subsequent cycles. Imp-blast Burn, flame-wall Burn and
-Wildfire have independent timers. Death pushback enters the next swept movement
+cooldown as well as subsequent cycles. Fire-ring damage, Candle ground Burn,
+Imp-blast Burn and Wildfire are independent. Ground pools survive their caster's
+death and clear at their lifetime or round end. Death pushback enters the next swept movement
 tick, capped with other simultaneous pushes at 24px, and stops at bodies, walls
 and arena edges. Rank and commander damage bonuses carry through split arrows,
 children and death blasts. Births use free collision positions and do not change
@@ -110,7 +117,7 @@ resurrection/splitting and thrown heads settle before elimination resolves.
 | Action / spell cost | 1 point |
 | Special eligibility | 2 normal summons |
 | Reinforcements | 2 per army per match |
-| Unit caps | Per army: ranged 8, melee 10, tanks 3, mages 5, assassins 3, siege 4; 72 per side safety ceiling |
+| Unit caps | Per army: ranged 8, melee 10, tanks 3, mages 5, assassins 3, siege 4. Specialist overrides: Candle 4, Penguin 4, Pitcher Plant 6. 72 per side safety ceiling |
 | Fixed ticks | 30/s |
 | Normal battle limit | 45s |
 | Sudden-death damage | 8 HP/s plus 4 HP/s per overtime second |

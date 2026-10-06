@@ -1,24 +1,25 @@
 [gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
 [ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]
 [ext_resource type="Script" path="res://data/types/unit_stats.gd" id="2"]
-[ext_resource type="Texture2D" path="res://assets/units/fire_tank.svg" id="3"]
+[ext_resource type="Texture2D" path="res://assets/units/earth_pitcher.svg" id="3"]
 [sub_resource type="Resource" id="Stats"]
 script = ExtResource("2")
-max_hp = 220.0
-damage = 7.0
+max_hp = 95.0
+damage = 13.0
 attacks_per_second = 0.65
-move_speed = 27.0
-attack_range = 23.0
-fire_aura_radius = 48.0
+move_speed = 26.0
+attack_range = 20.0
+pull_range = 154.0
 
 [resource]
 script = ExtResource("1")
-id = "fire_tank"
-display_name = "Magma Golems"
-short_name = "Magma Golem"
-set_id = "fire"
-role = "tank"
-group_size = 1
-description = "A moving 48px fire ring deals 3 damage/s to enemies inside. Overlapping rings do not stack."
+id = "earth_pitcher"
+display_name = "Pitcher Plant"
+short_name = "Pitcher Plant"
+set_id = "earth"
+role = "melee"
+group_size = 2
+spawn_limit = 6
+description = "Prefers back-line prey. Roots pull within 154px, then bite. 0.5s windup; 5s cooldown."
 stats = SubResource("Stats")
 sprite = ExtResource("3")

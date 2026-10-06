@@ -32,7 +32,7 @@ static func sanitize(raw: Variant) -> Dictionary:
 	if ids is Array and GameCatalog.valid_warband(ids, GameCatalog.cards()):
 		result.warband = ids.duplicate()
 	else:
-		result.warband = GameCatalog.realm_cards(GameCatalog.commander(result.commander).set_id)
+		result.warband = GameCatalog.realm_preset(GameCatalog.commander(result.commander).set_id)
 	var rival: Variant = raw.get("rival", "mirror")
 	if rival is String and rival in ["mirror", "fire", "water", "earth"]:
 		result.rival = rival

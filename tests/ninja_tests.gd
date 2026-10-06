@@ -23,6 +23,7 @@ func fixture(own: Dictionary, enemy: Dictionary) -> CombatSimulation:
 	state.config.battle_limit_seconds = 300.0
 	for id in state.cards:
 		state.cards[id] = state.cards[id].duplicate(true)
+		state.cards[id].stats.fire_aura_radius = 0.0
 		if id != "fire_assassin": state.cards[id].stats.move_speed = 0.0
 	for id in own: state.sides[0].roster[id].count = own[id]
 	for id in enemy: state.sides[1].roster[id].count = enemy[id]

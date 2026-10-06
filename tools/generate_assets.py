@@ -177,9 +177,11 @@ def art():
              ('fire_melee', 'Fire Imps', 'Fire Imp', 'melee', 3, 64, 8, 1.05, 39, 20,
               "On death: 24px blast deals one attack's damage, pushes enemies 12px, and burns for 3 damage/s for 2s."),
              ('fire_tank', 'Magma Golems', 'Magma Golem', 'tank', 1, 220, 7, .65, 27, 23,
-              'Every 5s, raises a 4s flame wall. Enemies crossing it burn for 3 damage/s for 2s.'),
+              'A moving 48px fire ring deals 3 damage/s to enemies inside. Overlapping rings do not stack.'),
              ('fire_assassin', 'Red Ninjas', 'Red Ninja', 'assassin', 1, 60, 13, 1.55, 62, 19,
               'Charges for 2s, then teleports behind enemy lines once per battle. Resurrects once with 30% max HP.'),
+             ('fire_candle', 'Candle', 'Candle', 'mage', 2, 65, 7, .55, 26, 132,
+              'Spits fire into a 24px area. The ground burns for 3s, dealing 3 damage/s to enemies inside.'),
              ('water_mage', 'Water Wizards', 'Water Wizard', 'mage', 2, 34, 6, .60, 30, 146,
               'Splash projectiles push enemies back 12px and slow movement by 25% for 2s.'),
              ('water_tank', 'Ice Golems', 'Ice Golem', 'tank', 1, 180, 6, .55, 24, 23,
@@ -188,6 +190,8 @@ def art():
               'Splits once into 2 small Slimes at 50% HP and damage each. Retains 15% lifesteal (2% HP/s cap).'),
              ('water_ranged', 'Snowmen', 'Snowman', 'ranged', 3, 34, 7, 1.0, 32, 154,
               'On death, throws its head at the nearest enemy for a small area blast.'),
+             ('water_penguin', 'Penguin', 'Penguin', 'mage', 2, 72, 4, .50, 28, 138,
+              'Splashes a 30px area, leaving a 3s puddle. Each puddle heals allies for 5% max HP/s. Puddles stack.'),
              ('earth_tank', 'Trees', 'Tree', 'tank', 1, 250, 6, .55, 22, 25,
               "Every 2s, heals itself and allies within 48px for 5% of each unit's max HP."),
              ('earth_melee', 'Armadillos', 'Armadillo', 'melee', 2, 80, 10, .75, 32, 23,
@@ -195,25 +199,32 @@ def art():
              ('earth_ranged', 'Wood Archers', 'Wood Archer', 'ranged', 2, 44, 13, .65, 28, 150,
               "Every 5s in range, fires 3 arrows sharing one attack's damage across nearby enemies."),
              ('earth_siege', 'Wooden Siege', 'Wooden Siege', 'siege', 1, 75, 20, .20, 17, 220,
-              'Long-range stones blast a huge 64px area. Nearby enemies take 70% damage.')]
+              'Long-range stones blast a huge 64px area. Nearby enemies take 70% damage.'),
+             ('earth_pitcher', 'Pitcher Plant', 'Pitcher Plant', 'melee', 2, 95, 13, .65, 26, 20,
+              'Prefers back-line prey. Roots pull within 154px, then bite. 0.5s windup; 5s cooldown.')]
     extras = {
         'fire_archer': {'splash_radius': 16.0, 'splash_falloff': 0.5},
         'fire_melee': {'death_blast_radius': 24.0, 'death_pushback_distance': 12.0, 'death_burn_dps': 3.0},
-        'fire_tank': {'flame_interval': 5.0},
+        'fire_tank': {'fire_aura_radius': 48.0},
         'fire_assassin': {'revive_fraction': 0.3, 'teleport_delay': 2.0},
+        'fire_candle': {'projectile_speed': 210.0, 'splash_radius': 24.0, 'splash_falloff': 1.0, 'ground_fire_duration': 3.0},
         'water_mage': {'projectile_speed': 220.0, 'splash_radius': 22.0, 'splash_falloff': 0.5, 'slow_fraction': 0.25, 'slow_duration': 2.0, 'knockback_distance': 12.0},
         'water_tank': {'ally_shield_fraction': 0.08, 'ally_shield_radius': 58.0, 'ally_shield_duration': 8.0, 'ice_aura_radius': 48.0},
         'water_melee': {'lifesteal_fraction': 0.15, 'lifesteal_cap_per_second': 0.02, 'split_count': 2},
         'water_ranged': {'projectile_speed': 280.0, 'death_blast_radius': 24.0, 'death_projectile': True},
+        'water_penguin': {'projectile_speed': 200.0, 'splash_radius': 30.0, 'splash_falloff': 1.0, 'puddle_duration': 3.0},
         'earth_tank': {'heal_interval': 2.0},
         'earth_melee': {'bounce_interval': 3.0},
         'earth_ranged': {'projectile_speed': 240.0, 'split_shot_interval': 5.0},
         'earth_siege': {'projectile_speed': 140.0, 'splash_radius': 64.0},
+        'earth_pitcher': {'pull_range': 154.0},
     }
     for ident, name, short, role, group, hp, damage, aps, speed, reach, description in names:
         realm = ident.split('_')[0]
         content = ''.join(f'<g transform="translate({frame*FRAME_SIZE} 0)">{army_figure(ident, frame)}</g>' for frame in range(FRAME_COUNT))
         (ROOT / f'assets/units/{ident}.svg').write_text(svg(FRAME_SIZE*FRAME_COUNT, FRAME_SIZE, content))
+        limits = {'fire_candle': 4, 'water_penguin': 4, 'earth_pitcher': 6}
+        spawn_line = f'spawn_limit = {limits[ident]}\n' if ident in limits else ''
         resource = f'''[gd_resource type="Resource" script_class="ArmyCardData" load_steps=5 format=3]
 [ext_resource type="Script" path="res://data/types/army_card_data.gd" id="1"]
 [ext_resource type="Script" path="res://data/types/unit_stats.gd" id="2"]
@@ -226,6 +237,7 @@ attacks_per_second = {aps}
 move_speed = {float(speed)}
 attack_range = {float(reach)}
 {''.join(f'{key} = {str(value).lower() if isinstance(value, bool) else value}\n' for key, value in extras.get(ident, {}).items()).rstrip()}
+
 [resource]
 script = ExtResource("1")
 id = "{ident}"
@@ -234,7 +246,7 @@ short_name = "{short}"
 set_id = "{realm}"
 role = "{role}"
 group_size = {group}
-description = "{description}"
+{spawn_line}description = "{description}"
 stats = SubResource("Stats")
 sprite = ExtResource("3")
 '''

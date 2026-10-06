@@ -28,6 +28,8 @@ func audio() -> void:
 	for id in GameCatalog.ARMY_IDS:
 		var requests: Dictionary = sound.combat_requests([{"kind":"attack", "card_id":id}])
 		check(requests.size() == 1 and sound.streams.has(requests.keys()[0]), "each army attack has an available sound: "+id)
+	for ability in ["fire_ring","candle_fire","penguin_puddle","puddle_heal","pitcher_pull","pitcher_bite"]:
+		check(sound.combat_requests([{"kind":"passive","ability":ability}]).size() == 1,"each new passive has a sound: "+ability)
 	var burst: Array = []
 	for index in range(144):
 		burst.append({"kind":"hit", "absorbed":0.0})
@@ -55,6 +57,10 @@ func _run() -> void:
 		ui._compendium_tab(realm)
 		check(ui.screen=="compendium" and ui.compendium_realm==realm, "each realm's compendium opens")
 		layout(ui)
+		var faces: int = 0
+		for child in ui.surface.get_children():
+			if child.has_meta("card_face"): faces += 1
+		check(faces == 5,"all five realm cards are visible together in the compendium")
 		for id in GameCatalog.realm_cards(realm):
 			ui._show_card_details(id)
 			check(ui.details_card_id == id and ui.details_overlay != null, "every compendium card opens detailed effects")

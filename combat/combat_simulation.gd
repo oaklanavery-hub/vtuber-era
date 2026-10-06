@@ -272,6 +272,8 @@ func _prepare_passive_state(unit: Dictionary) -> void:
 		"next_split_shot":_ticks(stats.split_shot_interval), "bounce_at":-100, "revive_at":-100,
 		"blast_burn_until":0, "blast_burn_next":0, "blast_burn_dps":0.0,
 		"ice_aura_fraction":0.0, "aura_started":false,
+		"fire_aura_dps":0.0, "fire_aura_started":false, "ground_fire_dps":0.0,
+		"pull_target":-1, "pull_started_at":-100, "pull_ready_at":0, "pull_until":0, "next_pull":_ticks(1.0),
 		"teleport_due":_ticks(stats.teleport_delay), "teleport_started":false,
 		"teleport_used":stats.teleport_delay <= 0.0, "teleport_at":-100}, true)
 
@@ -513,7 +515,7 @@ func _target(unit: Dictionary) -> int:
 			continue
 		var distance: float = unit.position.distance_squared_to(enemy.position)
 		var priority := 0
-		if unit.role == "assassin":
+		if unit.role == "assassin" or stats.pull_range > 0.0:
 			priority = 0 if enemy.role in BACKLINE else (2 if enemy.role == "tank" else 1)
 			# Fight a reachable defender rather than pushing forever against its
 			# solid body while selecting a distant backline unit.
@@ -570,7 +572,7 @@ func _hit(source: Dictionary, target: Dictionary, amount: float, damage: Array, 
 
 func _move(unit: Dictionary, dt: float) -> Vector2:
 	var next_position: Vector2 = unit.position
-	if unit.hp <= 0.0 or teleport_charging(unit):
+	if unit.hp <= 0.0 or teleport_charging(unit) or unit.pull_target >= 0:
 		unit.target = -1
 		return next_position
 	unit.target = _target(unit)
@@ -732,7 +734,9 @@ func _attack(unit: Dictionary, target: Dictionary, damage: Array, hits: Array, f
 		_hit(unit, target, unit.damage, damage, hits)
 
 func _tick_fields() -> void:
-	fields = fields.filter(func(field: Dictionary) -> bool: return int(field.until) > tick)
+	# Puddles deliver their last whole-second heal at their expiry tick.
+	fields = fields.filter(func(field: Dictionary) -> bool:
+		return int(field.until) >= tick if field.kind == "puddle" else int(field.until) > tick)
 	for unit in units:
 		if unit.hp <= 0.0:
 			continue
@@ -796,6 +800,8 @@ func _crosses_rect(start: Vector2, end: Vector2, rectangle: Rect2) -> bool:
 
 func _field_contacts(movements: Array = []) -> void:
 	for field in fields:
+		if field.kind not in ["flame", "ice"]:
+			continue
 		for unit in units:
 			if unit.side == field.side or unit.hp <= 0.0:
 				continue
@@ -841,6 +847,119 @@ func _tree_healing() -> void:
 		unit.next_heal = tick+1+_ticks(stats.heal_interval)
 		_passive("tree_heal", unit, stats.heal_radius)
 
+func _impact_field(source: Dictionary, center: Vector2) -> void:
+	var stats: UnitStats = cards[source.card_id].stats
+	if stats.ground_fire_duration <= 0.0 and stats.puddle_duration <= 0.0:
+		return
+	var healing: bool = stats.puddle_duration > 0.0
+	fields.append({"id":next_field_id, "kind":"puddle" if healing else "ground_fire",
+		"source":source.id, "side":source.side, "position":center, "radius":stats.splash_radius,
+		"until":tick+_ticks(stats.puddle_duration if healing else stats.ground_fire_duration),
+		"dps":stats.ground_fire_dps, "heal_fraction":stats.puddle_heal_fraction,
+		"next_heal":tick+config.ticks_per_second})
+	next_field_id += 1
+	_passive("penguin_puddle" if healing else "candle_fire", source, stats.splash_radius, center)
+
+func _area_damage(damage: Array) -> void:
+	var old_fire: Array = []
+	for unit in units:
+		old_fire.append(unit.fire_aura_dps)
+		unit.fire_aura_dps = 0.0
+		unit.ground_fire_dps = 0.0
+	for source in units:
+		var stats: UnitStats = cards[source.card_id].stats
+		if source.hp <= 0.0 or stats.fire_aura_radius <= 0.0:
+			continue
+		if not source.fire_aura_started:
+			source.fire_aura_started = true
+			_passive("fire_ring", source, stats.fire_aura_radius)
+		for enemy in units:
+			if enemy.hp > 0.0 and enemy.side != source.side and source.position.distance_squared_to(enemy.position) <= stats.fire_aura_radius*stats.fire_aura_radius:
+				if old_fire[int(enemy.id)] == 0.0 and enemy.fire_aura_dps == 0.0:
+					_passive("fire_ring_burn", source, 0.0, enemy.position)
+				enemy.fire_aura_dps = maxf(float(enemy.fire_aura_dps), stats.fire_aura_dps)
+	for field in fields:
+		if field.kind != "ground_fire" or tick >= int(field.until):
+			continue
+		for enemy in units:
+			if enemy.hp > 0.0 and enemy.side != field.side and enemy.position.distance_squared_to(field.position) <= field.radius*field.radius and line_of_sight(field.position, enemy.position):
+				enemy.ground_fire_dps = maxf(float(enemy.ground_fire_dps), float(field.dps))
+	for unit in units:
+		if unit.hp > 0.0:
+			# Both are independent of Imp/Wildfire Burn. Rings and fire pools
+			# each use the strongest overlap, avoiding accidental stacking.
+			damage[int(unit.id)] += (float(unit.fire_aura_dps)+float(unit.ground_fire_dps))/float(config.ticks_per_second)
+
+func _puddle_healing() -> void:
+	for field in fields:
+		if field.kind != "puddle" or tick < int(field.next_heal) or tick > int(field.until):
+			continue
+		for ally in units:
+			if ally.hp > 0.0 and ally.side == field.side and ally.position.distance_squared_to(field.position) <= field.radius*field.radius and line_of_sight(field.position, ally.position):
+				if _heal(ally, ally.max_hp*float(field.heal_fraction)) > 0.0:
+					_passive("puddle_heal", units[int(field.source)], 0.0, ally.position)
+		# Each puddle owns its clock. Overlapping puddles add independent heals.
+		field.next_heal += config.ticks_per_second
+
+func _start_tendrils() -> void:
+	var claimed: Dictionary = {}
+	for source in units:
+		if source.pull_target >= 0:
+			if source.hp <= 0.0 or units[int(source.pull_target)].hp <= 0.0 or tick >= int(source.pull_until):
+				source.pull_target = -1
+			else:
+				claimed[source.pull_target] = true
+	for source in units:
+		var stats: UnitStats = cards[source.card_id].stats
+		if source.hp <= 0.0 or stats.pull_range <= 0.0 or source.pull_target >= 0 or tick < int(source.next_pull):
+			continue
+		var best_id: int = -1
+		var best_priority: int = 999
+		var best_distance: float = INF
+		for enemy in units:
+			var distance: float = source.position.distance_squared_to(enemy.position)
+			if enemy.hp <= 0.0 or enemy.side == source.side or claimed.has(enemy.id) or distance > stats.pull_range*stats.pull_range or not line_of_sight(source.position, enemy.position):
+				continue
+			var priority: int = 0 if enemy.role in BACKLINE else 2 if enemy.role == "tank" else 1
+			if priority < best_priority or (priority == best_priority and (distance < best_distance-0.0001 or (absf(distance-best_distance) <= 0.0001 and enemy.id < best_id))):
+				best_id = enemy.id
+				best_priority = priority
+				best_distance = distance
+		if best_id >= 0:
+			source.pull_target = best_id
+			source.pull_started_at = tick
+			source.pull_ready_at = tick+_ticks(stats.pull_windup)
+			source.pull_until = source.pull_ready_at+_ticks(stats.pull_duration)
+			source.next_pull = tick+_ticks(stats.pull_interval)
+			claimed[best_id] = true
+			_passive("pitcher_pull", source, 0.0, units[best_id].position)
+
+func _tendril_forces(movements: Array, forces: Dictionary) -> void:
+	for source in units:
+		if source.hp <= 0.0 or source.pull_target < 0 or tick < int(source.pull_ready_at):
+			continue
+		var target: Dictionary = units[int(source.pull_target)]
+		if target.hp <= 0.0 or not line_of_sight(source.position, target.position):
+			source.pull_target = -1
+			continue
+		var stats: UnitStats = cards[source.card_id].stats
+		var delta: Vector2 = source.position-movements[int(target.id)]
+		var length: float = minf(stats.pull_speed/float(config.ticks_per_second), maxf(0.0, delta.length()-BODY_SIZE-0.1))
+		forces[target.id] = forces.get(target.id,Vector2.ZERO)+delta.normalized()*length
+
+func _tendril_bites(damage: Array, hits: Array) -> void:
+	for source in units:
+		if source.hp <= 0.0 or source.pull_target < 0 or tick < int(source.pull_ready_at):
+			continue
+		var target: Dictionary = units[int(source.pull_target)]
+		if target.hp > 0.0 and can_attack(source, target):
+			_hit(source, target, source.damage, damage, hits)
+			source.attack_at = tick
+			source.cooldown = _attack_cooldown(source)
+			source.target = target.id
+			_passive("pitcher_bite", source, 0.0, target.position)
+			source.pull_target = -1
+
 func _advance_projectiles(movements: Array, damage: Array, hits: Array) -> Dictionary:
 	var remaining: Array = []
 	var forces: Dictionary = pending_pushback.duplicate()
@@ -884,11 +1003,13 @@ func _advance_projectiles(movements: Array, damage: Array, hits: Array) -> Dicti
 				_passive("pushback", source, 0.0, movements[int(victim.id)])
 		if radius > 0.0:
 			events.append({"kind":"splash", "position":projectile.impact, "set_id":cards[source.card_id].set_id, "radius":radius})
+			if not projectile.posthumous:
+				_impact_field(source, projectile.impact)
 			if projectile.posthumous:
 				_passive("snow_head_impact", source, radius, projectile.impact)
 			elif source.role == "siege":
 				_passive("siege_blast", source, radius, projectile.impact)
-			elif stats.knockback_distance <= 0.0:
+			elif source.card_id == "fire_archer":
 				_passive("lizard_splash", source, radius, projectile.impact)
 	projectiles = remaining
 	return forces
@@ -974,8 +1095,9 @@ func _death_effects(deaths: Array, revivals: Array, damage: Array, hits: Array) 
 func _clear_statuses(unit: Dictionary) -> void:
 	for key in ["burn_until", "burn_next", "slow_until", "ice_until", "attack_slow_until", "flame_until", "flame_next", "recovery_next", "recovery_remaining", "shield_until", "cooldown", "blast_burn_until", "blast_burn_next"]:
 		unit[key] = 0
-	for key in ["shield", "slow_fraction", "ice_fraction", "attack_slow_fraction", "burn_dps", "flame_dps", "blast_burn_dps", "ice_aura_fraction"]:
+	for key in ["shield", "slow_fraction", "ice_fraction", "attack_slow_fraction", "burn_dps", "flame_dps", "blast_burn_dps", "ice_aura_fraction", "fire_aura_dps", "ground_fire_dps"]:
 		unit[key] = 0.0
+	unit.pull_target = -1
 
 func _settle_damage(damage: Array, hits: Array) -> void:
 	var revivals: Array = []
@@ -1077,6 +1199,7 @@ func step() -> void:
 	navigation_goals.clear()
 	_teleport_assassins()
 	_refresh_ice_auras()
+	_start_tendrils()
 	var dt: float = 1.0/float(config.ticks_per_second)
 	var damage: Array = []
 	damage.resize(units.size())
@@ -1108,7 +1231,7 @@ func step() -> void:
 		unit.cooldown = maxf(float(unit.cooldown)-rate, 0.0)
 		var stats: UnitStats = cards[unit.card_id].stats
 		var fan_due: bool = stats.split_shot_interval > 0.0 and tick+1 >= int(unit.next_split_shot)
-		if unit.target >= 0 and (unit.cooldown <= 0.000001 or fan_due) and not unit.flanking and not teleport_charging(unit):
+		if unit.target >= 0 and (unit.cooldown <= 0.000001 or fan_due) and not unit.flanking and not teleport_charging(unit) and unit.pull_target < 0:
 			var target: Dictionary = units[int(unit.target)]
 			if can_attack(unit, target):
 				_attack(unit, target, damage, hits, fan_due)
@@ -1136,6 +1259,7 @@ func step() -> void:
 			var overtime: float = float(tick)*dt-config.battle_limit_seconds
 			damage[int(unit.id)] += (config.sudden_death_dps+maxf(overtime, 0.0)*config.sudden_death_escalation)*dt
 	var forces: Dictionary = _advance_projectiles(movements, damage, hits)
+	_tendril_forces(movements, forces)
 	if not forces.is_empty():
 		for id in forces:
 			# Simultaneous hits contribute to pushback without tunnelling through
@@ -1146,10 +1270,13 @@ func step() -> void:
 	_field_contacts(movements)
 	for unit in units:
 		unit.position = movements[int(unit.id)]
+	_area_damage(damage)
+	_tendril_bites(damage, hits)
 	_settle_damage(damage, hits)
 	_birth_children()
 	_refresh_ice_auras()
 	_tree_healing()
+	_puddle_healing()
 	for unit in units:
 		if unit.hp <= 0.0:
 			continue
@@ -1208,6 +1335,8 @@ func signature() -> String:
 			unit.next_flame, unit.next_ice, unit.ice_anchor, unit.next_heal, unit.next_bounce, unit.next_split_shot, unit.bounce_at,
 			unit.blast_burn_until, unit.blast_burn_next, unit.blast_burn_dps, unit.ice_aura_fraction,
 			unit.aura_started, unit.teleport_due, unit.teleport_started, unit.teleport_used, unit.teleport_at])
+		snapshot.back().append_array([unit.fire_aura_dps, unit.fire_aura_started, unit.ground_fire_dps,
+			unit.pull_target, unit.pull_started_at, unit.pull_ready_at, unit.pull_until, unit.next_pull])
 	return JSON.stringify([tick, snapshot, projectiles, fields, pending_children, pending_pushback, spell_prepared, skills_activated,
 		opening_tick, opening_duration, meteors, walls, skill_counts,
 		next_projectile_id, next_field_id, sudden_death, passive_counts, result]).sha256_text()

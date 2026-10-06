@@ -1,3 +1,64 @@
+# Fire ring and new realm armies — 7 October 2026
+
+Magma Golem replaces its wall with a moving 48px fire ring, matching Ice Golem.
+It deals 3 HP/s to enemies inside; overlapping rings use the strongest value.
+Candle and Penguin summon two units and cap at four. Pitcher Plant summons two
+and caps at six. These individual limits apply to normal summons, reinforcements,
+card details, confirmations and AI actions; promotion remains legal at the cap.
+
+Candle's 24px fire splash leaves a three-second burning pool. Penguin's 30px
+water splash leaves a three-second puddle: every puddle heals living allies for
+5% of their max HP at one, two and three seconds. Overlaps heal independently,
+including after caster death, and never exceed max HP or resurrect units.
+Pitcher Plant chooses visible backline prey within 154px, winds up for 0.5s,
+then reels it in through swept movement before one melee bite. Bodies and Earth
+walls stop the pull. Failed pulls release; out-of-range plants approach enemies.
+
+All fifteen original sprite sheets use eight 32px frames. The picker displays
+all fifteen armies, the compendium five per realm, and any four same-realm cards
+still activate their bond. Existing presets and saves remain compatible. New
+fire rings, ground fire, puddles and root lines have pixel graphics and sound.
+
+Native validation used exact Godot 4.5.stable.official.876b29033 and matching Web
+templates, previously checked against official SHA512 sums.
+
+| Runner | Checks | Failures |
+|---|---:|---:|
+| Rules, caps and drafting | 1,217 | 0 |
+| Elemental mechanics and matches | 17,365 | 0 |
+| Original army passives | 24,534 | 0 |
+| New armies, fire ring, puddles and wall collision | 26,629 | 0 |
+| Ninja charge, teleport and revival | 1,735 | 0 |
+| Permanent collision and formations | 75,101 | 0 |
+| Commander skills and terrain | 1,845 | 0 |
+| **Gameplay total** | **148,426** | **0** |
+| Native UI, typography, card details and audio | — | 0 |
+
+Four complete WebAssembly/WebGL matches passed at 3x playback:
+
+| Warband | Rival | Rounds | Combat sounds | Errors / text overflows |
+|---|---|---:|---:|---:|
+| Fire (new armies equipped) | Fire | 6 | 295 | 0 |
+| Water (new armies equipped) | Earth | 4 | 326 | 0 |
+| Earth (new armies equipped) | Water | 6 | 1098 | 0 |
+| Mixed (new armies equipped) | Fire | 4 | 297 | 0 |
+
+Mixed combat recorded Candle pools, stacked puddle healing, fire rings and
+Pitcher pulls/bites together. Earth combat recorded backline pulls and bites
+with Ice Golem auras and Earth walls. All runs checked actual drafting, caps,
+spell payment, collision during movement, ranged line of sight, audio playback,
+results, Rematch and saved loadouts. The final Fire and Water runs also checked
+the shortened labels and complete Pitcher description after the visual review.
+All fifteen card details were exercised in every run. No game or JavaScript
+errors, failed HTTP requests, body overlaps, wall clips or text overflows occurred.
+
+Evidence: `docs/qa/garden-armies-native.txt`,
+`docs/qa/garden-armies-browser.json` and `docs/screenshots/garden-*.png`.
+Web export and ordinary HTTP preparation passed. GitHub Pages runs all eight
+correctness runners again before exporting and deploying.
+
+---
+
 # Army passives and role caps — 6 October 2026
 
 Fire Imps now explode on death with a 24px enemy-only blast for one attack's

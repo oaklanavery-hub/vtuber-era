@@ -31,6 +31,7 @@ func fixture(leader: String, own: Dictionary, rival: String, enemy: Dictionary, 
 	state.config.battle_limit_seconds = 300.0
 	for id in state.cards:
 		state.cards[id] = state.cards[id].duplicate(true)
+		state.cards[id].stats.fire_aura_radius = 0.0
 	for side in range(2):
 		state.sides[side].spell = prepared[side]
 		var counts: Dictionary = own if side == 0 else enemy
@@ -306,9 +307,9 @@ func _dense_and_replays() -> void:
 	for pair in [["earth","earth"],["fire","earth"],["water","earth"],["earth","water"]]:
 		var own: Dictionary = {}
 		var enemy: Dictionary = {}
-		for id in GameCatalog.realm_cards(pair[0]):
+		for id in GameCatalog.realm_preset(pair[0]):
 			own[id] = 18
-		for id in GameCatalog.realm_cards(pair[1]):
+		for id in GameCatalog.realm_preset(pair[1]):
 			enemy[id] = 18
 		var first := fixture(pair[0]+"_commander",own,pair[1]+"_commander",enemy,[true,true])
 		var second := fixture(pair[0]+"_commander",own,pair[1]+"_commander",enemy,[true,true])

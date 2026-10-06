@@ -11,7 +11,8 @@ const COMBAT_CUES := ["disperse", "siege_launch", "siege_impact", "fire_breath",
 const ATTACK_CUES := {"fire_archer":"fire_breath", "fire_melee":"swing", "fire_tank":"swing",
 	"fire_assassin":"slash", "water_mage":"water_cast", "water_tank":"swing",
 	"water_melee":"swing", "water_ranged":"snowball", "earth_tank":"swing",
-	"earth_melee":"swing", "earth_ranged":"arrow", "earth_siege":"siege_launch"}
+	"earth_melee":"swing", "earth_ranged":"arrow", "earth_siege":"siege_launch",
+	"fire_candle":"fire_breath", "water_penguin":"water_cast", "earth_pitcher":"swing"}
 
 func _ready() -> void:
 	music = AudioStreamPlayer.new()
@@ -58,6 +59,11 @@ func combat_requests(events: Array) -> Dictionary:
 					"ninja_vanish":"disperse", "ice_aura":"water_cast", "ice_path":"water_cast", "slime_split":"water_cast",
 					"snow_head":"snowball", "tree_heal":"heal", "armadillo_bounce":"impact",
 					"split_arrows":"arrow", "siege_blast":"siege_impact"}.get(event.ability, "")
+				if event.ability in ["fire_ring", "candle_fire"]: cue = "fire_breath"
+				elif event.ability == "penguin_puddle": cue = "water_cast"
+				elif event.ability == "puddle_heal": cue = "heal"
+				elif event.ability == "pitcher_pull": cue = "arrow"
+				elif event.ability == "pitcher_bite": cue = "swing"
 				if not cue.is_empty():
 					requests[cue] = true
 	return requests

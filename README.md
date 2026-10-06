@@ -1,7 +1,7 @@
 # VTuber Era
 
 A cozy storybook drafting auto-battler at the Convergence Festival. Choose a
-Fire, Water or Earth Commander and four unique armies from twelve cards. Phase 2
+Fire, Water or Earth Commander and four unique armies from fifteen cards. Phase 2
 adds mixed warbands, healing, shields, Slow, lifesteal and siege splash.
 
 Commanders each have an active skill costing **1 Command Point**, once per round.
@@ -18,15 +18,19 @@ The same card design appears in the compendium. Draft controls disappear during
 combat, opening a 600×280 arena—39% more fighting space than the 600×202 layout.
 
 The interface uses proportional Minecraft-style lettering by Idrees Hassan.
-All twelve armies share a 32-color palette, material details and eight animation
+All fifteen armies share a 32-color palette, material details and eight animation
 frames. Native-size battle sprites, stepped panels and crisp viewport scaling
 unify the pixel theme. Ninja teleport, contact attacks and one-use revival
 remain covered by gameplay tests.
 
-All twelve army passives remain active:
+All fifteen army passives remain active:
 projectile splash and pushback, death explosions and Slime splitting, one-use
-Ninja teleport and resurrection, flame walls, ice auras, Tree healing, Armadillo attack Slow,
-split arrows and huge siege blasts. The compendium explains each ability.
+Ninja teleport and resurrection, fire rings, ice auras, Tree healing, Armadillo attack Slow,
+split arrows and huge siege blasts. Candle adds three-second burning ground,
+Penguin adds stacking 5%-HP-per-second healing puddles, and Pitcher Plant pulls
+backline enemies into melee range. The compendium explains each ability.
+Each realm now offers five armies; choose any four. The three new armies summon
+two units, capped at four Candles, four Penguins and six Pitcher Plants.
 Collision stays active at 7.2×7.2 with depth-sorted sprites, a compact HUD and
 twelve original combat sound effects.
 
@@ -95,6 +99,7 @@ godot --headless --path . --editor --import --quit
 godot --headless --path . --script res://tests/run_tests.gd
 godot --headless --path . --script res://tests/elemental_tests.gd
 godot --headless --path . --script res://tests/passive_tests.gd
+godot --headless --path . --script res://tests/garden_army_tests.gd
 godot --headless --path . --script res://tests/ninja_tests.gd
 godot --headless --path . --script res://tests/formation_tests.gd
 godot --headless --path . --script res://tests/commander_skill_tests.gd
@@ -113,9 +118,12 @@ contact, range-based pursuit, original stats and deterministic movement replay.
 The Ninja runner covers the full two-second charge, mirrored rear landings,
 wall/crowd/edge destinations, blocking defenders, real attacks from both sides,
 30%-HP revival and deterministic collision-safe pursuit.
-The passive runner covers all twelve abilities, simultaneous death chains,
+The passive runner covers the original twelve abilities, simultaneous death chains,
 posthumous projectiles, one-use revivals/splits, non-stacking slows, exact damage
 and healing fractions, timed auras, pushback collisions and 240-unit split crowds.
+The garden army runner checks specialist caps, saved loadouts and bonds, matching
+golem radii, ring damage, exact ground lifetimes, additive puddle healing,
+backline targeting, collision-safe pulls and full mixed-army combat replays.
 The commander skill runner checks payment, six opening impacts, AOE and death
 passives, global ice and defence/shield math, wall routes, obscured ranged
 repositioning, blocked fast/posthumous projectiles, safe births and knockback,
@@ -157,7 +165,7 @@ account, CDN, remote asset service or JavaScript game framework is needed.
 ## GitHub Pages
 
 `.github/workflows/deploy-pages.yml` installs the exact engine/templates,
-verifies official SHA-512 checksums, imports, runs all seven correctness runners,
+verifies official SHA-512 checksums, imports, runs all eight correctness runners,
 exports, checks required files, includes notices and `.nojekyll`, then deploys
 through official Pages actions. Main pushes and manual dispatch trigger it.
 The public game uses the existing `/vtuber-era/` project path.
@@ -166,7 +174,7 @@ The public game uses the existing `/vtuber-era/` project path.
 
 | Folder | Responsibility |
 |---|---|
-| `data/` | Custom Resources: twelve armies, three Commanders/bonds and balance |
+| `data/` | Custom Resources: fifteen armies, three Commanders/bonds and balance |
 | `simulation/` | Persistent armies, points, Hearts and seeded draft RNG |
 | `drafting/` | Unique weighted offers and special eligibility |
 | `combat/` | Fixed-tick movement, projectiles, splash and elemental effects |

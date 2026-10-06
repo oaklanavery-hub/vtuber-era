@@ -7,6 +7,7 @@ extends Resource
 @export var set_id: String = "fire"
 @export_enum("tank", "melee", "ranged", "assassin", "mage", "siege") var role: String = "melee"
 @export var group_size: int = 3
+@export var spawn_limit: int = 0
 @export var description: String = ""
 @export var stats: UnitStats
 @export var sprite: Texture2D

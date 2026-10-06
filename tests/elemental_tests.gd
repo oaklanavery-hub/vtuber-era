@@ -29,6 +29,7 @@ func fixture(leader: String, ids: Array, own: Dictionary, rival: String = "fire_
 	for id in state.cards:
 		state.cards[id] = state.cards[id].duplicate(true)
 		state.cards[id].stats.move_speed = 0.0
+		state.cards[id].stats.fire_aura_radius = 0.0
 	for id in own:
 		state.sides[0].roster[id].count = own[id]
 	for id in enemy:
@@ -58,11 +59,12 @@ func _run() -> void:
 
 func _content_and_drafts() -> void:
 	var cards: Dictionary = GameCatalog.cards()
-	expect(cards.size() == 12, "twelve distinct Resource-backed armies")
+	expect(cards.size() == 15, "fifteen distinct Resource-backed armies")
 	expect(GameCatalog.valid_warband(MIXED, cards), "mixed four-card warband is legal")
 	expect(GameCatalog.warband_bond(MIXED, cards) == null, "mixed warband has no bond")
 	for realm in GameCatalog.REALMS:
-		var ids: Array = GameCatalog.realm_cards(realm)
+		var ids: Array = GameCatalog.realm_preset(realm)
+		expect(GameCatalog.realm_cards(realm).size() == 5,"each realm has five selectable armies")
 		var state := MatchState.new(11, "fire_commander", ids, "earth_commander")
 		expect(state.bond.set_id == realm, "bond depends on cards, independently of commander")
 		for id in ids:

@@ -26,9 +26,9 @@ func _init(seed_value: int = 1, commander_id: String = "fire_commander", player_
 	config = GameCatalog.balance()
 	cards = GameCatalog.cards()
 	commander = GameCatalog.commander(commander_id)
-	warband = player_warband.duplicate() if GameCatalog.valid_warband(player_warband, cards) else GameCatalog.realm_cards(commander.set_id)
+	warband = player_warband.duplicate() if GameCatalog.valid_warband(player_warband, cards) else GameCatalog.realm_preset(commander.set_id)
 	var rival: CommanderData = GameCatalog.commander(rival_commander_id) if not rival_commander_id.is_empty() else commander
-	var rival_ids: Array = rival_warband.duplicate() if GameCatalog.valid_warband(rival_warband, cards) else warband.duplicate() if rival_commander_id.is_empty() else GameCatalog.realm_cards(rival.set_id)
+	var rival_ids: Array = rival_warband.duplicate() if GameCatalog.valid_warband(rival_warband, cards) else warband.duplicate() if rival_commander_id.is_empty() else GameCatalog.realm_preset(rival.set_id)
 	warbands = [warband, rival_ids]
 	commanders = [commander, rival]
 	bonds = [GameCatalog.warband_bond(warband, cards), GameCatalog.warband_bond(rival_ids, cards)]
@@ -62,7 +62,7 @@ func total_units(side: int) -> int:
 	return total
 
 func army_cap(card_id: String) -> int:
-	return config.unit_cap(cards[card_id].role)
+	return GameCatalog.army_cap(cards[card_id], config)
 
 func action_gain(side: int, choice: Dictionary) -> int:
 	if side < 0 or side >= sides.size() or not warband_for(side).has(choice.get("card_id", "")):

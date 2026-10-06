@@ -27,6 +27,9 @@ func take(state: MatchState, side: int, id: String, kind: String = "summon") -> 
 
 func combat_fixture(seed_value: int = 4) -> MatchState:
 	var state := MatchState.new(seed_value)
+	# Isolate first-hit Wildfire and melee accounting from the separate ring.
+	state.cards.fire_tank = state.cards.fire_tank.duplicate(true)
+	state.cards.fire_tank.stats.fire_aura_radius = 0.0
 	take(state, 0, "fire_tank")
 	take(state, 1, "fire_tank")
 	return state
@@ -130,7 +133,7 @@ func _test_caps_and_offers() -> void:
 			if ids.size() < 4 and not ids.has(other): ids.append(other)
 		var capped := MatchState.new(778,"fire_commander",ids)
 		capped.sides[0].points = 100
-		var limit: int = expected[capped.cards[id].role]
+		var limit: int = {"fire_candle":4,"water_penguin":4,"earth_pitcher":6}.get(id,expected[capped.cards[id].role])
 		expect(capped.army_cap(id) == limit,"requested role cap for "+id)
 		while capped.sides[0].roster[id].count < limit:
 			var before: int = capped.sides[0].roster[id].count

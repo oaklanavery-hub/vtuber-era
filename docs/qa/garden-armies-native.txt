@@ -1,0 +1,59 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+
+1217 checks; 0 failures
+
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+MATCH fire / fire seed 42: side 0 wins in 7 rounds
+MATCH fire / fire seed 914: side 0 wins in 6 rounds
+MATCH fire / water seed 42: side 0 wins in 5 rounds
+MATCH fire / water seed 914: side 0 wins in 4 rounds
+MATCH fire / earth seed 42: side 1 wins in 7 rounds
+MATCH fire / earth seed 914: side 0 wins in 5 rounds
+MATCH water / fire seed 42: side 1 wins in 4 rounds
+MATCH water / fire seed 914: side 1 wins in 4 rounds
+MATCH water / water seed 42: side 1 wins in 6 rounds
+MATCH water / water seed 914: side 1 wins in 6 rounds
+MATCH water / earth seed 42: side 1 wins in 5 rounds
+MATCH water / earth seed 914: side 1 wins in 5 rounds
+MATCH earth / fire seed 42: side 0 wins in 7 rounds
+MATCH earth / fire seed 914: side 0 wins in 7 rounds
+MATCH earth / water seed 42: side 0 wins in 5 rounds
+MATCH earth / water seed 914: side 0 wins in 5 rounds
+MATCH earth / earth seed 42: side 0 wins in 7 rounds
+MATCH earth / earth seed 914: side 1 wins in 7 rounds
+MIXED fire / earth: side 1 wins in 6 rounds
+MIXED water / earth: side 1 wins in 7 rounds
+MIXED earth / earth: side 1 wins in 6 rounds
+
+Elemental expansion: 17365 checks; 0 failures
+
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+
+Army passives: 24534 checks; 0 failures
+
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+
+Garden armies, fire ring and stacking puddles: 26629 checks; 0 failures
+
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+
+Ninja teleport, pursuit and resurrection: 1735 checks; 0 failures
+
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+
+Creature formations and permanent collision: 75101 checks; 0 failures
+
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+
+Commander active skills: 1845 checks; 0 failures
+
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+UI smoke: 0 failures

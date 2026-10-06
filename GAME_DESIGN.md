@@ -5,7 +5,7 @@ sparks and return next round; Commanders remain in the UI.
 
 ## Match and loadout
 
-Choose any of three Commanders, then exactly four unique army cards from twelve.
+Choose any of three Commanders, then exactly four unique army cards from fifteen.
 Pure realm presets and mixed warbands are legal. A four-card Realm Bond depends
 only on the cards' shared set, independently of the Commander. The rival selector
 provides a Mirror loadout or a pure Fire, Water or Earth AI.
@@ -59,14 +59,17 @@ All skill terrain, opening state and enemy modifiers clear when the round ends.
 | Fire | Fire Imps | Melee | 3 |
 | Fire | Magma Golems | Tank | 1 |
 | Fire | Red Ninjas | Assassin | 1 |
+| Fire | Candle | Mage: fire splash and burning ground | 2 |
 | Water | Water Wizards | Mage: splash and non-stacking movement Slow | 2 |
 | Water | Ice Golems | Tank: nearby initial shields | 1 |
 | Water | Water Slimes | Melee: capped lifesteal | 3 |
 | Water | Snowmen | Long-range ranged | 3 |
+| Water | Penguin | Mage: water splash and stacking healing puddles | 2 |
 | Earth | Trees | Highest-base-HP tank | 1 |
 | Earth | Armadillos | Durable melee bruisers | 2 |
 | Earth | Wood Archers | Heavy ranged hits | 2 |
 | Earth | Wooden Siege | Slow, long-range cluster splash | 1 |
+| Earth | Pitcher Plant | Melee: backline root pull and bite | 2 |
 
 Wildfire gives each Fire unit one first-hit, non-stacking Burn: 3 damage/s for
 3s. Existing Burn is neither stacked nor refreshed; missed arrows do not consume
@@ -84,8 +87,8 @@ shields, Burn and overkill, capped at 2% actual max HP per one-second window.
 Buffered simultaneous hit credit is prorated fairly among attackers.
 
 Each army also has a Resource-backed passive. Fire Lizards splash with every
-projectile; Fire Imps explode on death with radial pushback and a two-second Burn. Magma Golems raise flame walls every 5s,
-burning enemies crossing them for 2s. Red Ninjas charge for 2s, then teleport behind
+projectile; Fire Imps explode on death with radial pushback and a two-second Burn. Magma Golems carry moving 48px fire rings,
+dealing 3 HP/s to enemies inside. Red Ninjas charge for 2s, then teleport behind
 enemy lines once per battle. They still resurrect once with 30% max HP. Water Wizards push enemies back with every splash spell. Ice Golems
 carry a moving 48px ice aura that slows enemy attack and movement speed by 15%. Water Slimes split
 once into two smaller children at 50% damage and HP each; children do not split.
@@ -95,6 +98,21 @@ every 3s and reduce nearby enemies' attack speed by 20% for 2s. Wood Archers fir
 three arrows sharing one attack's damage every 5s when in range. Wooden Siege
 stones hit a huge 64px area. Exact initial parameters are documented in
 `BALANCE.md` and each card's description.
+
+Candle spits full-damage fire into a 24px AOE, leaving ground that burns for 3s.
+Penguin splashes a 30px AOE, leaving a 3s puddle that heals living allies for 5%
+of each recipient's max HP every second. Puddles stack independently; ground
+fire and rings each use their strongest overlap. These pools persist after
+their caster dies and clear at round end. Pitcher Plant prefers visible backline
+prey within 154px, extends roots for 0.5s, then pulls with swept collision and
+bites only after reaching melee range. Obstacles stop the pull; failed pulls
+release after 2s. All three armies summon two units; their individual caps are
+four Candles, four Penguins and six Pitcher Plants.
+
+Each realm's compendium displays all five cards together. Existing four-card
+presets and saves remain compatible; players can replace any slot with the new
+realm army or build a mixed warband. Any four unique armies from one realm still
+activate that Realm Bond.
 
 ## Drafting and persistence
 
@@ -108,7 +126,8 @@ Reinforcement adds up to the current count without changing Rank; confirm the
 exact final count before spending. Both normal summons and reinforcements fill
 remaining slots at the cap. Maximum counts per army type are ranged 8, melee 10,
 tanks 3, mages 5, assassins 3 and siege 4; mixed cards sharing a role each have
-that limit. The 72-per-side ceiling remains an additional safety guard. There
+that limit. Candle and Penguin override their mage cap to 4, and Pitcher Plant
+overrides its melee cap to 6. The 72-per-side ceiling remains an additional safety guard. There
 are up to two reinforcements per army and Rank caps at 3. A capped army cannot
 spend a point on more units, but can still promote. Promotion affects
 current and future units. Counts, Ranks and action history survive rounds;

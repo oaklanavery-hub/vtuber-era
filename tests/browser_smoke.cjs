@@ -8,11 +8,13 @@ const scenario = process.env.QA_REALM || 'fire';
 const rival = process.env.QA_RIVAL || (scenario === 'water' ? 'earth' : scenario === 'earth' ? 'water' : 'fire');
 const leaderRealm = scenario === 'mixed' ? 'water' : scenario;
 const realms = ['fire', 'water', 'earth'];
-const cards = ['fire_archer', 'fire_melee', 'fire_tank', 'fire_assassin',
-  'water_mage', 'water_tank', 'water_melee', 'water_ranged',
-  'earth_tank', 'earth_melee', 'earth_ranged', 'earth_siege'];
-const chosenCards = scenario === 'mixed' ? ['fire_archer', 'water_melee', 'water_mage', 'earth_siege']
-  : cards.slice(realms.indexOf(scenario) * 4, realms.indexOf(scenario) * 4 + 4);
+const cards = ['fire_archer', 'fire_melee', 'fire_tank', 'fire_assassin', 'fire_candle',
+  'water_mage', 'water_tank', 'water_melee', 'water_ranged', 'water_penguin',
+  'earth_tank', 'earth_melee', 'earth_ranged', 'earth_siege', 'earth_pitcher'];
+const chosenCards = process.env.QA_WARBAND ? process.env.QA_WARBAND.split(',')
+  : scenario === 'mixed' ? ['fire_candle', 'water_penguin', 'earth_pitcher', 'fire_tank']
+  : [...cards.slice(realms.indexOf(scenario) * 5, realms.indexOf(scenario) * 5 + 3),
+      cards[realms.indexOf(scenario) * 5 + (process.env.QA_NEW_ARMIES ? 4 : 3)]];
 const root = path.resolve(__dirname, '../build/web');
 const output = path.resolve(__dirname, `../test-results/browser/${scenario}`);
 fs.mkdirSync(output, { recursive: true });
@@ -88,12 +90,13 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
     await click(211 + i * 106, 99);
     await page.waitForFunction(realm => window.vtuberEraQA?.compendium_realm === realm, realms[i]);
     await screenshot(`compendium-${realms[i]}`);
-    for (let index = 0; index < 4; index++) {
-      const id = cards[i * 4 + index];
-      await click(44.5 + index * 149, 144.5);
+    assert.deepEqual((await snapshot()).compendium_cards, cards.slice(i*5,i*5+5));
+    for (let index = 0; index < 5; index++) {
+      const id = cards[i * 5 + index];
+      await click(34.5 + index * 123, 144.5);
       await page.waitForFunction(id => window.vtuberEraQA?.card_details === id, id);
       assert.equal((await snapshot()).text_overflows, 0, 'full effects fit in the detail popup');
-      if (index === 0) await screenshot(`details-${realms[i]}`);
+      if (index === 0 || index === 4) await screenshot(`details-${id}`);
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => window.vtuberEraQA?.card_details === '');
       assert.equal((await snapshot()).compendium_realm, realms[i], 'details return to the same compendium tab');
@@ -154,7 +157,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   assert.equal((await snapshot()).screen, 'warband', 'an incomplete loadout cannot start');
   const pickCard = async id => {
     const index = cards.indexOf(id);
-    await click(88 + (index % 4) * 152, 175 + Math.floor(index / 4) * 44);
+    await click(76 + (index % 5) * 122, 175 + Math.floor(index / 5) * 44);
   };
   for (const id of chosenCards) await pickCard(id);
   await page.waitForFunction(() => window.vtuberEraQA?.selected_warband.length === 4);
@@ -171,13 +174,14 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await click(509, 336);
   await waitScreen('battle');
   const initial = await snapshot();
-  assert.equal(initial.release, 'army-passives-role-caps');
+  assert.equal(initial.release, 'elemental-garden-armies');
   assert.deepEqual(initial.arena, [600, 280]);
   assert.equal(initial.body_size, 7.2);
   assert.equal(initial.spawn_spacing, 24);
   assert.deepEqual(initial.caps, {fire_archer:8, fire_melee:10, fire_tank:3, fire_assassin:3,
     water_mage:5, water_tank:3, water_melee:10, water_ranged:8,
-    earth_tank:3, earth_melee:10, earth_ranged:8, earth_siege:4});
+    earth_tank:3, earth_melee:10, earth_ranged:8, earth_siege:4,
+    fire_candle:4, water_penguin:4, earth_pitcher:6});
   assert.equal(initial.commander, `${leaderRealm}_commander`);
   assert.equal(initial.commanders[1], `${rival}_commander`);
   assert.deepEqual(initial.warbands[0], chosenCards);
@@ -214,6 +218,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   const value = (choice, s) => {
     const army = s.roster[choice.card_id];
     if (choice.kind === 'summon' && choice.card_id === process.env.QA_PRIORITY_CARD) return 300 - army.count;
+    if (choice.kind === 'summon' && ['fire_candle','water_penguin','earth_pitcher'].includes(choice.card_id)) return 250 - army.count;
     if (choice.kind === 'reinforce') return 120 + army.count;
     if (choice.kind === 'promote') return 80 + army.count;
     return (army.summons === 1 ? 45 : 25) + (choice.card_id.includes('tank') && army.count === 0 ? 50 : 0) - army.count;

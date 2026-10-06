@@ -107,7 +107,8 @@ func _spawn_and_crowds() -> void:
 				expect(value.position.distance_to(value.previous_position) <= sim.cards[value.card_id].stats.move_speed/sim.config.ticks_per_second+0.001, "collision never teleports or accelerates a unit")
 		# A single 24-unit army must also use unique slots.
 	for id in GameCatalog.cards():
-		var ids: Array = GameCatalog.realm_cards(id.get_slice("_",0))
+		var ids: Array = GameCatalog.realm_preset(id.get_slice("_",0))
+		if not ids.has(id): ids[3] = id
 		var state := populated(ids, [0,0,0,0])
 		for side in range(2):
 			state.sides[side].roster[id].count = 24
