@@ -2,6 +2,15 @@ class_name NormalAI
 extends RefCounted
 
 static func score(state, side: int, choice: Dictionary, opponent: Dictionary) -> float:
+	if choice.kind == "power":
+		# Army-wide gains become worthwhile as the roster grows. No live
+		# opponent choices or extra draft randomness are read here.
+		var value: float = 18.0 + float(state.total_units(side))*0.9
+		var stacks: Dictionary = state.sides[side].powers
+		value /= PowerCards.multiplier(stacks, choice.card_id)
+		if state.previous_loser == side and choice.card_id in ["power_hp", "power_defence"]:
+			value += 3.0
+		return value
 	var own: Dictionary = state.sides[side].roster
 	var count: int = int(own[choice.card_id].count)
 	var army: ArmyCardData = state.cards[choice.card_id]
@@ -78,7 +87,8 @@ static func play(state, side: int = 1) -> void:
 			state.ai_explanations.append("%s · %.1f · %d units" % [state.commander_for(side).spell_name, spell_score, state.total_units(side)])
 		elif not best.is_empty():
 			state.choose(side, best)
-			state.ai_explanations.append("%s %s · %.1f" % [best.kind, state.cards[best.card_id].short_name, best_score])
+			var name: String = PowerCards.DEFINITIONS[best.card_id].label if best.kind == "power" else state.cards[best.card_id].short_name
+			state.ai_explanations.append("%s %s · %.1f" % [best.kind, name, best_score])
 		else:
 			# No legal offered action. Unused points are discarded at battle start.
 			break

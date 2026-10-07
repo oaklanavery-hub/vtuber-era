@@ -53,7 +53,7 @@ two units, capped at four Candles, four Penguins and six Pitcher Plants.
 Collision stays active at 7.2×7.2 with depth-sorted sprites, a compact HUD and
 twelve original combat sound effects.
 
-![Portrait-only commander cards](docs/screenshots/clear-commander.png)
+![Compact commander portrait cards](docs/screenshots/compact-commanders.png)
 ![Army cards with elemental, role and spawn symbols](docs/screenshots/clear-warband.png)
 
 **Play:** [Launch VTuber Era](https://oaklanavery-hub.github.io/vtuber-era/)
@@ -67,7 +67,7 @@ that realm's bond, independently of your Commander. Both sides start with four
 Hearts and three Command Points; the previous loser gets one comeback point.
 
 Each point summons an offered army, reinforces an eligible army, promotes its
-Rank, or prepares your Commander's active skill. Playing a card spends its point and
+Rank, plays an army-wide power card, or prepares your Commander's active skill. Playing a card spends its point and
 refreshes the offers inside the popup. Battle starts once you own an army; unused
 points are discarded. Specials require two normal summons.
 Each army type has a role cap: **ranged 8, melee 10, tanks 3, mages 5,
@@ -75,6 +75,19 @@ assassins 3, siege 4**. Summons and reinforcements fill the remaining slots and
 show the exact gain before spending a point. Promotions remain available at the
 cap. Separate cards of the same role have separate limits. Slime children are
 temporary combat units and do not increase the persistent roster.
+
+Power cards add **+15% HP**, **+10% Damage**, **+12% DEF**, or **+10% Attack Speed**
+to all your armies for the rest of the match. Repeats add to the bonus and future
+summons inherit it. Each costs **1 Command Point** and uses no unit slots.
+Defence divides incoming damage by the defence multiplier; it never makes units
+immune. Capped summons leave the pool, and fully capped armies draw three useful
+power choices. The top-left info icon shows the current bonus and what playing
+the card will add. Rematch clears all power bonuses.
+
+Commander selection uses small **84×84** portrait squares with a top-left info
+button, matching the marked layout. Their detailed effects remain behind that button.
+
+![Army-wide battle power cards](docs/screenshots/battle-power-cards.png)
 
 Fire Imps explode on death with AOE damage, radial pushback and a two-second
 Burn. Ice Golems carry a 48px aura that slows enemy movement and attack speed
@@ -117,6 +130,7 @@ Run from the project directory with `godot` pointing to Godot 4.5:
 ```sh
 godot --headless --path . --editor --import --quit
 godot --headless --path . --script res://tests/run_tests.gd
+godot --headless --path . --script res://tests/power_card_tests.gd
 godot --headless --path . --script res://tests/elemental_tests.gd
 godot --headless --path . --script res://tests/passive_tests.gd
 godot --headless --path . --script res://tests/garden_army_tests.gd
@@ -126,7 +140,9 @@ godot --headless --path . --script res://tests/commander_skill_tests.gd
 godot --headless --path . --script res://tests/ui_smoke.gd
 ```
 
-The rules runner covers economy, eligibility, offers, caps, persistence, Hearts,
+The power runner covers all four cards, additive stacking, rank/commander bonuses,
+damage passives, split/revive inheritance, capped and partial draft pools,
+AI purchases, replay and fresh-match resets. The rules runner covers economy, eligibility, offers, caps, persistence, Hearts,
 Fire effects, AI legality, deterministic replay, time limits and malformed saves.
 The elemental runner checks all Commanders, mixed loadouts, shields, healing,
 lifesteal, Slow, splash and complete deterministic matches across all nine realm
@@ -212,7 +228,7 @@ The public game uses the existing `/vtuber-era/` project path.
 - No multiplayer, accounts, monetization, manual formation or native package.
 - Rare simultaneous dispersal is a draw with no Heart loss. Exact timeout ties
   enter escalating sudden death.
-- Capped normal cards can remain visible but disabled; no free reroll is granted.
+- Capped army actions leave the pool; reusable power cards keep late-game drafts useful.
 - Private browsing or storage restrictions can prevent local saves.
 - Browser QA covers Chromium; Firefox, Safari and mobile validation remain.
 

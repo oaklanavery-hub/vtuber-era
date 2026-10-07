@@ -18,6 +18,11 @@ const ROLE_ICONS = {
 	"assassin":preload("res://assets/icons/role_assassin.svg"),
 	"siege":preload("res://assets/icons/role_siege.svg")}
 const SPAWN_BADGE = preload("res://assets/icons/spawn_badge.svg")
+const POWER_ICONS = {
+	"power_hp":preload("res://assets/icons/power_hp.svg"),
+	"power_damage":preload("res://assets/icons/role_melee.svg"),
+	"power_defence":preload("res://assets/icons/role_tank.svg"),
+	"power_speed":preload("res://assets/icons/power_speed.svg")}
 
 var world: Node2D
 var battlefield: Node2D
@@ -228,8 +233,32 @@ func _card_face(card: ArmyCardData, rectangle: Rect2, parent: Control, action: C
 		_label("1 Command Point" if state.eligible(0, choice) else "Unit cap reached", Rect2(7, height-18, width-14, 16), 10, true, false, tile)
 	return tile
 
+func _power_card_face(choice: Dictionary, rectangle: Rect2, parent: Control, action: Callable) -> Button:
+	var definition: Dictionary = PowerCards.DEFINITIONS[choice.card_id]
+	var tile := _button("", rectangle, action, false, parent)
+	tile.set_meta("power_face", choice.card_id)
+	var info := _button("", Rect2(7, 10, 23, 23), _show_card_details.bind(choice.card_id, choice), false, tile)
+	info.name = "CardInfo"
+	info.icon = INFO_ICON
+	info.add_theme_constant_override("icon_max_width", 16)
+	for key in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var box: StyleBoxFlat = StoryStyle.panel(StoryStyle.HONEY if key == "hover" else StoryStyle.PARCHMENT, StoryStyle.INK, 1)
+		box.content_margin_left = 2
+		box.content_margin_right = 2
+		info.add_theme_stylebox_override(key, box)
+	info.tooltip_text = "View %s effects" % definition.label
+	_label("Power", Rect2(34, 11, rectangle.size.x-63, 20), 11, true, false, tile)
+	_icon(POWER_ICONS[choice.card_id], Rect2(rectangle.size.x/2.0-24, 53, 48, 48), tile)
+	_label(definition.label, Rect2(7, 110, rectangle.size.x-14, 25), 14, true, true, tile)
+	_label("All armies · This match", Rect2(7, 136, rectangle.size.x-14, 18), 10, true, false, tile)
+	_label("1 Command Point", Rect2(7, 154, rectangle.size.x-14, 16), 10, true, false, tile)
+	return tile
+
 func _show_card_details(card_id: String, choice: Dictionary = {}) -> void:
 	if details_overlay or (modal and modal_kind != "command"):
+		return
+	if PowerCards.IDS.has(card_id):
+		_show_power_details(card_id)
 		return
 	var card: ArmyCardData = GameCatalog.cards()[card_id]
 	details_return_focus = get_viewport().gui_get_focus_owner()
@@ -258,6 +287,33 @@ func _show_card_details(card_id: String, choice: Dictionary = {}) -> void:
 			"reinforce": note = "Reinforce adds units: %d → %d units; rank stays %d." % [army.count, state.target_count(0, choice), army.rank]
 			"promote": note = "Promote raises rank %d → %d; unit count stays %d." % [army.rank, army.rank+1,army.count]
 	_label(note, Rect2(127, 262, 385, 20), 10, true, false, details_overlay)
+	var close := _button("Close", Rect2(248, 289, 144, 25), _close_card_details, true, details_overlay)
+	close.grab_focus()
+	_publish()
+
+func _show_power_details(card_id: String) -> void:
+	var definition: Dictionary = PowerCards.DEFINITIONS[card_id]
+	details_return_focus = get_viewport().gui_get_focus_owner()
+	details_card_id = card_id
+	details_overlay = Control.new()
+	details_overlay.name = "PowerCardDetails"
+	details_overlay.size = Vector2(640, 360)
+	surface.add_child(details_overlay)
+	var dim := ColorRect.new()
+	dim.color = Color(0.19, 0.16, 0.12, 0.64)
+	dim.size = Vector2(640, 360)
+	details_overlay.add_child(dim)
+	_panel(Rect2(108, 41, 424, 282), details_overlay)
+	_icon(POWER_ICONS[card_id], Rect2(131, 62, 48, 48), details_overlay)
+	_label(definition.label, Rect2(200, 54, 305, 28), 22, false, true, details_overlay)
+	_label("Power card · All your armies", Rect2(200, 87, 305, 23), 12, false, false, details_overlay)
+	var stacks: int = int(state.sides[0].powers[card_id])
+	var step: int = roundi(float(definition.bonus)*100.0)
+	_label("Army-wide bonus", Rect2(127, 126, 385, 21), 14, false, true, details_overlay)
+	_label("Current: +%d%% %s\nAfter playing: +%d%% %s" % [stacks*step, definition.stat, (stacks+1)*step, definition.stat], Rect2(127, 149, 385, 37), 11, false, false, details_overlay)
+	_label("Lasts for the rest of this match", Rect2(127, 191, 385, 22), 14, false, true, details_overlay)
+	_label(definition.description, Rect2(127, 216, 385, 42), 12, false, false, details_overlay)
+	_label("Repeat cards add to the bonus. Costs 1 Command Point.", Rect2(127, 262, 385, 20), 10, true, false, details_overlay)
 	var close := _button("Close", Rect2(248, 289, 144, 25), _close_card_details, true, details_overlay)
 	close.grab_focus()
 	_publish()
@@ -336,13 +392,13 @@ func show_commander() -> void:
 	for index in range(3):
 		var leader: CommanderData = GameCatalog.commander(GameCatalog.COMMANDER_IDS[index])
 		var chosen: bool = selected_commander_id == leader.id
-		var tile := _button("", Rect2(20+index*206, 124, 188, 179), _select_commander.bind(leader.id))
+		var tile := _button("", Rect2(156+index*94, 149, 84, 84), _select_commander.bind(leader.id))
 		tile.tooltip_text = leader.display_name
 		tile.set_meta("commander_face", leader.id)
 		if chosen:
 			tile.add_theme_stylebox_override("normal", StoryStyle.panel(Color("e5d7ad")))
-		_portrait(Rect2(17, 11, 154, 154), tile, leader)
-		_skill_info(Rect2(7, 10, 23, 23), tile, leader)
+		_portrait(Rect2(8, 8, 68, 68), tile, leader)
+		_skill_info(Rect2(4, 4, 23, 23), tile, leader)
 	_button("Back", Rect2(20, 315, 100, 28), show_menu)
 	_button("Build your warband →", Rect2(323, 312, 297, 31), show_warband, true)
 	_publish()
@@ -494,8 +550,12 @@ func _show_command_picker() -> void:
 	_label("Play cards with your points, then start the battle." if state.sides[0].points>0 else "Your warband is ready. Start the battle!", Rect2(56, 102, 526, 16), 11, false, false, modal)
 	for index in range(3):
 		var choice: Dictionary = state.sides[0].offers[index]
-		var card: ArmyCardData = state.cards[choice.card_id]
-		var tile: Button = _card_face(card, Rect2(54+index*178, 119, 166, 172), modal, _pick.bind(index), choice)
+		var rectangle := Rect2(54+index*178, 119, 166, 172)
+		var tile: Button
+		if choice.kind == "power":
+			tile = _power_card_face(choice, rectangle, modal, _pick.bind(index))
+		else:
+			tile = _card_face(state.cards[choice.card_id], rectangle, modal, _pick.bind(index), choice)
 		tile.name = "Offer%d" % index
 		tile.disabled = not state.can_choose(0, choice)
 		tile.tooltip_text = "Play this card · %d" % (index+1)
@@ -519,6 +579,8 @@ func _roster_tooltip(side: int) -> String:
 	for id in state.warband_for(side):
 		var army: Dictionary = state.sides[side].roster[id]
 		lines.append("%s: %d · Rank %d" % [state.cards[id].display_name, army.count, army.rank])
+	var power_summary: String = PowerCards.summary(state.sides[side].powers)
+	if not power_summary.is_empty(): lines.append("Powers: "+power_summary)
 	return "\n".join(lines)
 
 func _pick(index: int) -> void:
@@ -535,8 +597,9 @@ func _pick(index: int) -> void:
 
 func _apply_choice(choice: Dictionary) -> void:
 	if state.choose(0, choice):
-		Sound.play("summon")
-		last_played = "%s · %s played" % [state.cards[choice.card_id].display_name, choice.kind.capitalize()]
+		Sound.play("spell" if choice.kind == "power" else "summon")
+		var name: String = PowerCards.DEFINITIONS[choice.card_id].label if choice.kind == "power" else state.cards[choice.card_id].display_name
+		last_played = "%s · %s played" % [name, choice.kind.capitalize()]
 		show_battle()
 
 func prepare_spell() -> void:
@@ -781,7 +844,7 @@ func _publish() -> void:
 	if not qa_enabled:
 		return
 	var snapshot := {"screen": screen, "modal": modal_kind, "settings": SaveStore.settings,
-		"release": "clear-cards-wall-routing", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
+		"release": "compact-commanders-power-cards", "text_font": StoryStyle.TEXT_FONT.get_font_name(),
 		"card_details": details_card_id, "command_popup": modal_kind == "command",
 		"battle_controls_visible": is_instance_valid(battle_button) and battle_button.is_visible_in_tree(),
 		"pixel_scale_mode":"integer" if get_window().content_scale_stretch == Window.CONTENT_SCALE_STRETCH_INTEGER else "fit",
@@ -789,11 +852,16 @@ func _publish() -> void:
 		"selected_commander": selected_commander_id, "selected_warband": selected_warband,
 		"rival": rival_realm, "compendium_realm": compendium_realm,
 		"compendium_cards":GameCatalog.realm_cards(compendium_realm), "army_ids":GameCatalog.ARMY_IDS}
+	snapshot["commander_faces"] = []
+	for child in surface.get_children():
+		if child.has_meta("commander_face"):
+			snapshot.commander_faces.append([child.get_meta("commander_face"), child.position.x, child.position.y, child.size.x, child.size.y])
 	if state:
 		snapshot.merge({"phase": state.phase, "round": state.round_number,
 			"points": state.sides[0].points, "spell": state.sides[0].spell,
 			"hearts": [state.sides[0].hearts, state.sides[1].hearts],
 			"seed": state.match_seed, "offers": state.sides[0].offers,
+			"powers": [state.sides[0].powers, state.sides[1].powers], "power_cards": PowerCards.DEFINITIONS,
 			"roster": state.sides[0].roster, "total": state.total_units(0),
 			"commander": state.commander.id, "warbands": state.warbands,
 			"commanders": [state.commander_for(0).id, state.commander_for(1).id],

@@ -58,6 +58,7 @@ jobs:
         timeout-minutes: 15
         run: |
           godot --headless --path . --script res://tests/run_tests.gd
+          godot --headless --path . --script res://tests/power_card_tests.gd
           godot --headless --path . --script res://tests/elemental_tests.gd
           godot --headless --path . --script res://tests/passive_tests.gd
           godot --headless --path . --script res://tests/garden_army_tests.gd

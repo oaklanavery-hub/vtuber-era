@@ -40,7 +40,7 @@ func _init(seed_value: int = 1, commander_id: String = "fire_commander", player_
 		for id in warband_for(side):
 			roster[id] = {"count": 0, "rank": 1, "summons": 0, "reinforcements": 0}
 		sides.append({"hearts": config.starting_hearts, "points": 0,
-			"spell": false, "roster": roster, "offers": []})
+			"spell": false, "roster": roster, "offers": [], "powers": PowerCards.empty_stacks()})
 	begin_round()
 
 func warband_for(side: int) -> Array:
@@ -80,6 +80,8 @@ func target_count(side: int, choice: Dictionary) -> int:
 func eligible(side: int, choice: Dictionary) -> bool:
 	if side < 0 or side >= sides.size() or not choice.has("card_id") or not choice.has("kind"):
 		return false
+	if choice.kind == "power":
+		return PowerCards.IDS.has(choice.card_id) and total_units(side) > 0
 	if not warband_for(side).has(choice.card_id):
 		return false
 	var army: Dictionary = sides[side].roster[choice.card_id]
@@ -100,16 +102,19 @@ func can_choose(side: int, choice: Dictionary) -> bool:
 func choose(side: int, choice: Dictionary) -> bool:
 	if not can_choose(side, choice):
 		return false
-	var army: Dictionary = sides[side].roster[choice.card_id]
-	match choice.kind:
-		"summon":
-			army.count += action_gain(side, choice)
-			army.summons += 1
-		"reinforce":
-			army.count += action_gain(side, choice)
-			army.reinforcements += 1
-		"promote":
-			army.rank += 1
+	if choice.kind == "power":
+		sides[side].powers[choice.card_id] += 1
+	else:
+		var army: Dictionary = sides[side].roster[choice.card_id]
+		match choice.kind:
+			"summon":
+				army.count += action_gain(side, choice)
+				army.summons += 1
+			"reinforce":
+				army.count += action_gain(side, choice)
+				army.reinforcements += 1
+			"promote":
+				army.rank += 1
 	sides[side].points -= 1
 	action_log.append({"round": round_number, "side": side, "choice": choice.duplicate()})
 	sides[side].offers = OfferGenerator.generate(self, side)

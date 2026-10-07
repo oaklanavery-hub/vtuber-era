@@ -43,16 +43,18 @@ const commanderDetails = [];
 const skillRounds = [];
 let reinforcementCancelPassed = false;
 const visited = new Set();
-const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
+const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0, powers: 0 };
+const powerDetails = new Set();
 
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const url = process.env.QA_URL || `http://127.0.0.1:${server.address().port}/vtuber-era/?qa=1`;
   const custom = process.env.CHROMIUM_EXECUTABLE;
   browser = await chromium.launch({ headless: true, ...(custom ? { executablePath: custom } : {}),
+    ...(process.env.QA_URL && process.env.HTTPS_PROXY ? { proxy: { server: process.env.HTTPS_PROXY } } : {}),
     args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
       ...(process.env.QA_SINGLE_PROCESS ? ['--single-process', '--no-zygote', '--in-process-gpu'] : [])] });
-  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, ignoreHTTPSErrors: Boolean(process.env.QA_URL) });
   await page.addInitScript(() => {
     // Observe real WebAudio buffer starts; do not alter sound or game timing.
     window.vtuberEraAudioQA = { starts: 0, shortEffects: 0 };
@@ -136,9 +138,9 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await click(320, 190);
   await waitScreen('commander');
   for (let i = 0; i < realms.length; i++) {
-    await click(114 + i * 206, 204);
+    await click(198 + i * 94, 191);
     await page.waitForFunction(id => window.vtuberEraQA?.selected_commander === id, `${realms[i]}_commander`);
-    await click(38.5 + i * 206, 145.5);
+    await click(171.5 + i * 94, 164.5);
     await page.waitForFunction(id => window.vtuberEraQA?.card_details === id, `${realms[i]}_commander`);
     assert.equal((await snapshot()).text_overflows, 0, 'active skill details fit in their box');
     await screenshot(`skill-details-${realms[i]}`);
@@ -146,8 +148,10 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
     await page.waitForFunction(() => window.vtuberEraQA?.card_details === '');
     commanderDetails.push(`${realms[i]}_commander`);
   }
-  await click(114 + realms.indexOf(leaderRealm) * 206, 204);
+  await click(198 + realms.indexOf(leaderRealm) * 94, 191);
   await page.waitForFunction(id => window.vtuberEraQA?.selected_commander === id, `${leaderRealm}_commander`);
+  const commanderFaces = (await snapshot()).commander_faces;
+  assert.deepEqual(commanderFaces, realms.map((realm, i) => [`${realm}_commander`,156+i*94,149,84,84]), 'commander cards match the marked small squares');
   await screenshot('commander');
   await click(432, 328);
   await waitScreen('warband');
@@ -174,7 +178,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   await click(509, 336);
   await waitScreen('battle');
   const initial = await snapshot();
-  assert.equal(initial.release, 'clear-cards-wall-routing');
+  assert.equal(initial.release, 'compact-commanders-power-cards');
   assert.deepEqual(initial.army_scales, {fire_archer:.6,fire_melee:.6,fire_tank:1.5,fire_assassin:1,
     water_mage:1,water_tank:1.5,water_melee:1,water_ranged:1,water_penguin:.6,
     earth_tank:1.5,earth_melee:.6,earth_ranged:1,earth_siege:1.5,earth_pitcher:1,fire_candle:.6});
@@ -213,13 +217,14 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   console.log('PASS: spell costs one point and leaves all three offers intact.');
 
   const eligible = (choice, s) => {
+    if (choice.kind === 'power') return Object.hasOwn(s.power_cards, choice.card_id) && s.total > 0;
     const army = s.roster[choice.card_id];
-    const group = s.groups[choice.card_id];
     if (choice.kind === 'summon') return army.count < s.caps[choice.card_id] && s.total < 72;
     if (choice.kind === 'reinforce') return army.summons >= 2 && army.reinforcements < 2 && army.count > 0 && army.count < s.caps[choice.card_id] && s.total < 72;
     return army.summons >= 2 && army.rank < 3;
   };
   const value = (choice, s) => {
+    if (choice.kind === 'power') return s.total >= 6 ? 150 - s.powers[0][choice.card_id] * 10 : 15;
     const army = s.roster[choice.card_id];
     if (choice.kind === 'summon' && choice.card_id === process.env.QA_PRIORITY_CARD) return 300 - army.count;
     if (choice.kind === 'summon' && ['fire_candle','water_penguin','earth_pitcher'].includes(choice.card_id)) return 250 - army.count;
@@ -261,6 +266,17 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
         if (!choices.length) break;
         const { choice, index } = choices[0];
         const before = now;
+        if (choice.kind === 'power') {
+          await screenshot('power-cards');
+          await click(72.5 + index * 178, 140.5);
+          await page.waitForFunction(id => window.vtuberEraQA?.card_details === id, choice.card_id);
+          assert.equal((await snapshot()).text_overflows, 0, 'power effects stay inside the detail box');
+          await screenshot(`details-${choice.card_id}`);
+          await page.keyboard.press('Escape');
+          await page.waitForFunction(() => window.vtuberEraQA?.card_details === '');
+          assert.deepEqual((await snapshot()).offers, before.offers, 'power details preserve draft offers');
+          powerDetails.add(choice.card_id);
+        }
         await click(137 + index * 178, 205);
         if (choice.kind === 'reinforce') {
           await page.waitForFunction(() => window.vtuberEraQA?.modal === 'reinforce');
@@ -293,7 +309,14 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
           assert.equal(now.roster[choice.card_id].count, before.roster[choice.card_id].count);
           stats.promotions++;
         }
-        actions.push({ round: now.round, choice, beforeCount: before.roster[choice.card_id].count, afterCount: now.roster[choice.card_id].count, cap: now.caps[choice.card_id] });
+        if (choice.kind === 'power') {
+          assert.equal(now.powers[0][choice.card_id], before.powers[0][choice.card_id] + 1, 'power purchases add one permanent stack');
+          assert.deepEqual(now.roster, before.roster, 'power cards preserve unit counts and ranks');
+          stats.powers++;
+        }
+        actions.push({ round: now.round, choice, ...(choice.kind === 'power'
+          ? { beforeStacks: before.powers[0][choice.card_id], afterStacks: now.powers[0][choice.card_id] }
+          : { beforeCount: before.roster[choice.card_id].count, afterCount: now.roster[choice.card_id].count, cap: now.caps[choice.card_id] }) });
       }
       // Even exhausted/disabled offers keep their info icons usable.
       if (now.points === 0) {
@@ -354,7 +377,8 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
         if (body) {
           const enemySide = 1 - body[1];
           const frozen = preparedSkills[enemySide] && initial.commanders[enemySide] === 'water_commander';
-          assert(Math.abs(status[2] - (frozen ? 0.92 : 1)) < 0.001, 'ice reduces only enemy defence');
+          const defence = 1 + (skillState.powers[body[1]].power_defence || 0) * .12;
+          assert(Math.abs(status[2] - defence * (frozen ? 0.92 : 1)) < 0.001, 'Frozen Field reduces the enemy boosted defence by 8%');
         }
       }
       await page.waitForTimeout(220);
@@ -404,6 +428,11 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
       await screenshot(`result-round-${now.round}`);
       await page.keyboard.press('Enter');
       await page.waitForFunction(round => window.vtuberEraQA?.round > round, now.round);
+      const nextRound = await snapshot();
+      assert.deepEqual(nextRound.powers[0], now.powers[0], 'player power stacks persist into the next command phase');
+      for (const id of Object.keys(now.powers[1])) {
+        assert(nextRound.powers[1][id] >= now.powers[1][id], 'rival powers persist while its next-round draft may add more');
+      }
     }
   }
   visited.add('results');
@@ -421,6 +450,7 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   assert.equal(rematch.total, 0);
   assert.equal(rematch.spell, false);
   assert.equal(rematch.points, 3);
+  assert(rematch.powers.every(side => Object.values(side).every(stacks => stacks === 0)), 'Rematch clears both sides power bonuses');
   assert.notEqual(rematch.seed, final.seed);
   console.log('PASS: Rematch resets all persistent and temporary match state.');
   await page.reload();
@@ -440,6 +470,9 @@ const stats = { reinforcements: 0, promotions: 0, spell: 0, comeback: 0 };
   report.textFont = final.text_font;
   report.cardDetails = cardDetails;
   report.commanderDetails = commanderDetails;
+  report.commanderFaces = commanderFaces;
+  report.powerDetails = [...powerDetails];
+  report.finalPowers = final.powers;
   report.commanderSkills = skillRounds;
   report.wallCollisionPassed = true;
   report.armyCaps = initial.caps;

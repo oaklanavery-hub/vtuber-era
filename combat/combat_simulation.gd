@@ -9,6 +9,7 @@ var commander: CommanderData
 var bond: SetBonusData
 var commanders: Array = []
 var bonds: Array = []
+var powers: Array = []
 var units: Array = []
 var projectiles: Array = []
 var spell_prepared: Array = [false, false]
@@ -66,6 +67,7 @@ func _init(state) -> void:
 	bond = state.bond
 	commanders = state.commanders
 	bonds = state.bonds
+	powers = [state.sides[0].powers.duplicate(), state.sides[1].powers.duplicate()]
 	wildfire = bond != null and bond.effect == "burn"
 	for side in range(2):
 		var leader: CommanderData = commanders[side]
@@ -75,11 +77,11 @@ func _init(state) -> void:
 			var army: Dictionary = state.sides[side].roster[card_id]
 			var card: ArmyCardData = cards[card_id]
 			var hp_bonus: float = leader.max_hp_bonus + (leader.matching_max_hp_bonus if card.set_id == leader.set_id else 0.0)
-			var hp: float = card.stats.max_hp * config.rank_hp[int(army.rank)-1] * (1.0 + hp_bonus)
+			var hp: float = card.stats.max_hp * config.rank_hp[int(army.rank)-1] * (1.0 + hp_bonus) * power_multiplier(side, "power_hp")
 			var location: Vector2 = entry.position
 			units.append({"id":units.size(), "side":side, "card_id":card_id,
 				"role":card.role, "rank":army.rank, "hp":hp, "max_hp":hp,
-				"damage":card.stats.damage * config.rank_damage[int(army.rank)-1] * (1.0 + leader.attack_damage_bonus),
+				"damage":card.stats.damage * config.rank_damage[int(army.rank)-1] * (1.0 + leader.attack_damage_bonus) * power_multiplier(side, "power_damage"),
 				"position":location, "previous_position":location, "cooldown":0,
 				"target":-1, "burn_until":0, "burn_next":0, "burn_dps":0.0, "first_attack":true,
 				"slow_until":0, "slow_fraction":0.0, "shield":0.0, "shield_until":0,
@@ -411,16 +413,20 @@ func spell_active(side: int) -> bool:
 func opening_active() -> bool:
 	return opening_tick < opening_duration
 
+func power_multiplier(side: int, id: String) -> float:
+	return PowerCards.multiplier(powers[side], id)
+
 func defence_multiplier(unit: Dictionary) -> float:
+	var defence: float = power_multiplier(int(unit.side), "power_defence")
 	var rival: int = 1-int(unit.side)
 	if spell_active(rival) and commanders[rival].spell_kind == "frozen_field":
-		return maxf(0.01, 1.0-commanders[rival].spell_defence_reduction)
-	return 1.0
+		defence *= maxf(0.01, 1.0-commanders[rival].spell_defence_reduction)
+	return defence
 
 func attack_speed(unit: Dictionary) -> float:
 	var leader: CommanderData = commanders[int(unit.side)]
 	var bonus: float = leader.matching_attack_speed_bonus if cards[unit.card_id].set_id == leader.set_id else 0.0
-	return 1.0+bonus
+	return (1.0+bonus)*power_multiplier(int(unit.side), "power_speed")
 
 func damage_multiplier(unit: Dictionary) -> float:
 	var leader: CommanderData = commanders[int(unit.side)]
@@ -609,7 +615,7 @@ func _apply_first_burn(source: Dictionary, target: Dictionary) -> void:
 	if realm != null and realm.effect == "burn" and cards[source.card_id].set_id == realm.set_id and int(target.burn_until) <= tick:
 		target.burn_until = tick + int(round(realm.burn_duration*config.ticks_per_second))
 		target.burn_next = tick + config.ticks_per_second
-		target.burn_dps = realm.burn_damage_per_second
+		target.burn_dps = realm.burn_damage_per_second*power_multiplier(int(source.side), "power_damage")
 		events.append({"kind":"burn", "unit":target.id})
 
 func _hit(source: Dictionary, target: Dictionary, amount: float, damage: Array, hits: Array, attack_effects: bool = true) -> void:
@@ -791,7 +797,7 @@ func _tick_fields() -> void:
 				center = center.clamp(size/2.0, ARENA_SIZE-size/2.0)
 				fields.append({"id":next_field_id, "kind":"flame", "source":unit.id, "side":unit.side,
 					"rect":Rect2(center-size/2.0, size), "until":tick+_ticks(stats.flame_lifetime),
-					"dps":stats.flame_burn_dps, "duration":_ticks(stats.flame_burn_duration)})
+					"dps":stats.flame_burn_dps*power_multiplier(int(unit.side), "power_damage"), "duration":_ticks(stats.flame_burn_duration)})
 				next_field_id += 1
 				_passive("flame_wall", unit, stats.flame_length/2.0, center)
 			unit.next_flame = tick+1+_ticks(stats.flame_interval)
@@ -901,7 +907,7 @@ func _impact_field(source: Dictionary, center: Vector2) -> void:
 	fields.append({"id":next_field_id, "kind":"puddle" if healing else "ground_fire",
 		"source":source.id, "side":source.side, "position":center, "radius":stats.splash_radius,
 		"until":tick+_ticks(stats.puddle_duration if healing else stats.ground_fire_duration),
-		"dps":stats.ground_fire_dps, "heal_fraction":stats.puddle_heal_fraction,
+		"dps":stats.ground_fire_dps*power_multiplier(int(source.side), "power_damage"), "heal_fraction":stats.puddle_heal_fraction,
 		"next_heal":tick+config.ticks_per_second})
 	next_field_id += 1
 	_passive("penguin_puddle" if healing else "candle_fire", source, stats.splash_radius, center)
@@ -923,7 +929,7 @@ func _area_damage(damage: Array) -> void:
 			if enemy.hp > 0.0 and enemy.side != source.side and source.position.distance_squared_to(enemy.position) <= stats.fire_aura_radius*stats.fire_aura_radius:
 				if old_fire[int(enemy.id)] == 0.0 and enemy.fire_aura_dps == 0.0:
 					_passive("fire_ring_burn", source, 0.0, enemy.position)
-				enemy.fire_aura_dps = maxf(float(enemy.fire_aura_dps), stats.fire_aura_dps)
+				enemy.fire_aura_dps = maxf(float(enemy.fire_aura_dps), stats.fire_aura_dps*power_multiplier(int(source.side), "power_damage"))
 	for field in fields:
 		if field.kind != "ground_fire" or tick >= int(field.until):
 			continue
@@ -1129,7 +1135,7 @@ func _death_effects(deaths: Array, revivals: Array, damage: Array, hits: Array) 
 								enemy.blast_burn_next = tick+config.ticks_per_second
 								_passive("imp_burn", source, 0.0, enemy.position)
 							enemy.blast_burn_until = tick+_ticks(stats.death_burn_duration)
-							enemy.blast_burn_dps = maxf(float(enemy.blast_burn_dps), stats.death_burn_dps)
+							enemy.blast_burn_dps = maxf(float(enemy.blast_burn_dps), stats.death_burn_dps*power_multiplier(int(source.side), "power_damage"))
 				_passive("imp_explosion", source, stats.death_blast_radius)
 		if stats.revive_fraction > 0.0 and not source.revive_used:
 			revivals.append(source.id)
@@ -1389,5 +1395,5 @@ func signature() -> String:
 		snapshot.back().append_array([unit.fire_aura_dps, unit.fire_aura_started, unit.ground_fire_dps,
 			unit.pull_target, unit.pull_started_at, unit.pull_ready_at, unit.pull_until, unit.next_pull])
 	return JSON.stringify([tick, snapshot, projectiles, fields, pending_children, pending_pushback, spell_prepared, skills_activated,
-		opening_tick, opening_duration, meteors, walls, skill_counts,
+		opening_tick, opening_duration, meteors, walls, skill_counts, powers,
 		next_projectile_id, next_field_id, sudden_death, passive_counts, result]).sha256_text()

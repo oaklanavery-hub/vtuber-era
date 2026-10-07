@@ -126,9 +126,15 @@ Normal summons and reinforcements fill the remaining slots below these caps.
 Cards and confirmation show the exact gain; saturated armies cannot spend points
 on more units. Promotions are unaffected. Slime children are combat-only.
 
-Three unique offers include one mandatory normal offer. Remaining category slots
-use filtered 70% summon / 15% reinforce / 15% promote weights. Spell preparation
-is independent of the offers. Commander choice and warband realm are independent.
+Three unique legal offers include a summon whenever units can still be added.
+Remaining slots use filtered 50% summon / 15% reinforce / 15% promote / 20% power
+weights. If all army counts are capped, a power replaces the guaranteed summon;
+if counts and ranks are capped, all three offers are powers. Each army-wide
+power costs one Command Point and adds 15% HP, 10% damage, 12% defence or 10%
+attack speed for the match. Repeats add percentages; defence divides damage by
+`1 + 0.12 × cards`, and other bonuses multiply rank/commander-adjusted stats.
+The AI buys powers through the same pool, points and rules. Spell preparation
+preserves offers. Commander choice and warband realm remain independent.
 
 ## Balance sample
 

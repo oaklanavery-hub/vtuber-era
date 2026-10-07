@@ -138,10 +138,28 @@ movement into a wall or body remains blocked. Projectiles keep strict wall and
 line-of-sight checks. Crowded armies can reposition rather than queuing forever
 behind a firing ally at a corner.
 
-Three unique offers always contain a normal card. Other slots use editable
-70/15/15 summon/reinforce/promote category weights after filtering unavailable
-categories. The mandatory normal slot makes overall frequencies differ from
-those weights. Each side draws only from its own equipped cards.
+Three unique offers contain a legal normal summon whenever one is available.
+Other slots use editable 50/15/15/20 summon/reinforce/promote/power category
+weights after filtering unavailable actions. Capped summons are removed. When
+all unit counts are full, the first slot becomes a power card; at maximum counts
+and ranks, all three choices are distinct power cards. The guaranteed first slot
+makes overall frequencies differ from the weights. Army cards draw from that
+side's four-card warband; the power pool is shared across all commanders.
+
+After summoning at least one army, four power cards can appear: **+15% HP**,
+**+10% Damage**, **+12% DEF**, and **+10% Attack Speed**. Each costs one Command
+Point and upgrades all allied armies, including future summons, for the rest of
+the match. Repeated cards add percentages: two HP cards give +30%, two damage
+cards +20%, and so on. Their multiplier applies after rank and commander bonuses.
+Defence divides incoming damage by `1 + 0.12 × cards`, so it never grants complete
+immunity; Frozen Field still reduces the resulting defence by 8%. Damage powers
+also scale unit explosions, fire-ring DPS, Candle ground fire and burns, while
+commander meteor damage remains the commander's fixed skill value. Speed powers
+shorten attack cycles without changing movement or timed passive intervals.
+Slime children and revived Ninjas inherit the upgraded stats. Power bonuses
+persist through wins and losses and reset on Rematch. They consume no army slots
+and do not increase unit caps. Their clean fronts show an icon, bonus and cost;
+the top-left info control explains duration, stacking and current/next bonus.
 
 Two normal summons unlock Reinforcements and Promotions for that army.
 Reinforcement adds up to the current count without changing Rank; confirm the
@@ -152,7 +170,7 @@ that limit. Candle and Penguin override their mage cap to 4, and Pitcher Plant
 overrides its melee cap to 6. The 72-per-side ceiling remains an additional safety guard. There
 are up to two reinforcements per army and Rank caps at 3. A capped army cannot
 spend a point on more units, but can still promote. Promotion affects
-current and future units. Counts, Ranks and action history survive rounds;
+current and future units. Counts, Ranks, power stacks and action history survive rounds;
 combat HP, projectiles, shields, Burn, Slow and spell/recovery timers reset.
 Slime children exist only in combat; persistent roster counts stay unchanged.
 Revival eligibility also resets in each new battle.

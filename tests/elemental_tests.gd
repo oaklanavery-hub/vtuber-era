@@ -78,7 +78,7 @@ func _content_and_drafts() -> void:
 			draft.begin_round()
 			expect(take(draft, 0, id, "promote") and draft.sides[0].roster[id].rank == 2, "promotion preserves new army types")
 			for choice in draft.sides[1].offers:
-				expect(draft.warband_for(1).has(choice.card_id), "rival draws exclusively from its own warband")
+				expect(draft.warband_for(1).has(choice.card_id) or (choice.kind == "power" and PowerCards.IDS.has(choice.card_id)), "rival draws its own armies or shared power cards")
 	var state := MatchState.new(19, "water_commander", MIXED, "earth_commander")
 	var frozen: String = JSON.stringify(state.snapshot_for(1))
 	take(state, 0, "earth_siege")

@@ -170,18 +170,16 @@ func _test_caps_and_offers() -> void:
 	expect(take(total,0,"fire_archer") and total.sides[0].roster.fire_archer.count == 1,"a partial summon also respects the total safety cap")
 	expect(not take(total,0,"fire_tank") and not take(total,0,"fire_melee","reinforce"),"no action can exceed the total cap")
 	for subject in [state, partial, MatchState.new(82)]:
+		var summon_available: bool = subject.warband.any(func(id: String) -> bool: return subject.eligible(0, {"kind":"summon", "card_id":id}))
 		for _sample in range(75):
 			var choices: Array = OfferGenerator.generate(subject, 0)
 			expect(choices.size() == 3, "three offers including saturated roster")
 			var seen := {}
-			var normal := false
-			var legal_specials := true
+			var legal_choices := true
 			for choice in choices:
 				seen[OfferGenerator.key(choice)] = true
-				normal = normal or choice.kind=="summon"
-				if choice.kind != "summon":
-					legal_specials = legal_specials and subject.eligible(0, choice)
-			expect(seen.size()==3 and normal and legal_specials, "unique offers, one normal, eligible specials")
+				legal_choices = legal_choices and subject.eligible(0, choice)
+			expect(seen.size()==3 and legal_choices and choices[0].kind == ("summon" if summon_available else "power"), "three unique legal offers, with a summon or a late-game power first")
 	var first := MatchState.new(829)
 	var second := MatchState.new(829)
 	expect(JSON.stringify(first.sides[0].offers) == JSON.stringify(second.sides[0].offers), "seed reproduces offers")

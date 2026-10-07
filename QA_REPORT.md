@@ -1,3 +1,48 @@
+# Compact commander cards and battle powers — 7 October 2026
+
+Commander selection now matches the supplied red squares: three 84×84 portrait
+cards at logical positions (156,149), (250,149) and (344,149), with their info
+controls retained. Browser telemetry verifies the actual card rectangles.
+
+Added +15% HP, +10% Damage, +12% DEF and +10% Attack Speed power cards. Each
+costs one Command Point, applies to all allied armies and future summons, lasts
+for the match and stacks additively. Defence mitigates damage by division and
+cannot grant immunity. Damage bonuses include army burns, fire rings, ground
+fire and explosions. Split Slimes and revived Ninjas inherit upgraded stats.
+The top-left info view shows current and next bonuses and leaves offers/points
+untouched. Army tooltips show accumulated bonuses. Rematch resets both sides.
+
+Capped summons are filtered out of the pool. A summon remains first while legal;
+full unit counts guarantee a power, and full counts plus ranks produce three
+distinct powers. The AI obeys the same purchases, costs, pool and limits.
+
+| Native runner | Checks | Failures |
+|---|---:|---:|
+| Rules, caps and drafting | 1,217 | 0 |
+| Power economy, capped pools, combat and inheritance | 2,981 | 0 |
+| Elemental mechanics and complete matches | 17,925 | 0 |
+| Army passives | 24,536 | 0 |
+| New armies and character sizes | 20,834 | 0 |
+| Ninja teleport and revival | 1,735 | 0 |
+| Permanent collision and formations | 75,101 | 0 |
+| Commander skills and wall routing | 4,383 | 0 |
+| **Gameplay total** | **148,712** | **0** |
+| UI, four power faces/details, typography, audio and Rematch | — | 0 |
+
+A complete five-round browser match passed with a mixed Water-commanded warband
+against Earth. It played five power cards, including repeated damage and defence
+bonuses, retained bonuses between rounds and cleared them on Rematch. It covered
+all fifteen army detail views and three commander detail views, actual wall/body
+collision, hidden draft controls in combat, audio, saved loadouts/settings and
+two viewport sizes. There were zero text overflows and zero browser/engine/HTTP
+errors; 736 combat samples started through WebAudio.
+
+Evidence: [native output](docs/qa/power-cards-native.txt),
+[browser report](docs/qa/power-cards-browser.json),
+[compact commanders](docs/screenshots/compact-commanders.png),
+[power fronts](docs/screenshots/battle-power-cards.png) and
+[HP detail view](docs/screenshots/power-card-details.png).
+
 # Wall routing, portrait cards and character sizes — 7 October 2026
 
 Fixed an Uproot edge-contact deadlock: bodies touching a wall can slide along it

@@ -171,6 +171,28 @@ func _run() -> void:
 	check(ui.modal_kind == "command" and ui.state.sides[0].points == points_before-1 and ui.state.sides[0].roster.water_mage.count == 5, "confirming reinforcement plays the card and returns to the popup")
 	layout(ui)
 	ui.state.sides[1].hearts=1
+	# Power details use the same modal safeguards as army effects. Inspect all
+	# four faces, then play one through the actual picker without spawning units.
+	for power_id in PowerCards.IDS:
+		ui.state.sides[0].offers = [{"kind":"power", "card_id":power_id}, {"kind":"summon", "card_id":"water_melee"}, {"kind":"summon", "card_id":"earth_tank"}]
+		ui.show_battle()
+		layout(ui)
+		points_before = ui.state.sides[0].points
+		offers_before = JSON.stringify(ui.state.sides[0].offers)
+		ui.offer_buttons[0].get_node("CardInfo").pressed.emit()
+		check(ui.details_card_id == power_id and ui.details_overlay != null, "each power card opens its detailed effects")
+		layout(ui)
+		ui._pick(0)
+		ui.begin_battle()
+		check(ui.state.sides[0].points == points_before and JSON.stringify(ui.state.sides[0].offers) == offers_before and ui.state.phase == "command", "power details cannot spend points, reroll or start battle")
+		ui._close_card_details()
+	ui.state.sides[0].points = 1
+	var roster_before: Dictionary = ui.state.sides[0].roster.duplicate(true)
+	ui._pick(0)
+	check(ui.state.sides[0].powers.power_speed == 1 and ui.state.sides[0].points == 0 and ui.state.sides[0].roster == roster_before, "playing a power costs one point, adds its bonus and preserves armies")
+	check(ui._roster_tooltip(0).contains("Attack Speed +10%"), "army tooltip shows accumulated powers")
+	check(ui.modal_kind == "command", "power play returns to the round picker")
+	layout(ui)
 	ui.state.phase="combat"
 	ui.simulation = CombatSimulation.new(ui.state)
 	ui.simulation.result={"winner":0,"seconds":1.0,"reason":"UI fixture","survivors":[1,0]}
@@ -179,6 +201,7 @@ func _run() -> void:
 	layout(ui)
 	ui.new_match()
 	check(ui.state.round_number==1 and ui.state.sides[0].hearts==4, "Rematch starts a fresh match")
+	check(ui.state.sides[0].powers == PowerCards.empty_stacks() and ui.state.sides[1].powers == PowerCards.empty_stacks(), "Rematch resets all power bonuses")
 	ui.state.sides[0].hearts=1
 	ui.state.phase="combat"
 	ui.simulation = CombatSimulation.new(ui.state)
